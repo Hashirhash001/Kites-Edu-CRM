@@ -146,7 +146,7 @@
                     <button onclick="location.reload()" class="btn btn-light me-2" title="Refresh to see latest imports">
                         <i class="las la-sync-alt"></i> Refresh
                     </button>
-                    <a href="{{ route('leads.index') }}" class="btn btn-secondary">
+                    <a href="{{ route('edu-leads.index') }}" class="btn btn-secondary">
                         <i class="las la-arrow-left me-1"></i> Back to Leads
                     </a>
                 </div>
@@ -178,7 +178,7 @@
 
                     <!-- Download Template Button -->
                     <div class="text-center mb-4">
-                        <a href="{{ route('leads.download-template') }}" class="btn btn-success btn-lg">
+                        <a href="{{ route('edu-leads.download-template') }}" class="btn btn-success btn-lg">
                             <i class="las la-download me-2"></i>Download Excel Template
                         </a>
                     </div>
@@ -333,7 +333,7 @@
 
                             @if($hasFailedData)
                                 <div class="d-grid gap-1 mt-2">
-                                    <a href="{{ route('leads.download-failed-rows', $import->id) }}"
+                                    <a href="{{ route('edu-leads.download-failed-rows', $import->id) }}"
                                     class="btn btn-sm btn-danger"
                                     title="Download Failed Rows CSV">
                                         <i class="las la-download me-1"></i>
@@ -442,7 +442,7 @@ function startProgressPolling(importId) {
 
     progressInterval = setInterval(async () => {
         try {
-            const response = await fetch(`{{ url('/leads/bulk-import/progress') }}/${importId}`);
+            const response = await fetch(`{{ url('/edu-leads/bulk-import/progress') }}/${importId}`);
             const progress = await response.json();
 
             if (progress.error) {
@@ -498,7 +498,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         updateProgress(10, 'Analyzing file for duplicates...');
         document.getElementById('progressContainer').style.display = 'block';
 
-        const preValidateResponse = await fetch('{{ route("leads.pre-validate-import") }}', {
+        const preValidateResponse = await fetch('{{ route("edu-leads.pre-validate-import") }}', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -520,6 +520,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
 
         // Step 2: Show warning if duplicates found
         if (validation.needs_warning) {
+            const a = validation.analysis;
             const confirmResult = await Swal.fire({
                 icon: 'warning',
                 title: 'Duplicate Data Detected',
@@ -530,65 +531,47 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
                         <h6 class="mb-3">Import Summary:</h6>
                         <table class="table table-sm">
                             <tr>
-                                <td><strong>Total Rows:</strong></td>
-                                <td class="text-end">${validation.analysis.total_rows}</td>
+                                <td><strong>Total Rows</strong></td>
+                                <td class="text-end">${a.total_rows}</td>
                             </tr>
                             <tr>
-                                <td><strong>Existing Phones:</strong></td>
-                                <td class="text-end text-warning">${validation.analysis.existing_count}</td>
+                                <td><strong>Existing Mobile Numbers</strong></td>
+                                <td class="text-end text-warning">${a.existing_phone}</td>
                             </tr>
                             <tr>
-                                <td><strong>New Phones:</strong></td>
-                                <td class="text-end text-success">${validation.analysis.new_count}</td>
+                                <td><strong>Existing WhatsApp Numbers</strong></td>
+                                <td class="text-end text-warning">${a.existing_whatsapp}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>New Phones</strong></td>
+                                <td class="text-end text-success">${a.new_count}</td>
                             </tr>
                             <tr class="table-info">
-                                <td><strong>Will Create:</strong></td>
+                                <td><strong>Will Create</strong></td>
                                 <td></td>
                             </tr>
                             <tr>
-                                <td class="ps-4">New Leads:</td>
-                                <td class="text-end">${validation.analysis.will_create_leads}</td>
+                                <td class="ps-4">New Leads</td>
+                                <td class="text-end">${a.will_create_leads}</td>
                             </tr>
-                            <tr>
-                                <td class="ps-4">New Customers:</td>
-                                <td class="text-end">${validation.analysis.will_create_customers}</td>
-                            </tr>
-                            ${validation.analysis.leads_to_convert > 0 ? `
-                            <tr>
-                                <td class="ps-4 text-info">Lead Conversions:</td>
-                                <td class="text-end text-info">${validation.analysis.leads_to_convert}</td>
-                            </tr>
-                            ` : ''}
-                            <tr>
-                                <td class="ps-4">New Jobs:</td>
-                                <td class="text-end">${validation.analysis.will_create_jobs}</td>
-                            </tr>
-                            ${validation.analysis.new_jobs_for_existing > 0 ? `
-                            <tr>
-                                <td class="ps-4 text-warning">Jobs for Existing Customers:</td>
-                                <td class="text-end text-warning">${validation.analysis.new_jobs_for_existing}</td>
-                            </tr>
-                            ` : ''}
                         </table>
-
+                        ${a.existing_count >= a.total_rows ? `
+                        <div class="alert alert-danger mt-3 mb-0">
+                            <small><i class="las la-exclamation-circle me-1"></i>
+                            All rows are duplicates. No new leads will be created.</small>
+                        </div>` : `
                         <div class="alert alert-info mt-3 mb-0">
                             <small><i class="las la-info-circle me-1"></i>
-                            ${validation.analysis.existing_count === validation.analysis.total_rows
-                                ? 'This appears to be a duplicate upload. Only new jobs will be created for existing customers with payment received.'
-                                : 'Duplicate phone numbers will be processed according to payment status.'}
-                            </small>
-                        </div>
-                    </div>
-                `,
+                            Duplicate rows will be skipped. Only ${a.will_create_leads} new lead(s) will be imported.</small>
+                        </div>`}
+                    </div>`,
                 showCancelButton: true,
                 confirmButtonText: 'Yes, Continue Import',
                 cancelButtonText: 'Cancel',
                 confirmButtonColor: '#10b981',
                 cancelButtonColor: '#ef4444',
                 width: '600px',
-                customClass: {
-                    popup: 'text-start'
-                }
+                customClass: { popup: 'text-start' }
             });
 
             if (!confirmResult.isConfirmed) {
@@ -603,7 +586,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Importing...';
         updateProgress(30, 'Starting import process...');
 
-        const response = await fetch('{{ route("leads.process-bulk-import") }}', {
+        const response = await fetch('{{ route("edu-leads.process-bulk-import") }}', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -695,15 +678,11 @@ async function waitForCompletion(result) {
         Swal.fire({
             icon: result.stats.successful > 0 ? 'success' : 'warning',
             title: result.stats.successful > 0 ? 'Import Completed!' : 'Import Completed with Errors',
-            html: `
-                <div class="text-start">
-                    <p><strong>✓ Successfully processed:</strong> ${result.stats.successful} rows</p>
-                    ${result.stats.customers_created > 0 ? `<p><strong>✓ Customers created:</strong> ${result.stats.customers_created}</p>` : ''}
-                    ${result.stats.jobs_created > 0 ? `<p><strong>✓ Jobs created:</strong> ${result.stats.jobs_created}</p>` : ''}
-                    ${result.stats.failed > 0 ? `<p class="text-danger"><strong>✗ Failed:</strong> ${result.stats.failed} rows</p>` : ''}
-                    ${result.has_failed_rows ? '<p class="text-info mt-2"><small><i class="las la-info-circle me-1"></i>Scroll down to see error details and download failed rows.</small></p>' : ''}
-                </div>
-            `,
+            html: `<div class="text-start">
+                <p><strong>Successfully imported:</strong> ${result.stats.successful} leads</p>
+                ${result.stats.failed > 0 ? `<p class="text-danger"><strong>Failed:</strong> ${result.stats.failed} rows</p>` : ''}
+                ${result.has_failed_rows ? '<p class="text-info mt-2"><small><i class="las la-info-circle me-1"></i>Scroll down to see error details and download failed rows.</small></p>' : ''}
+            </div>`,
             confirmButtonText: 'OK',
             confirmButtonColor: '#10b981',
             width: '600px',
@@ -770,7 +749,7 @@ function showErrors(errors, importId, hasFailedRows) {
         const downloadBtn = document.createElement('div');
         downloadBtn.className = 'mb-3';
         downloadBtn.innerHTML = `
-            <a href="{{ url('/leads/bulk-import/download-failed') }}/${importId}"
+            <a href="{{ url('/edu-leads/bulk-import/download-failed') }}/${importId}"
                class="btn btn-danger">
                 <i class="las la-download me-2"></i>Download Failed Rows (${errors.length})
             </a>

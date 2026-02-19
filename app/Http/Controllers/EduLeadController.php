@@ -30,87 +30,57 @@ class EduLeadController extends Controller
     {
         $user = Auth::user();
 
-        // Base query with relationships (NO BRANCH)
-        $query = EduLead::with([
-            'course',
-            'leadSource',
-            'createdBy',
-            'assignedTo'
-        ]);
+        // ── Base query (shared for status counts + pagination) ──────────────
+        $baseQuery = EduLead::with(['course', 'leadSource', 'createdBy', 'assignedTo']);
 
-        // ========== ROLE-BASED ACCESS CONTROL (NO BRANCH) ==========
+        // Role-based access
         if ($user->role === 'super_admin') {
-            // Super admin sees all leads
+            // sees all
         } elseif ($user->role === 'lead_manager') {
-            // Lead manager sees only their created leads
-            $query->where('created_by', $user->id);
+            $baseQuery->where('created_by', $user->id);
         } elseif ($user->role === 'telecallers') {
-            // Telecallers see their assigned leads
-            $query->where('assigned_to', $user->id);
+            $baseQuery->where('assigned_to', $user->id);
         } else {
             abort(403, 'Unauthorized');
         }
 
-        // ========== FILTERS ==========
-
-        // Interest Level Filter
+        // ── Apply all filters EXCEPT final_status to base ──────────────────
         if ($request->filled('interest_level')) {
-            $query->where('interest_level', $request->interest_level);
+            $baseQuery->where('interest_level', $request->interest_level);
         }
-
-        // Final Status Filter
-        if ($request->filled('final_status')) {
-            $query->where('final_status', $request->final_status);
-        }
-
-        // Lead Source Filter
         if ($request->filled('lead_source_id') && $request->lead_source_id != 0) {
-            $query->where('lead_source_id', $request->lead_source_id);
+            $baseQuery->where('lead_source_id', $request->lead_source_id);
         }
-
-        // Course Filter
         if ($request->filled('course_id')) {
-            $query->where('course_id', $request->course_id);
+            $baseQuery->where('course_id', $request->course_id);
         }
-
-        // Country Filter
         if ($request->filled('country')) {
-            $query->where('country', $request->country);
+            $baseQuery->where('country', $request->country);
         }
-
-        // Date From Filter
         if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
+            $baseQuery->whereDate('created_at', '>=', $request->date_from);
         }
-
-        // Date To Filter
         if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
+            $baseQuery->whereDate('created_at', '<=', $request->date_to);
         }
-
-        // Assigned To Filter
         if ($request->filled('assigned_to')) {
             if ($user->role === 'telecallers') {
-                // Telecaller can only see 'me' or 'unassigned'
                 if ($request->assigned_to === 'me') {
-                    $query->where('assigned_to', $user->id);
+                    $baseQuery->where('assigned_to', $user->id);
                 } elseif ($request->assigned_to === 'unassigned') {
-                    $query->whereNull('assigned_to');
+                    $baseQuery->whereNull('assigned_to');
                 }
             } else {
-                // Admin/manager can see all
                 if ($request->assigned_to === 'unassigned') {
-                    $query->whereNull('assigned_to');
+                    $baseQuery->whereNull('assigned_to');
                 } else {
-                    $query->where('assigned_to', $request->assigned_to);
+                    $baseQuery->where('assigned_to', $request->assigned_to);
                 }
             }
         }
-
-        // Search Filter
         if ($request->filled('search')) {
             $search = '%' . $request->search . '%';
-            $query->where(function($q) use ($search) {
+            $baseQuery->where(function ($q) use ($search) {
                 $q->where('name', 'like', $search)
                   ->orWhere('email', 'like', $search)
                   ->orWhere('phone', 'like', $search)
@@ -119,25 +89,39 @@ class EduLeadController extends Controller
             });
         }
 
-        // ========== SORTING ==========
-        $sortColumn = $request->get('sort_column', 'created_at');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $query->orderBy($sortColumn, $sortDirection);
+        // ── STATUS COUNTS — always computed on the base query (no status filter) ──
+        $statusCounts = [
+            'all'            => (clone $baseQuery)->count(),
+            'pending'        => (clone $baseQuery)->where('final_status', 'pending')->count(),
+            'contacted'      => (clone $baseQuery)->where('final_status', 'contacted')->count(),
+            'follow_up'      => (clone $baseQuery)->where('final_status', 'follow_up')->count(),
+            'admitted'       => (clone $baseQuery)->where('final_status', 'admitted')->count(),
+            'not_interested' => (clone $baseQuery)->where('final_status', 'not_interested')->count(),
+            'dropped'        => (clone $baseQuery)->where('final_status', 'dropped')->count(),
+        ];
 
-        // ========== PAGINATION ==========
+        // ── NOW apply final_status for actual results ───────────────────────
+        $query = clone $baseQuery;
+        if ($request->filled('final_status')) {
+            $query->where('final_status', $request->final_status);
+        }
+
+        // ── Sorting & Pagination ────────────────────────────────────────────
+        $sortColumn    = $request->get('sort_column', 'created_at');
+        $sortDirection = $request->get('sort_direction', 'desc');
+
         $perPage = $request->get('per_page', 15);
-        $allowedPerPage = [15, 30, 50, 100];
-        if (!in_array($perPage, $allowedPerPage)) {
+        if (!in_array($perPage, [15, 30, 50, 100])) {
             $perPage = 15;
         }
 
-        $leads = $query->paginate($perPage);
+        $leads = $query->orderBy($sortColumn, $sortDirection)->paginate($perPage);
 
-        // ========== COUNTS ==========
+        // ── Extra counts ───────────────────────────────────────────────────
         $hotLeadsCount = EduLead::where('interest_level', 'hot')
             ->where('final_status', 'pending')
             ->when($user->role === 'lead_manager', fn($q) => $q->where('created_by', $user->id))
-            ->when($user->role === 'telecallers', fn($q) => $q->where('assigned_to', $user->id))
+            ->when($user->role === 'telecallers',  fn($q) => $q->where('assigned_to', $user->id))
             ->count();
 
         $pendingFollowupsCount = EduLeadFollowup::where('status', 'pending')
@@ -145,16 +129,14 @@ class EduLeadController extends Controller
             ->when($user->role !== 'super_admin', fn($q) => $q->where('assigned_to', $user->id))
             ->count();
 
-        // Get filter dropdown data (NO BRANCHES)
-        $courses = Course::where('is_active', true)->orderBy('name')->get();
+        // ── Dropdowns ──────────────────────────────────────────────────────
+        $courses     = Course::where('is_active', true)->orderBy('name')->get();
         $leadSources = EduLeadSource::where('is_active', true)->orderBy('name')->get();
         $telecallers = User::where('role', 'telecallers')
             ->where('is_active', true)
             ->select('id', 'name')
             ->orderBy('name')
             ->get();
-
-        // Get unique countries from courses
         $countries = Course::where('is_active', true)
             ->whereNotNull('country')
             ->distinct()
@@ -162,21 +144,18 @@ class EduLeadController extends Controller
             ->sort()
             ->values();
 
-        // ========== AJAX RESPONSE ==========
+        // ── AJAX response ──────────────────────────────────────────────────
         if ($request->ajax()) {
             return response()->json([
-                'success' => true,
-                'html' => view('edu-leads.partials.table-rows', compact('leads'))->render(),
-                'pagination' => $leads->links('pagination::bootstrap-5')->render(),
-                'total' => $leads->total(),
-                'per_page' => $leads->perPage(),
+                'success'      => true,
+                'html'         => view('edu-leads.partials.table-rows', compact('leads'))->render(),
+                'pagination'   => $leads->links('pagination::bootstrap-5')->render(),
+                'total'        => $leads->total(),
+                'per_page'     => $leads->perPage(),
                 'current_page' => $leads->currentPage(),
-                'from' => $leads->firstItem() ?? 0,
-                'to' => $leads->lastItem() ?? 0,
-                'current_sort' => [
-                    'column' => $sortColumn,
-                    'direction' => $sortDirection
-                ]
+                'from'         => $leads->firstItem() ?? 0,
+                'to'           => $leads->lastItem()  ?? 0,
+                'status_counts' => $statusCounts,
             ]);
         }
 
@@ -187,7 +166,8 @@ class EduLeadController extends Controller
             'courses',
             'leadSources',
             'telecallers',
-            'countries'
+            'countries',
+            'statusCounts'
         ));
     }
 
@@ -237,7 +217,7 @@ class EduLeadController extends Controller
                 ], 403);
             }
 
-            // ✅ FIXED VALIDATION - status and final_status are now NULLABLE
+            //status and final_status are now NULLABLE
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'nullable|email|max:255',
@@ -592,118 +572,98 @@ class EduLeadController extends Controller
         try {
             $user = Auth::user();
 
-            // Only super admin and lead manager can assign
             if (!in_array($user->role, ['super_admin', 'lead_manager'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized'
-                ], 403);
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
 
             $validated = $request->validate([
                 'assigned_to' => 'required|exists:users,id',
-                'notes' => 'nullable|string',
+                'notes'       => 'nullable|string',
             ]);
 
             $telecaller = User::findOrFail($validated['assigned_to']);
 
-            $eduLead->update([
-                'assigned_to' => $validated['assigned_to']
-            ]);
+            $eduLead->update(['assigned_to' => $validated['assigned_to']]);
 
-            // Add note if provided
             if ($request->filled('notes')) {
                 EduLeadNote::create([
                     'edu_lead_id' => $eduLead->id,
-                    'created_by' => auth()->id(),
-                    'note' => 'Assignment Note: ' . $validated['notes']
+                    'created_by'  => auth()->id(),
+                    'note'        => 'Assignment Note: ' . $validated['notes'],
                 ]);
             }
 
             Log::info('Education lead assigned', [
-                'lead_id' => $eduLead->id,
+                'lead_id'     => $eduLead->id,
                 'assigned_to' => $telecaller->name,
-                'assigned_by' => $user->id
+                'assigned_by' => $user->id,
             ]);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Lead assigned to ' . $telecaller->name . ' successfully!'
+                'success'         => true,
+                'message'         => 'Lead assigned to ' . $telecaller->name . ' successfully!',
+                'telecaller_name' => $telecaller->name,   // ← THIS WAS MISSING
             ]);
 
         } catch (\Exception $e) {
             Log::error('Lead assign error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error assigning lead'
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error assigning lead'], 500);
         }
     }
 
     /**
-     * Bulk assign leads to telecaller (NO BRANCH VALIDATION)
+     * Bulk assign leads to telecaller
      */
     public function bulkAssign(Request $request)
     {
         try {
             $user = Auth::user();
 
-            // Authorization check
             if (!in_array($user->role, ['super_admin', 'lead_manager'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized'
-                ], 403);
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
 
-            // Validate
             $validated = $request->validate([
-                'lead_ids' => 'required|array',
-                'lead_ids.*' => 'exists:edu_leads,id',
+                'lead_ids'    => 'required|array',
+                'lead_ids.*'  => 'exists:edu_leads,id',
                 'assigned_to' => 'required|exists:users,id',
-                'notes' => 'nullable|string',
+                'notes'       => 'nullable|string',
             ]);
 
             $telecaller = User::find($validated['assigned_to']);
-            $count = 0;
+            $count      = 0;
 
             foreach ($validated['lead_ids'] as $leadId) {
                 $lead = EduLead::find($leadId);
                 if ($lead) {
                     $lead->update(['assigned_to' => $validated['assigned_to']]);
-
-                    // Add note if provided
                     if ($request->filled('notes')) {
                         EduLeadNote::create([
                             'edu_lead_id' => $lead->id,
-                            'created_by' => $user->id,
-                            'note' => 'Bulk Assignment Note: ' . $validated['notes']
+                            'created_by'  => $user->id,
+                            'note'        => 'Bulk Assignment Note: ' . $validated['notes'],
                         ]);
                     }
-
                     $count++;
                 }
             }
 
             Log::info('Bulk education lead assignment', [
-                'count' => $count,
+                'count'       => $count,
                 'assigned_to' => $telecaller->name,
-                'assigned_by' => $user->id
+                'assigned_by' => $user->id,
             ]);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Bulk assignment completed!',
-                'count' => $count,
-                'telecaller_name' => $telecaller->name
+                'success'         => true,
+                'message'         => 'Bulk assignment completed!',
+                'count'           => $count,
+                'telecaller_name' => $telecaller->name,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Bulk assign error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error in bulk assignment'
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error in bulk assignment'], 500);
         }
     }
 
@@ -759,7 +719,7 @@ class EduLeadController extends Controller
             ], 422);
 
         } catch (\Exception $e) {
-            \Log::error('Error logging call: ' . $e->getMessage());
+            Log::error('Error logging call: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error logging call: ' . $e->getMessage()

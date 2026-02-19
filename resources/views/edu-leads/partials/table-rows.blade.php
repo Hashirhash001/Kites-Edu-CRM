@@ -1,158 +1,139 @@
+@php
+$statusLabels = [
+    'pending'        => ['label' => 'Pending',        'class' => 'fs-pending'],
+    'contacted'      => ['label' => 'Contacted',      'class' => 'fs-contacted'],
+    'follow_up'      => ['label' => 'Follow Up',      'class' => 'fs-follow_up'],
+    'admitted'       => ['label' => 'Admitted',       'class' => 'fs-admitted'],
+    'not_interested' => ['label' => 'Not Interested', 'class' => 'fs-not_interested'],
+    'dropped'        => ['label' => 'Dropped',        'class' => 'fs-dropped'],
+];
+$interestIcons = ['hot' => '🔥', 'warm' => '☀️', 'cold' => '❄️'];
+@endphp
+
 @forelse($leads as $lead)
 <tr>
     @if(in_array(auth()->user()->role, ['super_admin', 'lead_manager']))
     <td class="checkbox-col">
         <div class="checkbox-wrapper">
-            <input type="checkbox"
-                   class="custom-checkbox lead-checkbox"
-                   value="{{ $lead->id }}"
-                   data-name="{{ $lead->name }}"
-                   data-code="{{ $lead->lead_code }}">
+            <input type="checkbox" class="custom-checkbox lead-checkbox" value="{{ $lead->id }}">
         </div>
     </td>
     @endif
 
+    {{-- Lead Code --}}
     <td>
-        <span class="badge bg-primary">{{ $lead->lead_code }}</span>
+        <span class="text-muted small fw-semibold">{{ $lead->lead_code }}</span>
     </td>
 
+    {{-- Name --}}
     <td>
         <a href="{{ route('edu-leads.show', $lead->id) }}" class="lead-name-link">
-            <h6 class="mb-0">{{ $lead->name }}</h6>
+            {{ $lead->name }}
         </a>
-        @if($lead->email)
-            <small class="text-muted d-block">{{ $lead->email }}</small>
-        @endif
     </td>
 
+    {{-- Phone --}}
     <td>
-        <strong>{{ $lead->phone }}</strong>
-        @if($lead->whatsapp_number)
-            <br><small class="text-success">
-                <i class="lab la-whatsapp"></i> {{ $lead->whatsapp_number }}
-            </small>
-        @endif
+        <a href="tel:{{ $lead->phone }}" class="text-body text-decoration-underline small">
+            {{ $lead->phone }}
+        </a>
     </td>
 
-    <td>
-        @if($lead->country)
-            <span class="badge bg-info">{{ $lead->country }}</span>
-        @else
-            <span class="text-muted">-</span>
-        @endif
-    </td>
+    {{-- Country --}}
+    <td>{{ $lead->country ?? '—' }}</td>
 
-    <td>
-        @if($lead->course)
-            {{ $lead->course->name }}
-        @elseif($lead->course_interested)
-            <em class="text-muted">{{ $lead->course_interested }}</em>
-        @else
-            <span class="text-muted">-</span>
-        @endif
-    </td>
+    {{-- Course --}}
+    <td>{{ $lead->course->name ?? '—' }}</td>
 
+    {{-- Interest Level --}}
     <td>
         @if($lead->interest_level)
-            @if($lead->interest_level === 'hot')
-                <span class="badge bg-danger">🔥 Hot</span>
-            @elseif($lead->interest_level === 'warm')
-                <span class="badge bg-warning text-dark">☀️ Warm</span>
-            @else
-                <span class="badge bg-info">❄️ Cold</span>
-            @endif
+            <span class="badge
+                @if($lead->interest_level === 'hot')    bg-danger
+                @elseif($lead->interest_level === 'warm') bg-warning text-dark
+                @else bg-info text-dark
+                @endif">
+                {{ $interestIcons[$lead->interest_level] ?? '' }}
+                {{ ucfirst($lead->interest_level) }}
+            </span>
         @else
-            <span class="text-muted">-</span>
+            <span class="text-muted small">—</span>
         @endif
     </td>
 
+    {{-- Final Status --}}
     <td>
-        @if($lead->final_status === 'pending')
-            <span class="badge bg-warning text-dark">Pending</span>
-        @elseif($lead->final_status === 'admitted')
-            <span class="badge bg-success">✅ Admitted</span>
-        @elseif($lead->final_status === 'not_interested')
-            <span class="badge bg-danger">Not Interested</span>
-        @else
-            <span class="badge bg-secondary">{{ ucfirst(str_replace('_', ' ', $lead->final_status)) }}</span>
-        @endif
+        @php
+            $s = $statusLabels[$lead->final_status] ?? ['label' => ucfirst($lead->final_status), 'class' => 'fs-pending'];
+        @endphp
+        <span class="fs-badge {{ $s['class'] }}">{{ $s['label'] }}</span>
     </td>
 
-    <td>
-        @if($lead->leadSource)
-            <span class="badge bg-light text-dark">{{ $lead->leadSource->name }}</span>
-        @else
-            <span class="text-muted">-</span>
-        @endif
-    </td>
+    {{-- Source --}}
+    <td>{{ $lead->leadSource->name ?? '—' }}</td>
 
+    {{-- Assigned To --}}
     <td>
         @if($lead->assignedTo)
-            <div class="d-flex align-items-center gap-2">
-                <i class="las la-user-circle fs-4 text-success"></i>
-                <div>
-                    <strong>{{ $lead->assignedTo->name }}</strong>
-                </div>
-            </div>
+            <span class="badge bg-secondary">{{ $lead->assignedTo->name }}</span>
         @else
-            <span class="badge bg-secondary">Unassigned</span>
+            <span class="badge bg-light text-muted border">Unassigned</span>
         @endif
     </td>
 
-    <td>
-        <small class="text-muted">
-            {{ $lead->created_at->format('d M Y') }}<br>
-            {{ $lead->created_at->format('h:i A') }}
-        </small>
-    </td>
+    {{-- Created --}}
+    <td><span class="text-muted small">{{ $lead->created_at->format('d M Y') }}</span></td>
 
+    {{-- Actions --}}
     <td>
         <div class="action-icons">
-            <a href="{{ route('edu-leads.show', $lead->id) }}"
-               class="text-info"
-               title="View">
-                <i class="las la-eye fs-4"></i>
+            {{-- View --}}
+            <a href="{{ route('edu-leads.show', $lead->id) }}" title="View" class="text-info">
+                <i class="las la-eye fs-18"></i>
             </a>
 
-            @if(in_array(auth()->user()->role, ['super_admin', 'lead_manager']) ||
-                (auth()->user()->role === 'telecallers' && $lead->assigned_to == auth()->id()))
-                <a href="{{ route('edu-leads.edit', $lead->id) }}"
-                   class="text-primary"
-                   title="Edit">
-                    <i class="las la-edit fs-4"></i>
-                </a>
+            @if(
+                auth()->user()->role === 'super_admin' ||
+                (auth()->user()->role === 'lead_manager' && $lead->created_by === auth()->id()) ||
+                (auth()->user()->role === 'telecallers'  && $lead->assigned_to === auth()->id())
+            )
+            {{-- Edit --}}
+            <a href="{{ route('edu-leads.edit', $lead->id) }}" title="Edit" class="text-secondary">
+                <i class="las la-pen fs-18"></i>
+            </a>
             @endif
 
             @if(in_array(auth()->user()->role, ['super_admin', 'lead_manager']))
-                @if(!$lead->assigned_to || auth()->user()->role === 'super_admin')
-                    <a href="javascript:void(0)"
-                       class="text-success assignLeadBtn"
-                       data-id="{{ $lead->id }}"
-                       data-name="{{ $lead->name }}"
-                       data-code="{{ $lead->lead_code }}"
-                       title="Assign">
-                        <i class="las la-user-plus fs-4"></i>
-                    </a>
-                @endif
+            {{-- Single Assign --}}
+            <a href="javascript:void(0)"
+               class="assignLeadBtn text-primary"
+               title="Assign"
+               data-id="{{ $lead->id }}"
+               data-code="{{ $lead->lead_code }}"
+               data-name="{{ $lead->name }}"
+               data-assignee="{{ $lead->assignedTo->name ?? '' }}">
+                <i class="las la-user-plus fs-18"></i>
+            </a>
+            @endif
 
-                <a href="javascript:void(0)"
-                   class="text-danger deleteLeadBtn"
-                   data-id="{{ $lead->id }}"
-                   data-name="{{ $lead->name }}"
-                   title="Delete">
-                    <i class="las la-trash fs-4"></i>
-                </a>
+            @if(auth()->user()->role === 'super_admin')
+            {{-- Delete --}}
+            <a href="javascript:void(0)"
+               class="deleteLeadBtn text-danger"
+               title="Delete"
+               data-id="{{ $lead->id }}"
+               data-name="{{ $lead->name }}">
+                <i class="las la-trash-alt fs-18"></i>
+            </a>
             @endif
         </div>
     </td>
 </tr>
 @empty
 <tr>
-    <td colspan="12" class="text-center py-4">
-        <div class="text-muted">
-            <i class="las la-inbox fs-1 mb-2"></i>
-            <p class="mb-0">No leads found</p>
-        </div>
+    <td colspan="12" class="text-center py-5 text-muted">
+        <i class="las la-graduation-cap" style="font-size:3rem; opacity:.2; display:block; margin-bottom:8px;"></i>
+        No leads found matching your filters
     </td>
 </tr>
 @endforelse

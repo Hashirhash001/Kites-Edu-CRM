@@ -256,7 +256,7 @@
     .badge {
         border-radius: 6px;
         font-weight: 600;
-        padding: 0.4rem 0.9rem;
+        /* padding: 0.4rem 0.9rem; */
     }
 
     .badge.bg-success { background: var(--success-green) !important; }

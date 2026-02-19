@@ -16,485 +16,406 @@
     @yield('extra-css')
 
     <style>
-        /* Avatar Circle Styles */
+        /* ── Avatar ─────────────────────────────────────────── */
         .avatar-circle {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
+            width: 35px; height: 35px; border-radius: 50%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
-            transition: transform 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(102,126,234,.4);
+            transition: transform .2s;
         }
-
-        .avatar-circle:hover {
-            transform: scale(1.05);
-        }
-
-        .avatar-initials {
-            color: white;
-            font-weight: 600;
-            font-size: 14px;
-            letter-spacing: 0.5px;
-        }
+        .avatar-circle:hover { transform: scale(1.05); }
+        .avatar-initials { color: white; font-weight: 600; font-size: 14px; letter-spacing: .5px; }
 
         .avatar-circle-large {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            width: 50px; height: 50px; border-radius: 50%;
+            background: rgba(255,255,255,.2);
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid rgba(255,255,255,.3);
         }
+        .avatar-initials-large { color: white; font-weight: 700; font-size: 18px; letter-spacing: 1px; }
 
-        .avatar-initials-large {
-            color: white;
-            font-weight: 700;
-            font-size: 18px;
-            letter-spacing: 1px;
-        }
+        /* ── Dropdown ───────────────────────────────────────── */
+        .dropdown-menu { border: none; box-shadow: 0 10px 30px rgba(0,0,0,.15); }
+        .dropdown-item { transition: all .2s; font-weight: 500; }
+        .dropdown-item:hover { background-color: #f8f9fa; padding-left: 1.25rem; }
 
-        /* Dropdown improvements */
-        .dropdown-menu {
-            border: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        }
-
-        .dropdown-item {
-            transition: all 0.2s;
-            font-weight: 500;
-        }
-
-        .dropdown-item:hover {
-            background-color: #f8f9fa;
-            padding-left: 1.25rem;
-        }
-
-        /* Profile card at bottom of sidebar */
+        /* ── Profile sidebar card ───────────────────────────── */
         .profile-sidebar-card {
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 10px;
-            padding: 12px;
-            margin: 10px;
+            background: rgba(102,126,234,.1);
+            border-radius: 10px; padding: 12px; margin: 10px;
             border-left: 3px solid #667eea;
-            transition: all 0.3s;
-            cursor: pointer;
-            text-decoration: none;
-            display: block;
+            transition: all .3s; cursor: pointer;
+            text-decoration: none; display: block;
         }
-
-        .profile-sidebar-card:hover {
-            background: rgba(102, 126, 234, 0.15);
-            transform: translateX(2px);
-        }
+        .profile-sidebar-card:hover { background: rgba(102,126,234,.15); transform: translateX(2px); }
 
         .profile-sidebar-avatar {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
+            width: 45px; height: 45px; border-radius: 50%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: 700;
-            color: white;
-            letter-spacing: 1px;
-            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; font-weight: 700; color: white;
+            letter-spacing: 1px; flex-shrink: 0;
         }
-
-        .profile-sidebar-info {
-            flex-grow: 1;
-            min-width: 0;
-        }
-
+        .profile-sidebar-info { flex-grow: 1; min-width: 0; }
         .profile-sidebar-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 14px; font-weight: 600; color: #ffffff;
+            margin-bottom: 2px; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
         }
+        .profile-sidebar-role { font-size: 12px; color: #667eea; font-weight: 500; }
 
-        .profile-sidebar-role {
-            font-size: 12px;
-            color: #667eea;
-            font-weight: 500;
-        }
-
-        /* Account label above profile */
         .account-label {
-            text-transform: uppercase;
-            font-size: 11px;
-            font-weight: 600;
-            color: #a0aec0;
-            padding: 0 20px;
-            margin-top: auto;
-            margin-bottom: 8px;
+            text-transform: uppercase; font-size: 11px; font-weight: 600;
+            color: #a0aec0; padding: 0 20px; margin-top: auto; margin-bottom: 8px;
         }
 
-        /* Table loading state */
-        .table-loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
+        /* ── Misc ───────────────────────────────────────────── */
+        .table-loading { opacity: .6; pointer-events: none; }
 
-        /* Sortable columns */
-        .sortable {
-            cursor: pointer;
-            user-select: none;
-        }
+        .sortable { cursor: pointer; user-select: none; }
+        .sortable:hover { background-color: #f8f9fa; }
+        .sortable.asc::after  { content: " ▲"; font-size: 10px; }
+        .sortable.desc::after { content: " ▼"; font-size: 10px; }
 
-        .sortable:hover {
-            background-color: #f8f9fa;
-        }
-
-        .sortable.asc::after {
-            content: " ▲";
-            font-size: 10px;
-        }
-
-        .sortable.desc::after {
-            content: " ▼";
-            font-size: 10px;
-        }
-
-        /* Badge pulse animation for hot leads */
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .badge-pulse {
-            animation: pulse 2s infinite;
-        }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+        .badge-pulse { animation: pulse 2s infinite; }
     </style>
-
 </head>
 
 <body>
-    <!-- Top Bar Start -->
-    <div class="topbar d-print-none">
-        <div class="container-fluid">
-            <nav class="topbar-custom d-flex justify-content-between" id="topbar-custom">
-                <ul class="topbar-item list-unstyled d-inline-flex align-items-center mb-0">
-                    <li>
-                        <button class="nav-link mobile-menu-btn nav-icon" id="togglemenu">
-                            <i class="iconoir-menu"></i>
-                        </button>
-                    </li>
-                    {{-- <li class="ms-3">
-                        <h5 class="mb-0 text-dark">🎓 Education CRM</h5>
-                    </li> --}}
-                </ul>
 
-                <ul class="topbar-item list-unstyled d-inline-flex align-items-center mb-0">
-                    <li class="dropdown topbar-item">
-                        <a class="nav-link dropdown-toggle arrow-none nav-icon" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false" data-bs-offset="0,19">
-                            <div class="avatar-circle">
-                                <span class="avatar-initials"><i class="iconoir-user" style="color: #fff;"></i></span>
-                            </div>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-end py-0 shadow-lg" style="min-width: 250px;">
-                            <div class="d-flex align-items-center dropdown-item py-3 bg-primary bg-gradient">
-                                <div class="flex-shrink-0">
-                                    <div class="avatar-circle-large">
-                                        <span class="avatar-initials-large">{{ strtoupper(substr(auth()->user()->name, 0, 2)) }}</span>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1 ms-3 text-truncate">
-                                    <h6 class="my-0 fw-semibold text-white">{{ auth()->user()->name }}</h6>
-                                    <small class="text-white-50">{{ ucfirst(str_replace('_', ' ', auth()->user()->role)) }}</small>
-                                </div>
-                            </div>
-                            <div class="dropdown-divider my-0"></div>
-                            <small class="text-muted px-3 py-2 d-block fw-semibold">Account</small>
-                            <a class="dropdown-item py-2" href="{{ route('profile.show') }}">
-                                <i class="las la-user-circle fs-18 me-2 align-text-bottom text-primary"></i> My Profile
-                            </a>
-                            <a class="dropdown-item py-2" href="{{ route('profile.edit') }}">
-                                <i class="las la-user-edit fs-18 me-2 align-text-bottom text-info"></i> Edit Profile
-                            </a>
-                            <div class="dropdown-divider my-0"></div>
-                            <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                                @csrf
-                                <button type="submit" class="dropdown-item text-danger py-2 w-100 text-start">
-                                    <i class="las la-power-off fs-18 me-2 align-text-bottom"></i> Logout
-                                </button>
-                            </form>
+<!-- ── Top Bar ──────────────────────────────────────────────────────── -->
+<div class="topbar d-print-none">
+    <div class="container-fluid">
+        <nav class="topbar-custom d-flex justify-content-between" id="topbar-custom">
+            <ul class="topbar-item list-unstyled d-inline-flex align-items-center mb-0">
+                <li>
+                    <button class="nav-link mobile-menu-btn nav-icon" id="togglemenu">
+                        <i class="iconoir-menu"></i>
+                    </button>
+                </li>
+            </ul>
+
+            <ul class="topbar-item list-unstyled d-inline-flex align-items-center mb-0">
+                <li class="dropdown topbar-item">
+                    <a class="nav-link dropdown-toggle arrow-none nav-icon"
+                       data-bs-toggle="dropdown" href="#" role="button"
+                       aria-haspopup="false" aria-expanded="false" data-bs-offset="0,19">
+                        <div class="avatar-circle">
+                            <span class="avatar-initials">
+                                <i class="iconoir-user" style="color:#fff;"></i>
+                            </span>
                         </div>
-                    </li>
-                </ul>
-            </nav>
-        </div>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end py-0 shadow-lg" style="min-width:250px;">
+                        <div class="d-flex align-items-center dropdown-item py-3 bg-primary bg-gradient">
+                            <div class="flex-shrink-0">
+                                <div class="avatar-circle-large">
+                                    <span class="avatar-initials-large">
+                                        {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3 text-truncate">
+                                <h6 class="my-0 fw-semibold text-white">{{ auth()->user()->name }}</h6>
+                                <small class="text-white-50">
+                                    {{ ucfirst(str_replace('_', ' ', auth()->user()->role)) }}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider my-0"></div>
+                        <small class="text-muted px-3 py-2 d-block fw-semibold">Account</small>
+                        <a class="dropdown-item py-2" href="{{ route('profile.show') }}">
+                            <i class="las la-user-circle fs-18 me-2 align-text-bottom text-primary"></i>
+                            My Profile
+                        </a>
+                        <a class="dropdown-item py-2" href="{{ route('profile.edit') }}">
+                            <i class="las la-user-edit fs-18 me-2 align-text-bottom text-info"></i>
+                            Edit Profile
+                        </a>
+                        <div class="dropdown-divider my-0"></div>
+                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="dropdown-item text-danger py-2 w-100 text-start">
+                                <i class="las la-power-off fs-18 me-2 align-text-bottom"></i> Logout
+                            </button>
+                        </form>
+                    </div>
+                </li>
+            </ul>
+        </nav>
     </div>
-    <!-- Top Bar End -->
+</div>
+<!-- ── Top Bar End ───────────────────────────────────────────────────── -->
 
-    <!-- Sidebar Start -->
-    <div class="startbar d-print-none">
-        <!--start brand-->
-        <div class="brand">
-            <a href="{{ route('dashboard') }}" class="logo">
-                <span>
-                    <img src="{{ asset('assets/images/logos/icon.png') }}" alt="logo-small" class="logo-sm p-2">
-                </span>
-                <span class="">
-                    <img src="{{ asset('assets/images/logos/logo.png') }}" alt="logo-large" class="logo-lg logo-light" style="max-width: 150px; height: unset;">
-                    <img src="{{ asset('assets/images/logos/logo.png') }}" alt="logo-large" class="logo-lg logo-dark" style="max-width: 150px; height: unset;">
-                </span>
-            </a>
-        </div>
-        <!--end brand-->
+<!-- ── Sidebar ──────────────────────────────────────────────────────── -->
+<div class="startbar d-print-none">
 
-        <!--start startbar-menu-->
-        <div class="startbar-menu">
-            <div class="startbar-collapse" id="startbarCollapse" data-simplebar>
-                <div class="d-flex align-items-start flex-column w-100">
-                    <!-- Navigation -->
-                    <ul class="navbar-nav mb-auto w-100">
-                        <li class="menu-label mt-2">
-                            <span>Main Menu</span>
-                        </li>
+    {{-- Brand --}}
+    <div class="brand justify-content-start pt-3">
+        <a href="{{ route('dashboard') }}" class="logo">
+            <span>
+                <img src="{{ asset('assets/images/logos/icon.png') }}"
+                     alt="logo-small" class="logo-sm p-2">
+            </span>
+            <span class="px-4">
+                <img src="{{ asset('assets/images/logos/icon.png') }}"
+                     alt="logo-large" class="logo-lg logo-light"
+                     style="max-width:60px; height:unset;">
+            </span>
+        </a>
+    </div>
 
-                        <!-- Dashboard -->
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
-                                <i class="iconoir-home menu-icon"></i>
-                                <span>Dashboard</span>
-                            </a>
-                        </li>
+    {{-- Sidebar menu --}}
+    <div class="startbar-menu">
+        <div class="startbar-collapse" id="startbarCollapse" data-simplebar>
+            <div class="d-flex align-items-start flex-column w-100">
+                <ul class="navbar-nav mb-auto w-100">
 
-                        <!-- Education Leads Section -->
-                        <li class="menu-label mt-3">
-                            <span>🎓 Education CRM</span>
-                        </li>
+                    <li class="menu-label mt-2"><span>Main Menu</span></li>
 
-                        @php
-                            // Safe badge counts
-                            try {
-                                // Hot leads count
-                                $hotLeadsCount = \App\Models\EduLead::where('interest_level', 'hot')
-                                    ->where('final_status', 'pending')
-                                    ->count();
+                    {{-- Dashboard --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
+                           href="{{ route('dashboard') }}">
+                            <i class="iconoir-home menu-icon"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
 
-                                // Today's followups count
-                                $todayFollowupsCount = \App\Models\EduLeadFollowup::where('status', 'pending')
-                                    ->whereDate('followup_date', today())
-                                    ->count();
+                    {{-- ── Education CRM section ────────────────────────── --}}
+                    <li class="menu-label mt-3"><span>🎓 Education CRM</span></li>
 
-                                // Role-specific counts
-                                if (auth()->user()->role === 'telecallers') {
-                                    // My pending followups
-                                    $myFollowups = \App\Models\EduLeadFollowup::where('assigned_to', auth()->id())
-                                        ->where('status', 'pending')
-                                        ->whereDate('followup_date', '<=', today())
-                                        ->count();
-                                } elseif (auth()->user()->role === 'lead_manager') {
-                                    // My leads
-                                    $myLeadsCount = \App\Models\EduLead::where('created_by', auth()->id())
-                                        ->where('final_status', 'pending')
-                                        ->count();
-                                }
-                            } catch (\Exception $e) {
-                                $hotLeadsCount = 0;
-                                $todayFollowupsCount = 0;
-                                $myFollowups = 0;
-                                $myLeadsCount = 0;
+                    @php
+                        try {
+                            $authRole = auth()->user()->role;
+                            $authId   = auth()->id();
+
+                            // Hot leads (super_admin sees all)
+                            $hotLeadsCount = \App\Models\EduLead::where('interest_level', 'hot')
+                                ->where('final_status', 'pending')->count();
+
+                            // Overdue follow-ups — role-scoped
+                            $overdueQuery = \App\Models\EduLeadFollowup::where('status', 'pending')
+                                ->whereDate('followup_date', '<', today());
+
+                            if ($authRole === 'telecallers') {
+                                $myOverdueCount = (clone $overdueQuery)->where('assigned_to', $authId)->count();
                             }
-                        @endphp
+                            $overdueFollowupsCount = $overdueQuery->count();
 
-                        <!-- Education Leads -->
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('edu-leads.*') ? 'active' : '' }}" href="{{ route('edu-leads.index') }}">
-                                <i class="las la-graduation-cap menu-icon"></i>
-                                <span>Education Leads
-                                    @if(auth()->user()->role === 'super_admin')
-                                        @if($hotLeadsCount > 0)
-                                            <span class="badge bg-danger ms-2 badge-pulse">🔥 {{ $hotLeadsCount }}</span>
-                                        @endif
-                                    @elseif(auth()->user()->role === 'lead_manager')
-                                        @if($myLeadsCount > 0)
-                                            <span class="badge bg-warning ms-2">{{ $myLeadsCount }}</span>
-                                        @endif
-                                    @elseif(auth()->user()->role === 'telecallers')
-                                        @if($myFollowups > 0)
-                                            <span class="badge bg-danger ms-2">
-                                                <i class="las la-bell"></i> {{ $myFollowups }}
-                                            </span>
-                                        @endif
-                                    @endif
-                                </span>
-                            </a>
-                        </li>
+                            // Lead manager — own pending leads
+                            if ($authRole === 'lead_manager') {
+                                $myPendingLeads = \App\Models\EduLead::where('created_by', $authId)
+                                    ->where('final_status', 'pending')->count();
+                            }
+                        } catch (\Exception $e) {
+                            $hotLeadsCount = $overdueFollowupsCount = 0;
+                            $myOverdueCount = $myPendingLeads = 0;
+                        }
+                    @endphp
 
-                        <!-- Quick Stats (for all users) -->
-                        @if($todayFollowupsCount > 0)
-                        <li class="nav-item">
-                            <a class="nav-link text-warning" href="{{ route('edu-leads.index') }}?filter=today_followups">
-                                <i class="las la-clock menu-icon"></i>
-                                <span>Today's Follow-ups
-                                    <span class="badge bg-warning text-dark ms-2">{{ $todayFollowupsCount }}</span>
-                                </span>
-                            </a>
-                        </li>
-                        @endif
-
-                        <!-- Quick Actions (Super Admin & Lead Manager only) -->
-                        @if(in_array(auth()->user()->role, ['super_admin', 'lead_manager']))
-                        <li class="menu-label mt-3">
-                            <span>Quick Actions</span>
-                        </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('edu-leads.create') }}">
-                                <i class="las la-plus-circle menu-icon"></i>
-                                <span>Create New Lead</span>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('edu-leads.bulk-import') }}">
-                                <i class="las la-file-upload menu-icon"></i>
-                                <span>Bulk Import</span>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('edu-leads.export') }}">
-                                <i class="las la-file-download menu-icon"></i>
-                                <span>Export Leads</span>
-                            </a>
-                        </li>
-                        @endif
-
-                        <!-- Account Section -->
-                        <div class="account-label mt-auto pt-3">
-                            ACCOUNT
-                        </div>
-
-                        <!-- Profile Card -->
-                        <a href="{{ route('profile.show') }}" class="profile-sidebar-card text-decoration-none">
-                            <div class="d-flex align-items-center">
-                                <div class="profile-sidebar-avatar">
-                                    {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
-                                </div>
-                                <div class="profile-sidebar-info ms-3">
-                                    <div class="profile-sidebar-name">
-                                        {{ auth()->user()->name }}
-                                    </div>
-                                    <div class="profile-sidebar-role">
-                                        {{ ucfirst(str_replace('_', ' ', auth()->user()->role)) }}
-                                    </div>
-                                </div>
-                            </div>
+                    {{-- Education Leads --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('edu-leads.*') ? 'active' : '' }}"
+                           href="{{ route('edu-leads.index') }}">
+                            <i class="las la-graduation-cap menu-icon"></i>
+                            <span>Education Leads
+                                @if($authRole === 'super_admin' && ($hotLeadsCount ?? 0) > 0)
+                                    <span class="badge bg-danger ms-2 badge-pulse">
+                                        🔥 {{ $hotLeadsCount }}
+                                    </span>
+                                @elseif($authRole === 'lead_manager' && ($myPendingLeads ?? 0) > 0)
+                                    <span class="badge bg-warning text-dark ms-2">
+                                        {{ $myPendingLeads }}
+                                    </span>
+                                @elseif($authRole === 'telecallers' && ($myOverdueCount ?? 0) > 0)
+                                    <span class="badge bg-danger ms-2 badge-pulse">
+                                        <i class="las la-bell"></i> {{ $myOverdueCount }}
+                                    </span>
+                                @endif
+                            </span>
                         </a>
+                    </li>
 
-                    </ul>
-                </div>
-            </div><!--end startbar-collapse-->
-        </div><!--end startbar-menu-->
+                    {{-- Overdue Follow-ups (non-telecaller roles only) --}}
+                    @if(($overdueFollowupsCount ?? 0) > 0 && $authRole !== 'telecallers')
+                    <li class="nav-item">
+                        <a class="nav-link text-danger"
+                           href="{{ route('edu-leads.index') }}?filter=overdue">
+                            <i class="las la-exclamation-triangle menu-icon"></i>
+                            <span>Overdue Follow-ups
+                                <span class="badge bg-danger ms-2">{{ $overdueFollowupsCount }}</span>
+                            </span>
+                        </a>
+                    </li>
+                    @endif
 
-    </div><!--end startbar-->
-    <div class="startbar-overlay d-print-none"></div>
-    <!-- Sidebar End -->
+                    {{-- ── Quick Actions (super_admin & lead_manager) ──────── --}}
+                    @if(in_array($authRole, ['super_admin', 'lead_manager']))
+                    <li class="menu-label mt-3"><span>Quick Actions</span></li>
 
-    <!-- Page Wrapper -->
-    <div class="page-wrapper">
-        <!-- Page Content-->
-        <div class="page-content">
-            <div class="container-fluid">
-                <!-- Success Messages -->
-                @if(session('success'))
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                <i class="las la-check-circle me-2"></i>
-                                {{ session('success') }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('edu-leads.create') ? 'active' : '' }}"
+                           href="{{ route('edu-leads.create') }}">
+                            <i class="las la-plus-circle menu-icon"></i>
+                            <span>New Lead</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('edu-leads.bulk-import') ? 'active' : '' }}"
+                           href="{{ route('edu-leads.bulk-import') }}">
+                            <i class="las la-file-upload menu-icon"></i>
+                            <span>Bulk Import</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('edu-leads.export') }}">
+                            <i class="las la-file-download menu-icon"></i>
+                            <span>Export All Leads</span>
+                        </a>
+                    </li>
+                    @endif
+
+                    {{-- ── Administration (super_admin only) ──────────────── --}}
+                    @if($authRole === 'super_admin')
+                    <li class="menu-label mt-3"><span>Administration</span></li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
+                           href="{{ route('users.index') }}">
+                            <i class="las la-users menu-icon"></i>
+                            <span>Users</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('users.performance*') ? 'active' : '' }}"
+                           href="{{ route('users.performance') }}">
+                            <i class="las la-trophy menu-icon"></i>
+                            <span>Performance
+                                @if(($hotLeadsCount ?? 0) > 0)
+                                    <span class="badge bg-warning text-dark ms-1">
+                                        {{ $hotLeadsCount }} 🔥
+                                    </span>
+                                @endif
+                            </span>
+                        </a>
+                    </li>
+                    @endif
+
+                    {{-- ── Account ──────────────────────────────────────────── --}}
+                    <div class="account-label mt-auto pt-3">ACCOUNT</div>
+
+                    <a href="{{ route('profile.show') }}" class="profile-sidebar-card text-decoration-none">
+                        <div class="d-flex align-items-center">
+                            <div class="profile-sidebar-avatar">
+                                {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
                             </div>
-                        </div>
-                    </div>
-                @endif
-
-                <!-- Error Messages -->
-                @if(session('error'))
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <i class="las la-exclamation-circle me-2"></i>
-                                {{ session('error') }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                <!-- Validation Errors -->
-                @if($errors->any())
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <i class="las la-exclamation-triangle me-2"></i>
-                                <strong>Please fix the following errors:</strong>
-                                <ul class="mb-0 mt-2">
-                                    @foreach($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                @yield('content')
-            </div><!-- container -->
-            <!-- Footer -->
-            <footer class="footer text-center text-sm-start d-print-none">
-                <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card mb-0 rounded-bottom-0">
-                                <div class="card-body">
-                                    <p class="text-muted mb-0">
-                                        © <span id="year"></span> Education CRM. All rights reserved.
-                                        <span class="text-muted d-none d-sm-inline-block float-end">
-                                            Crafted with <i class="las la-heart text-danger"></i> for Education
-                                        </span>
-                                    </p>
+                            <div class="profile-sidebar-info ms-3">
+                                <div class="profile-sidebar-name">{{ auth()->user()->name }}</div>
+                                <div class="profile-sidebar-role">
+                                    {{ ucfirst(str_replace('_', ' ', auth()->user()->role)) }}
                                 </div>
                             </div>
                         </div>
+                    </a>
+
+                </ul>
+            </div>
+        </div>
+    </div>
+
+</div>
+<div class="startbar-overlay d-print-none"></div>
+<!-- ── Sidebar End ───────────────────────────────────────────────────── -->
+
+<!-- ── Page Wrapper ─────────────────────────────────────────────────── -->
+<div class="page-wrapper">
+    <div class="page-content">
+        <div class="container-fluid">
+
+            @if(session('success'))
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="las la-check-circle me-2"></i>
+                        {{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 </div>
-            </footer>
-        </div><!-- page-content -->
+            </div>
+            @endif
 
-    </div>
-    <!-- end page-wrapper -->
+            @if(session('error'))
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="las la-exclamation-circle me-2"></i>
+                        {{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            </div>
+            @endif
 
-    <!-- Javascript -->
-    <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="{{ asset('assets/libs/simplebar/simplebar.min.js') }}"></script>
-    <script src="{{ asset('assets/js/app.js') }}"></script>
+            @if($errors->any())
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="las la-exclamation-triangle me-2"></i>
+                        <strong>Please fix the following errors:</strong>
+                        <ul class="mb-0 mt-2">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            </div>
+            @endif
 
-    <script>
-        // Set year
-        document.getElementById('year').textContent = new Date().getFullYear();
+            @yield('content')
 
-        // Auto-hide alerts after 5 seconds
-        setTimeout(function() {
-            $('.alert').fadeOut('slow');
-        }, 5000);
-    </script>
+        </div><!-- /container-fluid -->
 
-    @yield('extra-scripts')
+        <footer class="footer text-center text-sm-start d-print-none">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card mb-0 rounded-bottom-0">
+                            <div class="card-body">
+                                <p class="text-muted mb-0">
+                                    © <span id="year"></span> Education CRM. All rights reserved.
+                                    <span class="text-muted d-none d-sm-inline-block float-end">
+                                        Crafted with <i class="las la-heart text-danger"></i> for Education
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div><!-- /page-content -->
+</div><!-- /page-wrapper -->
+
+<!-- ── Scripts ──────────────────────────────────────────────────────── -->
+<script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{{ asset('assets/libs/simplebar/simplebar.min.js') }}"></script>
+<script src="{{ asset('assets/js/app.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    setTimeout(() => $('.alert').fadeOut('slow'), 5000);
+</script>
+
+@yield('extra-scripts')
 </body>
 </html>
