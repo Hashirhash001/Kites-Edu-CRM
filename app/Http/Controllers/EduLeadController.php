@@ -1137,4 +1137,44 @@ class EduLeadController extends Controller
             'followups' => $followups
         ]);
     }
+
+    public function quickSearch(Request $request)
+    {
+        $user  = auth()->user();
+        $query = $request->input('query', '');
+
+        if (strlen($query) < 2) {
+            return response()->json(['leads' => []]);
+        }
+
+        $leadsQuery = EduLead::with(['course', 'assignedTo', 'leadSource'])
+            ->where(function ($q) use ($query) {
+                $q->where('name',  'like', "%{$query}%")
+                ->orWhere('phone', 'like', "%{$query}%")
+                ->orWhere('email', 'like', "%{$query}%")
+                ->orWhere('lead_code', 'like', "%{$query}%");
+            });
+
+        // Telecallers only see their assigned leads
+        if ($user->role === 'telecallers') {
+            $leadsQuery->where('assigned_to', $user->id);
+        }
+
+        $leads = $leadsQuery->limit(8)->get()->map(function ($lead) {
+            return [
+                'id'          => $lead->id,
+                'lead_code'   => $lead->lead_code,
+                'name'        => $lead->name,
+                'phone'       => $lead->phone,
+                'email'       => $lead->email,
+                'status'      => $lead->final_status,
+                'course'      => $lead->course->name ?? 'N/A',
+                'assigned_to' => $lead->assignedTo->name ?? 'Unassigned',
+                'url'         => route('edu-leads.show', $lead->id),
+            ];
+        });
+
+        return response()->json(['leads' => $leads]);
+    }
+
 }

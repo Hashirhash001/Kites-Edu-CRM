@@ -330,7 +330,7 @@
                             <div class="position-relative">
                                 <input type="text"
                                        class="form-control"
-                                       id="quickSearch"
+                                       id="telecallerQuickSearch"
                                        placeholder="Search by lead code, name, phone, email..."
                                        autocomplete="off">
                                 <i class="las la-search position-absolute"
@@ -346,7 +346,7 @@
                         </div>
                         <div class="col-lg-4 col-md-5">
                             <a href="{{ route('edu-leads.create') }}" class="btn btn-primary w-100">
-                                <i class="las la-plus me-1"></i> New Edu Lead
+                                <i class="las la-plus me-1"></i> New Lead
                             </a>
                         </div>
                     </div>
@@ -913,7 +913,7 @@
 // ── SECTION TOGGLE ─────────────────────────────────────────────────
 function toggleSection(sectionId, header) {
     const section = document.getElementById(sectionId);
-    const icon = header.querySelector('.toggle-icon');
+    const icon    = header.querySelector('.toggle-icon');
     if (!section) return;
 
     if (section.style.display === 'none') {
@@ -925,9 +925,9 @@ function toggleSection(sectionId, header) {
     }
 }
 
-// ── COMPLETE FOLLOWUP ─────────────────────────────────────────────
+// ── COMPLETE FOLLOWUP ──────────────────────────────────────────────
 $(document).on('click', '.btn-complete-followup', function () {
-    const btn = $(this);
+    const btn        = $(this);
     const followupId = btn.data('id');
 
     Swal.fire({
@@ -936,14 +936,14 @@ $(document).on('click', '.btn-complete-followup', function () {
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#10b981',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Yes, Complete It'
+        cancelButtonColor:  '#6c757d',
+        confirmButtonText:  'Yes, Complete It'
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
-                url: '/edu-leads/followups/' + followupId + '/complete',
+                url:    '/edu-lead-followups/' + followupId + '/complete',
                 method: 'POST',
-                data: { _token: '{{ csrf_token() }}' },
+                data:   { _token: '{{ csrf_token() }}' },
                 success: function (res) {
                     if (res.success) {
                         btn.closest('.followup-item').fadeOut(300, function () { $(this).remove(); });
@@ -960,7 +960,9 @@ $(document).on('click', '.btn-complete-followup', function () {
 
 // ── QUICK SEARCH ───────────────────────────────────────────────────
 let searchTimeout;
-$('#quickSearch').on('input', function () {
+
+// ✅ Fixed: ID matches the blade input  →  telecallerQuickSearch
+$('#telecallerQuickSearch').on('input', function () {
     clearTimeout(searchTimeout);
     const query = $(this).val().trim();
 
@@ -975,32 +977,52 @@ $('#quickSearch').on('input', function () {
         $('.search-content').empty();
 
         $.ajax({
-            url: '{{ route("edu-leads.index") }}',
+            // ✅ Fixed: dedicated JSON endpoint, not the resource index
+            url:    '{{ route("edu-leads.quick-search") }}',
             method: 'GET',
-            data: { search: query, ajax: 1 },
+            data:   { query: query },
             success: function (res) {
                 $('.search-loading').hide();
+
                 if (res.leads && res.leads.length > 0) {
                     let html = '<div class="search-result-header">Edu Leads</div>';
                     res.leads.forEach(function (lead) {
                         html += `
-                            <div class="search-result-item" onclick="window.location='/edu-leads/${lead.id}'">
-                                <div class="search-result-title">${lead.name}</div>
-                                <small class="text-muted">${lead.lead_code} · ${lead.phone}</small>
-                                <span class="badge ms-2 bg-secondary">${lead.final_status}</span>
+                            <div class="search-result-item" onclick="window.location='${lead.url}'">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <div class="search-result-title">${lead.name}</div>
+                                        <small class="text-muted">
+                                            <i class="las la-phone me-1"></i>${lead.phone ?? '—'}
+                                            &nbsp;|&nbsp;
+                                            <i class="las la-book me-1"></i>${lead.course}
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-secondary">${lead.lead_code}</span><br>
+                                        <small class="text-muted">${lead.assigned_to}</small>
+                                    </div>
+                                </div>
                             </div>`;
                     });
                     $('.search-content').html(html);
                 } else {
-                    $('.search-content').html('<div class="search-no-results"><i class="las la-search"></i> No leads found</div>');
+                    $('.search-content').html(
+                        '<div class="search-no-results"><i class="las la-search"></i> No leads found for "<strong>' + query + '</strong>"</div>'
+                    );
                 }
+            },
+            error: function () {
+                $('.search-loading').hide();
+                $('.search-content').html('<div class="search-no-results text-danger">Search failed. Try again.</div>');
             }
         });
     }, 350);
 });
 
+// Close dropdown on outside click
 $(document).on('click', function (e) {
-    if (!$(e.target).closest('#quickSearch, #searchResults').length) {
+    if (!$(e.target).closest('#telecallerQuickSearch, #searchResults').length) {
         $('#searchResults').hide();
     }
 });

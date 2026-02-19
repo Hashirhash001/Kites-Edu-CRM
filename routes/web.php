@@ -101,6 +101,10 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/edu-leads/today-followups', [EduLeadController::class, 'getTodayFollowups'])
         ->name('edu-leads.today-followups');
 
+    // Dashboard Quick Search
+    Route::get('/edu-leads/quick-search', [EduLeadController::class, 'quickSearch'])
+    ->name('edu-leads.quick-search');
+
     // Education Lead Resource Routes
     Route::resource('edu-leads', EduLeadController::class);
 

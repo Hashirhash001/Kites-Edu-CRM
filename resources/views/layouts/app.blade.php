@@ -153,16 +153,16 @@
 <div class="startbar d-print-none">
 
     {{-- Brand --}}
-    <div class="brand justify-content-start pt-3">
+    <div class="brand justify-content-start">
         <a href="{{ route('dashboard') }}" class="logo">
             <span>
                 <img src="{{ asset('assets/images/logos/icon.png') }}"
                      alt="logo-small" class="logo-sm p-2">
             </span>
             <span class="px-4">
-                <img src="{{ asset('assets/images/logos/icon.png') }}"
+                <img src="{{ asset('assets/images/logos/kites-logo-white.png') }}"
                      alt="logo-large" class="logo-lg logo-light"
-                     style="max-width:60px; height:unset;">
+                     style="max-width:180px; height:unset;">
             </span>
         </a>
     </div>
