@@ -1,125 +1,78 @@
 @extends('layouts.app')
-
 @section('title', 'Education Leads')
 
 @section('extra-css')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
 <style>
-    .badge-pending      { background-color: #ffc107; color: #000; }
-    .badge-approved     { background-color: #28a745; color: #fff; }
-    .badge-rejected     { background-color: #dc3545; color: #fff; }
     body, .page-content { overflow-x: hidden; }
-    .row { margin-left: 0; margin-right: 0; }
-    .row > * { padding-left: 12px; padding-right: 12px; }
+    .row { margin-left: 0; margin-right: 0; padding-left: 12px; padding-right: 12px; }
     .card { overflow: hidden; }
-    .leads-card .card-body { padding: 0; overflow: hidden; }
+    .leads-card .card-body  { padding: 0; overflow: hidden; }
     .leads-card .card-footer { padding: 15px 20px; background-color: #f8f9fa; }
 
-    /* ── Quick Status Tabs ─────────────────────────────────── */
-    .status-tabs {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        padding: 12px 16px;
-        background: #f8f9fa;
-        border-bottom: 1px solid #dee2e6;
-    }
+    /* ── Quick status tabs ─────────────────────────────────── */
+    .status-tabs { display:flex; gap:6px; flex-wrap:wrap; padding:12px 16px; background:#f8f9fa; border-bottom:1px solid #dee2e6; }
     .status-tab {
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.82rem;
-        font-weight: 600;
-        cursor: pointer;
-        border: 2px solid transparent;
-        transition: all 0.2s;
-        background: #fff;
-        color: #6c757d;
-        border-color: #dee2e6;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        user-select: none;
+        padding:6px 14px; border-radius:20px; font-size:.82rem; font-weight:600;
+        cursor:pointer; border:2px solid transparent; transition:all .2s;
+        background:#fff; color:#6c757d; border-color:#dee2e6;
+        display:inline-flex; align-items:center; gap:6px; user-select:none;
     }
-    .status-tab:hover  { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,.1); }
-    .status-tab.active { color: #fff; border-color: transparent; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
-    .status-tab[data-status=""]             { background:#343a40; color:#fff; border-color:#adb5bd; }
-    .status-tab[data-status=""].active      { background:#343a40; }
-    .status-tab[data-status="pending"].active       { background:#ffc107; color:#000; }
-    .status-tab[data-status="contacted"].active     { background:#3b82f6; }
-    .status-tab[data-status="follow_up"].active     { background:#f97316; }
-    .status-tab[data-status="admitted"].active      { background:#10b981; }
-    .status-tab[data-status="not_interested"].active{ background:#ef4444; }
-    .status-tab[data-status="dropped"].active       { background:#6b7280; }
+    .status-tab:hover { transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.1); }
+    .status-tab.active { color:#fff; border-color:transparent; box-shadow:0 2px 8px rgba(0,0,0,.15); }
+    .status-tab[data-status=""]      { background:#343a40; color:#fff; border-color:#adb5bd; }
+    .status-tab[data-status=""].active { background:#343a40; }
+    .status-tab[data-status="pending"].active      { background:#ffc107; color:#000; }
+    .status-tab[data-status="contacted"].active    { background:#3b82f6; }
+    .status-tab[data-status="follow_up"].active    { background:#f97316; }
+    .status-tab[data-status="admitted"].active     { background:#10b981; }
+    .status-tab[data-status="not_interested"].active { background:#ef4444; }
+    .status-tab[data-status="dropped"].active      { background:#6b7280; }
     .status-tab .tab-count {
-        background: rgba(0,0,0,.12);
-        border-radius: 10px;
-        padding: 0 7px;
-        font-size: 0.75rem;
-        line-height: 1.5;
+        background:rgba(0,0,0,.12); border-radius:10px; padding:0 7px; font-size:.75rem; line-height:1.5;
     }
-    .status-tab.active .tab-count { background: rgba(255,255,255,.25); }
+    .status-tab.active .tab-count { background:rgba(255,255,255,.25); }
 
     /* ── Table ─────────────────────────────────────────────── */
-    .table-container {
-        overflow-x: auto;
-        overflow-y: visible;
-        width: 100%;
-    }
-    .table-container::-webkit-scrollbar        { width: 10px; height: 10px; }
-    .table-container::-webkit-scrollbar-track  { background: #f1f1f1; border-radius: 10px; }
-    .table-container::-webkit-scrollbar-thumb  { background: #888; border-radius: 10px; }
-    .table-container::-webkit-scrollbar-thumb:hover { background: #555; }
-    .table-container table   { margin-bottom: 0; min-width: 100%; }
+    .table-container { overflow-x:auto; overflow-y:visible; width:100%; }
+    .table-container::-webkit-scrollbar { width:10px; height:10px; }
+    .table-container::-webkit-scrollbar-track { background:#f1f1f1; border-radius:10px; }
+    .table-container::-webkit-scrollbar-thumb { background:#888; border-radius:10px; }
+    .table-container::-webkit-scrollbar-thumb:hover { background:#555; }
+    .table-container table { margin-bottom:0; min-width:100%; }
     .table-container thead th {
-        position: sticky; top: 0;
-        background-color: #f8f9fa;
-        z-index: 10;
-        box-shadow: 0 2px 2px -1px rgba(0,0,0,.1);
-        white-space: nowrap;
-        padding: 12px 15px;
-        vertical-align: middle;
-        font-weight: 600;
+        position:sticky; top:0; background-color:#f8f9fa; z-index:10;
+        box-shadow:0 2px 2px -1px rgba(0,0,0,.1); white-space:nowrap;
+        padding:12px 15px; vertical-align:middle; font-weight:600;
     }
-    .table-container tbody td {
-        white-space: nowrap;
-        padding: 12px 15px;
-        vertical-align: middle;
-    }
-    .table-container tbody tr:hover td { background-color: #f8f9fa; }
+    .table-container tbody td { white-space:nowrap; padding:12px 15px; vertical-align:middle; }
+    .table-container tbody tr:hover td { background-color:#f8f9fa; }
 
     /* ── Checkboxes ────────────────────────────────────────── */
-    .checkbox-col { width: 50px; min-width: 50px; text-align: center; padding: 12px 10px !important; }
-    .custom-checkbox { width: 12px; height: 12px; cursor: pointer; accent-color: #0d6efd; transform: scale(1.2); }
-    .custom-checkbox:hover { transform: scale(1.3); }
-    #selectAll { width: 14px; height: 14px; cursor: pointer; accent-color: #198754; transform: scale(1.3); }
-    .checkbox-wrapper { display: flex; align-items: center; justify-content: center; padding: 5px; }
-    .checkbox-wrapper input[type="checkbox"] { margin: 0; }
-    .table-container tbody tr:has(.custom-checkbox:checked) {
-        background-color: #e7f3ff;
-        border-left: 3px solid #0d6efd;
-    }
+    .checkbox-col { width:50px; min-width:50px; text-align:center; padding:12px 10px !important; }
+    .custom-checkbox { width:12px; height:12px; cursor:pointer; accent-color:#0d6efd; transform:scale(1.2); }
+    #selectAll { width:14px; height:14px; cursor:pointer; accent-color:#198754; transform:scale(1.3); }
+    .checkbox-wrapper { display:flex; align-items:center; justify-content:center; padding:5px; }
+    .checkbox-wrapper input[type="checkbox"] { margin:0; }
+    .table-container tbody tr:has(.custom-checkbox:checked) { background-color:#e7f3ff; border-left:3px solid #0d6efd; }
 
     /* ── Sortable ──────────────────────────────────────────── */
-    .sortable { cursor: pointer; user-select: none; position: relative; padding-right: 20px !important; }
-    .sortable:hover       { background-color: #e9ecef; }
-    .sortable::after      { content: '⇅'; position: absolute; right: 8px; opacity: .3; }
-    .sortable.asc::after  { content: '↑'; opacity: 1; }
-    .sortable.desc::after { content: '↓'; opacity: 1; }
+    .sortable { cursor:pointer; user-select:none; position:relative; padding-right:20px !important; }
+    .sortable:hover { background-color:#e9ecef; }
+    .sortable::after { content:'⇅'; position:absolute; right:8px; opacity:.3; }
+    .sortable.asc::after  { content:'▲'; opacity:1; }
+    .sortable.desc::after { content:'▼'; opacity:1; }
 
-    .action-icons { display: inline-flex; gap: 8px; align-items: center; justify-content: flex-end; }
-    .action-icons a { display: inline-flex; align-items: center; justify-content: center; }
-    .lead-name-link { color: #0d6efd; text-decoration: none; font-weight: 600; }
-    .lead-name-link:hover { color: #0a58ca; text-decoration: underline; }
-    .table-loading { position: relative; opacity: .5; pointer-events: none; }
+    /* ── Actions ───────────────────────────────────────────── */
+    .action-icons { display:inline-flex; gap:8px; align-items:center; justify-content:flex-end; }
+    .action-icons a { display:inline-flex; align-items:center; justify-content:center; }
+    .lead-name-link { color:#0d6efd; text-decoration:none; font-weight:600; }
+    .lead-name-link:hover { color:#0a58ca; text-decoration:underline; }
+    .table-loading { position:relative; opacity:.5; pointer-events:none; }
 
-    /* ── Final Status Inline Badge ─────────────────────────── */
-    .fs-badge {
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.78rem;
-        font-weight: 600;
-        display: inline-block;
-        white-space: nowrap;
-    }
+    /* ── Final status badges ───────────────────────────────── */
+    .fs-badge { padding:4px 10px; border-radius:12px; font-size:.78rem; font-weight:600; display:inline-block; white-space:nowrap; }
     .fs-pending        { background:#fff3cd; color:#856404; }
     .fs-contacted      { background:#dbeafe; color:#1d4ed8; }
     .fs-follow_up      { background:#ffedd5; color:#c2410c; }
@@ -127,38 +80,63 @@
     .fs-not_interested { background:#fee2e2; color:#991b1b; }
     .fs-dropped        { background:#f3f4f6; color:#374151; }
 
-    @media (max-width: 768px) {
-        .table-container table { min-width: 1200px; }
-        .status-tabs { gap: 4px; }
-        .status-tab  { font-size: 0.75rem; padding: 5px 10px; }
+    /* ── Filter panel ──────────────────────────────────────── */
+    .filter-card-header {
+        display:flex; justify-content:space-between; align-items:center;
+        padding:.85rem 1.25rem; background:#f8fafc; border-bottom:1px solid #e2e8f0;
+        border-radius:8px 8px 0 0; cursor:pointer; user-select:none; transition:background .2s ease;
+    }
+    .filter-card-header:hover { background:#f1f5f9; }
+    .filter-toggle-icon {
+        width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+        border-radius:50%; background:#e2e8f0; color:#64748b;
+        transition:transform .25s ease, background .2s ease; font-size:.8rem;
+    }
+    .filter-toggle-icon.open { transform:rotate(180deg); background:#dbeafe; color:#3b82f6; }
+    .filter-group-label {
+        font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.6px;
+        color:#94a3b8; margin-bottom:.6rem; display:flex; align-items:center; gap:.4rem;
+    }
+    .filter-divider { border:none; border-top:1px dashed #e2e8f0; margin:.5rem 0 1rem; }
+    .filter-label { display:block; font-size:.78rem; font-weight:600; color:#475569; margin-bottom:4px; }
+    #schoolDeptWrap, #collegeDeptWrap { transition: opacity .2s ease; }
+    #schoolDeptWrap.dimmed, #collegeDeptWrap.dimmed { opacity:.35; pointer-events:none; }
+    .bulk-lead-item {
+        display:flex; align-items:center; gap:10px; padding:6px 10px;
+        border-radius:6px; background:#fff; margin-bottom:4px;
+        border:1px solid #e9ecef; font-size:.85rem;
     }
 
-    .bulk-lead-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 6px 10px;
-        border-radius: 6px;
-        background: #fff;
-        margin-bottom: 4px;
-        border: 1px solid #e9ecef;
-        font-size: 0.85rem;
+    /* ── Select2 theme ─────────────────────────────────────── */
+    .select2-container--bootstrap-5 .select2-selection {
+        border:1px solid #ced4da !important; border-radius:4px !important;
+        min-height:31px !important; font-size:.875rem; padding:2px 8px !important;
     }
-    .bulk-lead-item:last-child { margin-bottom: 0; }
-    .bulk-lead-code {
-        font-weight: 700;
-        color: #0d6efd;
-        min-width: 90px;
-        font-size: 0.78rem;
+    .select2-container--bootstrap-5.select2-container--focus .select2-selection,
+    .select2-container--bootstrap-5.select2-container--open  .select2-selection {
+        border-color:#667eea !important;
+        box-shadow:0 0 0 0.15rem rgba(102,126,234,0.2) !important;
     }
-    .bulk-lead-name { color: #1e293b; font-weight: 500; }
-    .bulk-lead-assignee {
-        margin-left: auto;
-        font-size: 0.75rem;
-        color: #6c757d;
-        background: #f1f3f5;
-        padding: 2px 8px;
-        border-radius: 10px;
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+        padding-top:1px; color:#495057; line-height:1.5;
+    }
+    .select2-container--bootstrap-5 .select2-dropdown {
+        border-color:#667eea; border-radius:6px;
+        box-shadow:0 4px 16px rgba(102,126,234,0.15);
+        font-size:.875rem;
+    }
+    .select2-container--bootstrap-5 .select2-results__option--highlighted {
+        background-color:#667eea !important;
+    }
+    .select2-container--bootstrap-5 .select2-search__field {
+        border-color:#667eea !important; border-radius:4px !important; font-size:.875rem;
+    }
+    .select2-container { width:100% !important; }
+
+    @media (max-width: 768px) {
+        .table-container table { min-width:1200px; }
+        .status-tabs { gap:4px; }
+        .status-tab { font-size:.75rem; padding:5px 10px; }
     }
 </style>
 @endsection
@@ -166,7 +144,7 @@
 @section('content')
 <div class="container-fluid mt-4">
 
-    {{-- ── Page Header ───────────────────────────────────────── --}}
+    {{-- ── Page Header ──────────────────────────────────────────── --}}
     <div class="row mb-3">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -193,56 +171,71 @@
         </div>
     </div>
 
-    {{-- ── Filters ────────────────────────────────────────────── --}}
-    <div class="card mb-3">
-        <div class="card-body">
+    {{-- ── FILTERS CARD ──────────────────────────────────────────── --}}
+    <div class="card mb-3" id="filterCard">
+
+        <div class="filter-card-header" onclick="toggleFilters()">
+            <div class="d-flex align-items-center gap-2">
+                <i class="las la-sliders-h fs-18 text-primary"></i>
+                <span class="fw-semibold">Filters</span>
+                <span class="badge bg-primary rounded-pill ms-1" id="activeFilterCount" style="display:none">0</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-primary px-3" id="applyFiltersBtn"
+                        onclick="event.stopPropagation()">
+                    <i class="las la-check me-1"></i>Apply
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary px-3" id="resetBtn"
+                        onclick="event.stopPropagation()">
+                    <i class="las la-redo me-1"></i>Reset
+                </button>
+                <span class="filter-toggle-icon" id="filterToggleIcon">
+                    <i class="las la-angle-down"></i>
+                </span>
+            </div>
+        </div>
+
+        <div id="filterBody" class="card-body pt-3 pb-3">
             <form id="filterForm">
-                <div class="row g-2 align-items-end">
+
+                {{-- GROUP 1 — Search & Basics --}}
+                <div class="filter-group-label"><i class="las la-search"></i> Search & Lead Info</div>
+                <div class="row g-3 mb-3">
 
                     {{-- Search --}}
-                    <div class="col-md-3">
-                        <label class="form-label fw-semibold mb-1"><i class="las la-search"></i> Search</label>
-                        <input type="text" class="form-control" id="searchInput"
-                               placeholder="Name, Phone, Email, Code...">
+                    <div class="col-lg-3 col-md-6">
+                        <label class="filter-label">Search</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="las la-search text-muted"></i></span>
+                            <input type="text" class="form-control" id="searchInput"
+                                   placeholder="Name, phone, email, lead code, app no...">
+                        </div>
                     </div>
 
                     {{-- Interest Level --}}
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold mb-1"><i class="las la-fire"></i> Interest</label>
-                        <select class="form-select" id="filterInterestLevel">
-                            <option value="">All Levels</option>
+                    <div class="col-lg-3 col-md-3 col-6">
+                        <label class="filter-label"><i class="las la-fire text-danger"></i> Interest</label>
+                        <select class="form-select form-select-sm" id="filterInterestLevel">
+                            <option value="">All Interest</option>
                             <option value="hot">🔥 Hot</option>
                             <option value="warm">☀️ Warm</option>
                             <option value="cold">❄️ Cold</option>
                         </select>
                     </div>
 
-                    {{-- Course --}}
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold mb-1"><i class="las la-book"></i> Course</label>
-                        <select class="form-select" id="filterCourse">
-                            <option value="">All Courses</option>
-                            @foreach($courses as $course)
-                                <option value="{{ $course->id }}">{{ $course->name }}</option>
-                            @endforeach
-                        </select>
+                    {{-- Agent Name --}}
+                    <div class="col-lg-3 col-md-3 col-6">
+                        <label class="filter-label"><i class="las la-user-tie text-info"></i> Agent</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="las la-user text-muted"></i></span>
+                            <input type="text" class="form-control" id="filterAgentName" placeholder="Agent name...">
+                        </div>
                     </div>
 
-                    {{-- Country --}}
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold mb-1"><i class="las la-globe"></i> Country</label>
-                        <select class="form-select" id="filterCountry">
-                            <option value="">All Countries</option>
-                            @foreach($countries as $country)
-                                <option value="{{ $country }}">{{ $country }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    {{-- Source --}}
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold mb-1"><i class="las la-bullhorn"></i> Source</label>
-                        <select class="form-select" id="filterSource">
+                    {{-- Lead Source --}}
+                    <div class="col-lg-3 col-md-4 col-6">
+                        <label class="filter-label"><i class="las la-bullhorn text-info"></i> Lead Source</label>
+                        <select class="form-select form-select-sm" id="filterSource">
                             <option value="">All Sources</option>
                             @foreach($leadSources as $source)
                                 <option value="{{ $source->id }}">{{ $source->name }}</option>
@@ -250,128 +243,238 @@
                         </select>
                     </div>
 
-                    {{-- Assigned To --}}
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold mb-1"><i class="las la-user-tie"></i> Assigned To</label>
-                        <select class="form-select" id="filterAssignedTo">
-                            <option value="">All</option>
-                            <option value="unassigned">Unassigned</option>
-                            @if(auth()->user()->role === 'telecallers')
-                                <option value="me">My Leads</option>
-                            @else
-                                @foreach($telecallers as $t)
-                                    <option value="{{ $t->id }}">{{ $t->name }}</option>
-                                @endforeach
-                            @endif
+                    {{-- Date Range --}}
+                    <div class="col-lg-5 col-md-5">
+                        <label class="filter-label"><i class="las la-calendar text-success"></i> Created Date Range</label>
+                        <div class="input-group input-group-sm">
+                            <input type="date" class="form-control" id="dateFrom" title="From date">
+                            <span class="input-group-text bg-white px-2">→</span>
+                            <input type="date" class="form-control" id="dateTo" title="To date">
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="filter-divider">
+
+                {{-- GROUP 2 — Institution --}}
+                <div class="filter-group-label"><i class="las la-school"></i> Institution</div>
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-2 col-md-4 col-6">
+                        <label class="filter-label">Type</label>
+                        <select class="form-select form-select-sm" id="filterInstitutionType">
+                            <option value="">All Types</option>
+                            <option value="school">🏫 School</option>
+                            <option value="college">🎓 College</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-4" id="schoolDeptWrap">
+                        <label class="filter-label">School Stream / Dept</label>
+                        <select class="form-select form-select-sm" id="filterSchoolDepartment">
+                            <option value="">All Streams</option>
+                            @foreach(['Science','Commerce','Arts','Vocational','Other'] as $s)
+                                <option value="{{ $s }}">{{ $s }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-4" id="collegeDeptWrap">
+                        <label class="filter-label">College Department</label>
+                        <select class="form-select form-select-sm" id="filterCollegeDepartment">
+                            <option value="">All Departments</option>
+                            @foreach(['Engineering','Medical','Arts','Commerce','Science','Law','Management','Other'] as $d)
+                                <option value="{{ $d }}">{{ $d }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <hr class="filter-divider">
+
+                {{-- GROUP 3 — Programme, Course & Location --}}
+                <div class="filter-group-label"><i class="las la-map-marker"></i> Programme, Course & Location</div>
+                <div class="row g-3 mb-3">
+
+                    {{-- State — searchable Select2 --}}
+                    <div class="col-lg-2 col-md-3">
+                        <label class="filter-label"><i class="las la-map text-muted"></i> State</label>
+                        <select class="form-select form-select-sm" id="filterState">
+                            <option value=""></option>
+                            @foreach($states as $stateOption)
+                                <option value="{{ $stateOption }}">{{ $stateOption }}</option>
+                            @endforeach
                         </select>
                     </div>
 
-                    {{-- Date From --}}
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold mb-1"><i class="las la-calendar"></i> From</label>
-                        <input type="date" class="form-control" id="dateFrom">
+                    {{-- District — searchable Select2, cascades from State --}}
+                    <div class="col-lg-2 col-md-3">
+                        <label class="filter-label"><i class="las la-map-pin text-muted"></i> District</label>
+                        <select class="form-select form-select-sm" id="filterDistrict">
+                            <option value=""></option>
+                        </select>
                     </div>
 
-                    {{-- Date To --}}
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold mb-1"><i class="las la-calendar"></i> To</label>
-                        <input type="date" class="form-control" id="dateTo">
+                    {{-- Preferred State — searchable Select2 --}}
+                    <div class="col-lg-3 col-md-3">
+                        <label class="filter-label"><i class="las la-star text-warning"></i> Preferred State</label>
+                        <select class="form-select form-select-sm" id="filterPreferredState">
+                            <option value=""></option>
+                            @foreach($states as $stateOption)
+                                <option value="{{ $stateOption }}">{{ $stateOption }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Programme --}}
+                    <div class="col-lg-2 col-md-4">
+                        <label class="filter-label">Programme</label>
+                        <select class="form-select form-select-sm" id="filterProgramme">
+                            <option value="">All Programmes</option>
+                            @foreach($programmes as $programme)
+                                <option value="{{ $programme->id }}">{{ $programme->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Course --}}
+                    <div class="col-lg-3 col-md-4">
+                        <label class="filter-label">Specific Course</label>
+                        <select class="form-select form-select-sm" id="filterCourse">
+                            <option value="">All Courses</option>
+                            @foreach($courses as $course)
+                                <option value="{{ $course->id }}"
+                                        data-programme="{{ $course->programme_id }}">
+                                    {{ $course->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                {{-- GROUP 4 — Assignment (role-gated) --}}
+                @if(auth()->user()->canAssignLeads())
+                <hr class="filter-divider">
+                <div class="filter-group-label"><i class="las la-users-cog"></i> Assignment</div>
+                <div class="row g-3">
+                    {{-- Branch (super_admin & operation_head only) --}}
+                    @if(in_array(auth()->user()->role, ['super_admin', 'operation_head']))
+                    <div class="col-lg-3 col-md-4">
+                        <label class="filter-label">Branch</label>
+                        <select class="form-select form-select-sm" id="filterBranch">
+                            <option value="">All Branches</option>
+                            @foreach($branches as $branch)
+                                <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
+
+                    {{-- Assigned To --}}
+                    <div class="col-lg-3 col-md-4">
+                        <label class="filter-label">Assigned To (Telecaller)</label>
+                        <select class="form-select form-select-sm" id="filterAssignedTo">
+                            <option value="">All</option>
+                            <option value="unassigned">— Unassigned —</option>
+                            @foreach($assignableUsers as $u)
+                                <option value="{{ $u->id }}">
+                                    {{ $u->name }}
+                                    @if($u->branch) — {{ $u->branch->name }} @endif
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
                     {{-- Per Page --}}
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold mb-1"><i class="las la-list"></i> Per Page</label>
-                        <select class="form-select" id="perPageSelect">
+                    <div class="col-lg-1 col-md-2 col-4">
+                        <label class="filter-label">Show</label>
+                        <select class="form-select form-select-sm" id="perPageSelect">
                             <option value="15">15</option>
                             <option value="30">30</option>
                             <option value="50">50</option>
                             <option value="100">100</option>
                         </select>
                     </div>
-
-                    {{-- Action Buttons --}}
-                    <div class="col-md-4">
-                        <label class="form-label mb-1">&nbsp;</label>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-primary" id="applyFiltersBtn">
-                                <i class="las la-filter"></i> Apply
-                            </button>
-                            <button type="button" class="btn btn-secondary" id="resetBtn">
-                                <i class="las la-redo"></i> Reset
-                            </button>
-                        </div>
-                    </div>
-
                 </div>
+                @else
+                <hr class="filter-divider">
+                <div class="row g-3">
+                    <div class="col-lg-1 col-md-2 col-4">
+                        <label class="filter-label">Show</label>
+                        <select class="form-select form-select-sm" id="perPageSelect">
+                            <option value="15">15</option>
+                            <option value="30">30</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+                @endif
+
             </form>
         </div>
     </div>
 
-    {{-- ── Leads Table Card ───────────────────────────────────── --}}
-    <div class="card">
+    {{-- ── Leads Table Card ──────────────────────────────────────── --}}
+    <div class="card leads-card">
 
-        {{-- Card Header --}}
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <strong id="leadCount">{{ $leads->total() }}</strong> leads found
                     <span class="text-muted ms-2" id="pageInfo">
                         @if($leads->total() > 0)
-                            {{ $leads->firstItem() ?? 1 }} – {{ $leads->lastItem() ?? $leads->total() }} of {{ $leads->total() }}
+                            {{ $leads->firstItem() ?? 1 }}–{{ $leads->lastItem() ?? $leads->total() }} of {{ $leads->total() }}
                         @else
                             0–0 of 0
                         @endif
                     </span>
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
-                    @if(in_array(auth()->user()->role, ['super_admin', 'lead_manager']))
+                    <span class="badge bg-primary py-2 px-3">
+                        <i class="las la-school me-1"></i>Schools
+                        <span id="ic-school">{{ $institutionCounts['school'] ?? 0 }}</span>
+                    </span>
+                    <span class="badge bg-success py-2 px-3">
+                        <i class="las la-graduation-cap me-1"></i>Colleges
+                        <span id="ic-college">{{ $institutionCounts['college'] ?? 0 }}</span>
+                    </span>
+
+                    @if(auth()->user()->canAssignLeads())
                     <button type="button" class="btn btn-info d-none" id="bulkAssignBtn">
-                        <i class="las la-users me-1"></i> Bulk Assign (<span id="bulkcount">0</span>)
+                        <i class="las la-users me-1"></i>Bulk Assign
+                        <span id="bulkcount">0</span>
                     </button>
                     @endif
-                    <button type="button" class="btn btn-success" id="exportBtn"
-                            onclick="exportWithFilters()">
-                        <i class="las la-file-download me-1"></i> Export CSV
+
+                    <button type="button" class="btn btn-success" id="exportBtn" onclick="exportWithFilters()">
+                        <i class="las la-file-download me-1"></i>Export CSV
                     </button>
+
+                    @if(auth()->user()->canCreateLeads())
                     <a href="{{ route('edu-leads.create') }}" class="btn btn-primary">
-                        <i class="las la-plus me-1"></i> Create Lead
+                        <i class="las la-plus me-1"></i>Create Lead
                     </a>
+                    @endif
                 </div>
             </div>
         </div>
 
-        {{-- ── Quick Status Tabs ──────────────────────────────── --}}
+        {{-- Quick Status Tabs --}}
         <div class="status-tabs" id="statusTabs">
-            <span class="status-tab active" data-status="">
-                All <span class="tab-count" id="tc-all">{{ $statusCounts['all'] ?? $leads->total() }}</span>
-            </span>
-            <span class="status-tab" data-status="pending">
-                ⏳ Pending <span class="tab-count" id="tc-pending">{{ $statusCounts['pending'] ?? 0 }}</span>
-            </span>
-            <span class="status-tab" data-status="contacted">
-                📞 Contacted <span class="tab-count" id="tc-contacted">{{ $statusCounts['contacted'] ?? 0 }}</span>
-            </span>
-            <span class="status-tab" data-status="follow_up">
-                🔔 Follow Up <span class="tab-count" id="tc-follow_up">{{ $statusCounts['follow_up'] ?? 0 }}</span>
-            </span>
-            <span class="status-tab" data-status="admitted">
-                ✅ Admitted <span class="tab-count" id="tc-admitted">{{ $statusCounts['admitted'] ?? 0 }}</span>
-            </span>
-            <span class="status-tab" data-status="not_interested">
-                ❌ Not Interested <span class="tab-count" id="tc-not_interested">{{ $statusCounts['not_interested'] ?? 0 }}</span>
-            </span>
-            <span class="status-tab" data-status="dropped">
-                🚫 Dropped <span class="tab-count" id="tc-dropped">{{ $statusCounts['dropped'] ?? 0 }}</span>
-            </span>
+            <span class="status-tab active" data-status="">All <span class="tab-count" id="tc-all">{{ $statusCounts['all'] ?? $leads->total() }}</span></span>
+            <span class="status-tab" data-status="pending">Pending <span class="tab-count" id="tc-pending">{{ $statusCounts['pending'] ?? 0 }}</span></span>
+            <span class="status-tab" data-status="contacted">Contacted <span class="tab-count" id="tc-contacted">{{ $statusCounts['contacted'] ?? 0 }}</span></span>
+            <span class="status-tab" data-status="follow_up">Follow Up <span class="tab-count" id="tc-follow_up">{{ $statusCounts['follow_up'] ?? 0 }}</span></span>
+            <span class="status-tab" data-status="admitted">Admitted <span class="tab-count" id="tc-admitted">{{ $statusCounts['admitted'] ?? 0 }}</span></span>
+            <span class="status-tab" data-status="not_interested">Not Interested <span class="tab-count" id="tc-not_interested">{{ $statusCounts['not_interested'] ?? 0 }}</span></span>
+            <span class="status-tab" data-status="dropped">Dropped <span class="tab-count" id="tc-dropped">{{ $statusCounts['dropped'] ?? 0 }}</span></span>
         </div>
 
-        {{-- Table --}}
         <div class="card-body p-0">
             <div class="table-container">
                 <table class="table table-hover mb-0" id="leadsTable">
                     <thead class="table-light">
                         <tr>
-                            @if(in_array(auth()->user()->role, ['super_admin', 'lead_manager']))
+                            @if(auth()->user()->canAssignLeads())
                             <th class="checkbox-col">
                                 <div class="checkbox-wrapper">
                                     <input type="checkbox" id="selectAll" title="Select All">
@@ -381,7 +484,11 @@
                             <th class="sortable" data-column="lead_code">Lead Code</th>
                             <th class="sortable" data-column="name">Name</th>
                             <th class="sortable" data-column="phone">Phone</th>
-                            <th class="sortable" data-column="country">Country</th>
+                            <th>Agent</th>
+                            <th>Institution</th>
+                            <th>Department</th>
+                            <th>State / District</th>
+                            <th>Preferred State</th>
                             <th class="sortable" data-column="course_id">Course</th>
                             <th class="sortable" data-column="interest_level">Interest</th>
                             <th class="sortable" data-column="final_status">Status</th>
@@ -405,72 +512,58 @@
         </div>
     </div>
 
-</div><!-- /container-fluid -->
+</div>
 
-
-{{-- ══════════════════════════════════════════════════════════
-     SINGLE ASSIGN MODAL
-═══════════════════════════════════════════════════════════ --}}
-@if(in_array(auth()->user()->role, ['super_admin', 'lead_manager']))
+{{-- ── SINGLE ASSIGN MODAL ─────────────────────────────────────── --}}
+@if(auth()->user()->canAssignLeads())
 <div class="modal fade" id="assignLeadModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">
-                    <i class="las la-user-plus me-2"></i>Assign Lead
-                </h5>
+                <h5 class="modal-title"><i class="las la-user-plus me-2"></i>Assign Lead</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form id="assignLeadForm">
                 @csrf
                 <input type="hidden" id="assignLeadId" name="lead_id">
-
                 <div class="modal-body">
-
-                    {{-- Lead info chip --}}
                     <div class="alert alert-light border mb-3 py-2 px-3">
                         <div class="d-flex gap-3">
                             <div>
                                 <small class="text-muted d-block">Lead Code</small>
-                                <strong id="assignLeadCode" class="text-primary">—</strong>
+                                <strong id="assignLeadCode" class="text-primary"></strong>
                             </div>
                             <div>
                                 <small class="text-muted d-block">Name</small>
-                                <strong id="assignLeadName">—</strong>
+                                <strong id="assignLeadName"></strong>
                             </div>
                         </div>
                     </div>
-
-                    {{-- Current assignment --}}
                     <div class="mb-3" id="currentAssignmentBlock" style="display:none">
-                        <small class="text-muted">Currently assigned to:</small>
+                        <small class="text-muted">Currently assigned to</small>
                         <span class="badge bg-secondary ms-2" id="currentAssigneeLabel"></span>
                     </div>
-
-                    {{-- Telecaller select --}}
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
-                            <i class="las la-user-tie me-1"></i>Select Telecaller
+                            <i class="las la-user-tie me-1"></i>Assign To Telecaller
                             <span class="text-danger">*</span>
                         </label>
                         <select class="form-select" id="assignTelecaller" name="assigned_to" required>
                             <option value="">Choose telecaller...</option>
-                            @foreach($telecallers as $t)
-                                <option value="{{ $t->id }}">{{ $t->name }}</option>
+                            @foreach($assignableUsers as $u)
+                                <option value="{{ $u->id }}">
+                                    {{ $u->name }}
+                                    @if($u->branch) — {{ $u->branch->name }} @endif
+                                </option>
                             @endforeach
                         </select>
                     </div>
-
-                    {{-- Notes --}}
                     <div class="mb-1">
-                        <label class="form-label">
-                            <i class="las la-comment me-1"></i>Notes <small class="text-muted">(optional)</small>
-                        </label>
+                        <label class="form-label"><i class="las la-comment me-1"></i>Notes <small class="text-muted">optional</small></label>
                         <textarea class="form-control" id="assignNotes" name="notes" rows="2"
                                   placeholder="Any notes about this assignment..."></textarea>
                     </div>
                 </div>
-
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">
@@ -482,49 +575,35 @@
     </div>
 </div>
 
-
-{{-- ══════════════════════════════════════════════════════════
-     BULK ASSIGN MODAL
-═══════════════════════════════════════════════════════════ --}}
+{{-- ── BULK ASSIGN MODAL ──────────────────────────────────────── --}}
 <div class="modal fade" id="bulkAssignModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-info text-white">
-                <h5 class="modal-title">
-                    <i class="las la-users me-2"></i>Bulk Assign Leads
-                </h5>
+                <h5 class="modal-title"><i class="las la-users me-2"></i>Bulk Assign Leads</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form id="bulkAssignForm">
                 @csrf
                 <div class="modal-body">
-
-                    {{-- Selected count banner --}}
                     <div class="alert mb-3 py-3 px-4"
-                         style="background:linear-gradient(135deg,#fff3cd,#ffe69c); border-left:4px solid #ffc107;">
+                         style="background:linear-gradient(135deg,#fff3cd,#ffe69c);border-left:4px solid #ffc107;">
                         <div class="d-flex align-items-center gap-3">
-                            <i class="las la-check-circle" style="font-size:2rem; color:#997404;"></i>
+                            <i class="las la-check-circle" style="font-size:2rem;color:#997404;"></i>
                             <div>
-                                <span style="font-size:1.6rem; font-weight:700; color:#664d03;"
-                                      id="selectedCount">0</span>
-                                <span style="font-size:1rem; color:#664d03;"> leads selected for assignment</span>
+                                <span style="font-size:1.6rem;font-weight:700;color:#664d03;" id="selectedCount">0</span>
+                                <span style="font-size:1rem;color:#664d03;"> leads selected for assignment</span>
                             </div>
                         </div>
                     </div>
-
-                    {{-- Selected leads list --}}
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-muted small mb-1">
                             <i class="las la-list me-1"></i>Selected Leads
                         </label>
                         <div id="selectedLeadsList"
-                             style="max-height:200px; overflow-y:auto; border:1px solid #dee2e6;
-                                    border-radius:8px; background:#f8f9fa; padding:8px;">
-                            {{-- filled dynamically --}}
+                             style="max-height:200px;overflow-y:auto;border:1px solid #dee2e6;border-radius:8px;background:#f8f9fa;padding:8px;">
                         </div>
                     </div>
-
-                    {{-- Telecaller selection --}}
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
                             <i class="las la-user-tie me-1"></i>Assign To Telecaller
@@ -532,21 +611,21 @@
                         </label>
                         <select class="form-select" id="bulkTelecaller" name="assigned_to" required>
                             <option value="">Choose telecaller...</option>
-                            @foreach($telecallers as $t)
-                                <option value="{{ $t->id }}">{{ $t->name }}</option>
+                            @foreach($assignableUsers as $u)
+                                <option value="{{ $u->id }}">
+                                    {{ $u->name }}
+                                    @if($u->branch) — {{ $u->branch->name }} @endif
+                                </option>
                             @endforeach
                         </select>
                     </div>
-
-                    {{-- Notes --}}
                     <div class="mb-1">
                         <label class="form-label fw-semibold">
-                            <i class="las la-comment me-1"></i>Notes <small class="text-muted">(optional)</small>
+                            <i class="las la-comment me-1"></i>Notes <small class="text-muted">optional</small>
                         </label>
                         <textarea class="form-control" id="bulkNotes" name="notes" rows="2"
                                   placeholder="Notes about this bulk assignment..."></textarea>
                     </div>
-
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -564,94 +643,215 @@
 
 @endsection
 
-
 @section('extra-scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script>
-$(document).ready(function () {
+const districtMap = @json($districtMap ?? []);
 
+$(document).ready(function () {
     $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
 
-    let currentSort   = { column: 'created_at', direction: 'desc' };
-    let activeStatus  = '';   // tracks the quick-filter tab
+    let currentSort  = { column: 'created_at', direction: 'desc' };
+    let activeStatus = '';
 
-    // ── PRE-POPULATE FILTERS FROM URL (dashboard redirects) ───────────
-    (function prePopulateFilters() {
+    // ── SELECT2 FACTORY ───────────────────────────────────────────────
+    function s2(selector, placeholder) {
+        $(selector).select2({
+            theme:       'bootstrap-5',
+            placeholder: placeholder,
+            allowClear:  true,
+            width:       '100%',
+        });
+    }
+
+    // ── POPULATE FILTER DISTRICTS ─────────────────────────────────────
+    function populateFilterDistricts(state, selectedDistrict) {
+        const districts = districtMap[state] || [];
+        const $d = $('#filterDistrict');
+        $d.select2('destroy');
+        $d.empty().append('<option value=""></option>');
+        districts.forEach(function (d) {
+            $d.append(new Option(d, d, d === selectedDistrict, d === selectedDistrict));
+        });
+        s2('#filterDistrict', 'Search district...');
+    }
+
+    // ── INIT SELECT2 ON ALL FILTER DROPDOWNS ─────────────────────────
+    s2('#filterState',          'Search state...');
+    s2('#filterDistrict',       'Search district...');
+    s2('#filterPreferredState', 'Search preferred state...');
+    s2('#filterProgramme',      'All programmes...');
+    s2('#filterCourse',         'All courses...');
+    s2('#filterSource',         'All sources...');
+    s2('#filterAssignedTo',     'All telecallers...');
+    s2('#filterBranch',         'All branches...');
+    s2('#assignTelecaller',     'Choose telecaller...');
+    s2('#bulkTelecaller',       'Choose telecaller...');
+
+    // ── STATE → DISTRICT CASCADE ──────────────────────────────────────
+    $('#filterState').on('change', function () {
+        populateFilterDistricts($(this).val(), '');
+        updateActiveFilterCount();
+        loadLeads();
+    });
+
+    // ── FILTER PANEL TOGGLE ───────────────────────────────────────────
+    window.toggleFilters = function () {
+        const body = document.getElementById('filterBody');
+        const icon = document.getElementById('filterToggleIcon');
+        const isHidden = body.style.display === 'none';
+        body.style.display = isHidden ? 'block' : 'none';
+        icon.classList.toggle('open', isHidden);
+    };
+
+    // ── ACTIVE FILTER BADGE ───────────────────────────────────────────
+    function updateActiveFilterCount() {
+        const selectIds = [
+            'filterInterestLevel', 'filterSource', 'filterInstitutionType',
+            'filterSchoolDepartment', 'filterCollegeDepartment',
+            'filterProgramme', 'filterCourse',
+            'filterState', 'filterDistrict', 'filterPreferredState',
+            'filterBranch', 'filterAssignedTo',
+        ];
+        const textIds = [
+            'searchInput', 'filterAgentName', 'dateFrom', 'dateTo',
+        ];
+        const count = [...selectIds, ...textIds].filter(id => {
+            const el = document.getElementById(id);
+            return el && el.value && el.value.length > 0;
+        }).length;
+        const badge = $('#activeFilterCount');
+        count > 0 ? badge.text(count).show() : badge.hide();
+    }
+
+    // ── FILTER PARAMS ─────────────────────────────────────────────────
+    function getFilterParams() {
+        return {
+            search:             $('#searchInput').val(),
+            interest_level:     $('#filterInterestLevel').val(),
+            institution_type:   $('#filterInstitutionType').val(),
+            school_department:  $('#filterSchoolDepartment').val(),
+            college_department: $('#filterCollegeDepartment').val(),
+            programme_id:       $('#filterProgramme').val(),
+            course_id:          $('#filterCourse').val(),
+            state:              $('#filterState').val(),
+            district:           $('#filterDistrict').val(),
+            preferred_state:    $('#filterPreferredState').val(),
+            agent_name:         $('#filterAgentName').val(),
+            lead_source_id:     $('#filterSource').val(),
+            assigned_to:        $('#filterAssignedTo').val(),
+            branch_id:          $('#filterBranch').val(),
+            date_from:          $('#dateFrom').val(),
+            date_to:            $('#dateTo').val(),
+            final_status:       activeStatus,
+            sort_column:        currentSort.column,
+            sort_direction:     currentSort.direction,
+            per_page:           $('#perPageSelect').val(),
+        };
+    }
+
+    // ── INSTITUTION TYPE SHOW/HIDE ────────────────────────────────────
+    function applyInstitutionTypeUi(type) {
+        if (type === 'school') {
+            $('#schoolDeptWrap').show().removeClass('dimmed');
+            $('#collegeDeptWrap').hide().addClass('dimmed');
+            $('#filterCollegeDepartment').val('').trigger('change');
+        } else if (type === 'college') {
+            $('#collegeDeptWrap').show().removeClass('dimmed');
+            $('#schoolDeptWrap').hide().addClass('dimmed');
+            $('#filterSchoolDepartment').val('').trigger('change');
+        } else {
+            $('#schoolDeptWrap, #collegeDeptWrap').show().removeClass('dimmed');
+        }
+    }
+
+    $('#filterInstitutionType').on('change', function () {
+        applyInstitutionTypeUi($(this).val());
+        updateActiveFilterCount();
+        loadLeads();
+    });
+
+    // ── PROGRAMME → COURSE CASCADE ────────────────────────────────────
+    function cascadeCourses() {
+        const programmeId = $('#filterProgramme').val();
+        const current     = $('#filterCourse').val();
+
+        $('#filterCourse option').each(function () {
+            const $o = $(this);
+            if (!$o.val()) return;
+            const match = !programmeId || String($o.data('programme')) === String(programmeId);
+            $o.prop('disabled', !match);
+        });
+
+        $('#filterCourse').trigger('change.select2');
+
+        if (current) {
+            const ok = $('#filterCourse option[value="' + current + '"]:not(:disabled)').length > 0;
+            if (!ok) $('#filterCourse').val('').trigger('change');
+        }
+    }
+
+    $('#filterProgramme').on('change', function () { cascadeCourses(); updateActiveFilterCount(); loadLeads(); });
+
+    // ── PRE-POPULATE FROM URL ─────────────────────────────────────────
+    function prePopulateFilters() {
         const p = new URLSearchParams(window.location.search);
+        const map = {
+            search:             '#searchInput',
+            interest_level:     '#filterInterestLevel',
+            institution_type:   '#filterInstitutionType',
+            school_department:  '#filterSchoolDepartment',
+            college_department: '#filterCollegeDepartment',
+            programme_id:       '#filterProgramme',
+            course_id:          '#filterCourse',
+            state:              '#filterState',
+            district:           '#filterDistrict',
+            preferred_state:    '#filterPreferredState',
+            agent_name:         '#filterAgentName',
+            lead_source_id:     '#filterSource',
+            assigned_to:        '#filterAssignedTo',
+            branch_id:          '#filterBranch',
+            date_from:          '#dateFrom',
+            date_to:            '#dateTo',
+            per_page:           '#perPageSelect',
+        };
 
-        if (p.get('search'))         $('#searchInput').val(p.get('search'));
-        if (p.get('interest_level')) $('#filterInterestLevel').val(p.get('interest_level'));
-        if (p.get('course_id'))      $('#filterCourse').val(p.get('course_id'));
-        if (p.get('country'))        $('#filterCountry').val(p.get('country'));
-        if (p.get('lead_source_id')) $('#filterSource').val(p.get('lead_source_id'));
-        if (p.get('assigned_to'))    $('#filterAssignedTo').val(p.get('assigned_to'));
-        if (p.get('date_from'))      $('#dateFrom').val(p.get('date_from'));
-        if (p.get('date_to'))        $('#dateTo').val(p.get('date_to'));
-        if (p.get('per_page'))       $('#perPageSelect').val(p.get('per_page'));
+        $.each(map, function (param, selector) {
+            const val = p.get(param);
+            if (val) $(selector).val(val).trigger('change');
+        });
 
-        // Sort state
+        // Restore district dropdown if state pre-filled
+        const preState    = p.get('state')    || '';
+        const preDistrict = p.get('district') || '';
+        if (preState) populateFilterDistricts(preState, preDistrict);
+
         if (p.get('sort_column'))    currentSort.column    = p.get('sort_column');
         if (p.get('sort_direction')) currentSort.direction = p.get('sort_direction');
-        if (currentSort.direction)
-            $('.sortable[data-column="' + currentSort.column + '"]').addClass(currentSort.direction);
-
-        // Quick-status tab
+        if (currentSort.column) {
+            $(`.sortable[data-column="${currentSort.column}"]`).addClass(currentSort.direction);
+        }
         if (p.get('final_status')) {
             activeStatus = p.get('final_status');
             $('.status-tab').removeClass('active');
-            $('.status-tab[data-status="' + activeStatus + '"]').addClass('active');
+            $(`.status-tab[data-status="${activeStatus}"]`).addClass('active');
         }
-    })();
 
-    function exportWithFilters() {
-        const params = new URLSearchParams({
-            search:         $('#searchInput').val(),
-            interest_level: $('#filterInterestLevel').val(),
-            final_status:   activeStatus,
-            course_id:      $('#filterCourse').val(),
-            country:        $('#filterCountry').val(),
-            lead_source_id: $('#filterSource').val(),
-            assigned_to:    $('#filterAssignedTo').val(),
-            date_from:      $('#dateFrom').val(),
-            date_to:        $('#dateTo').val(),
-            sort_column:    currentSort.column,
-            sort_direction: currentSort.direction,
-        });
-        // Remove empty params for cleaner URL
-        for (const [k, v] of [...params.entries()]) {
-            if (!v) params.delete(k);
-        }
-        window.location.href = '{{ route("edu-leads.export") }}?' + params.toString();
+        applyInstitutionTypeUi(p.get('institution_type') || '');
+        if (p.get('programme_id')) cascadeCourses();
+        updateActiveFilterCount();
     }
 
-    window.exportWithFilters = exportWithFilters;
-
-    // ── LOAD LEADS ──────────────────────────────────────────
+    // ── LOAD LEADS AJAX ───────────────────────────────────────────────
     function loadLeads(url) {
         const requestUrl = url || '{{ route("edu-leads.index") }}';
-
-        const params = {
-            search:         $('#searchInput').val(),
-            interest_level: $('#filterInterestLevel').val(),
-            final_status:   activeStatus,
-            course_id:      $('#filterCourse').val(),
-            country:        $('#filterCountry').val(),
-            lead_source_id: $('#filterSource').val(),
-            assigned_to:    $('#filterAssignedTo').val(),
-            date_from:      $('#dateFrom').val(),
-            date_to:        $('#dateTo').val(),
-            sort_column:    currentSort.column,
-            sort_direction: currentSort.direction,
-            per_page:       $('#perPageSelect').val(),
-        };
-
         $('#leadsTable').addClass('table-loading');
 
         $.ajax({
-            url: requestUrl,
-            type: 'GET',
-            data: params,
+            url:     requestUrl,
+            type:    'GET',
+            data:    getFilterParams(),
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function (res) {
                 $('#leadsTableBody').html(res.html);
@@ -659,12 +859,11 @@ $(document).ready(function () {
                 $('#leadCount').text(res.total);
 
                 if (res.from && res.to) {
-                    $('#pageInfo').text(res.from + ' – ' + res.to + ' of ' + res.total);
+                    $('#pageInfo').text(res.from + '–' + res.to + ' of ' + res.total);
                 } else {
                     $('#pageInfo').text(res.total > 0 ? '1–' + res.total + ' of ' + res.total : '0–0 of 0');
                 }
 
-                // Update tab counts if provided
                 if (res.status_counts) {
                     $('#tc-all').text(res.status_counts.all ?? 0);
                     $.each(res.status_counts, function (k, v) {
@@ -672,9 +871,12 @@ $(document).ready(function () {
                     });
                 }
 
-                $('#leadsTable').removeClass('table-loading');
+                if (res.institution_counts) {
+                    $('#ic-school').text(res.institution_counts.school ?? 0);
+                    $('#ic-college').text(res.institution_counts.college ?? 0);
+                }
 
-                // Reset checkboxes
+                $('#leadsTable').removeClass('table-loading');
                 $('#selectAll').prop('checked', false);
                 updateBulkBtn();
             },
@@ -685,35 +887,65 @@ $(document).ready(function () {
         });
     }
 
-    // ── FILTERS ─────────────────────────────────────────────
-    $('#applyFiltersBtn').on('click', function () { loadLeads(); });
+    // ── EXPORT ───────────────────────────────────────────────────────
+    window.exportWithFilters = function () {
+        const params = new URLSearchParams();
+        $.each(getFilterParams(), function (k, v) { if (v) params.set(k, v); });
+        window.location.href = '{{ route("edu-leads.export") }}?' + params.toString();
+    };
+
+    // ── FILTER CONTROLS ───────────────────────────────────────────────
+    $('#applyFiltersBtn').on('click', function () { updateActiveFilterCount(); loadLeads(); });
 
     $('#resetBtn').on('click', function () {
         $('#filterForm')[0].reset();
+        // Reset all Select2
+        $('#filterState, #filterDistrict, #filterPreferredState, #filterProgramme, #filterCourse, ' +
+          '#filterSource, #filterAssignedTo, #filterBranch')
+            .val('').trigger('change');
+        populateFilterDistricts('', '');
+        $('#schoolDeptWrap, #collegeDeptWrap').show().removeClass('dimmed');
         activeStatus = '';
         currentSort  = { column: 'created_at', direction: 'desc' };
         $('.sortable').removeClass('asc desc');
         $('.status-tab').removeClass('active');
         $('.status-tab[data-status=""]').addClass('active');
+        $('#activeFilterCount').hide();
         window.location.href = '{{ route("edu-leads.index") }}';
     });
 
+    // Search — debounced
     let searchTimer;
     $('#searchInput').on('keyup', function () {
         clearTimeout(searchTimer);
-        searchTimer = setTimeout(loadLeads, 450);
+        searchTimer = setTimeout(function () { updateActiveFilterCount(); loadLeads(); }, 450);
+    });
+
+    // Text inputs — debounced
+    let textTimer;
+    $('#filterAgentName').on('keyup', function () {
+        clearTimeout(textTimer);
+        textTimer = setTimeout(function () { updateActiveFilterCount(); loadLeads(); }, 450);
+    });
+
+    // Select2 changes — instant trigger
+    $('#filterPreferredState, #filterCourse, #filterSource, #filterAssignedTo, #filterBranch, ' +
+      '#filterSchoolDepartment, #filterCollegeDepartment, #filterDistrict, ' +
+      '#filterInterestLevel, #dateFrom, #dateTo').on('change', function () {
+        updateActiveFilterCount();
+        loadLeads();
     });
 
     $('#perPageSelect').on('change', function () { loadLeads(); });
 
-    // Pagination
+    // ── PAGINATION ────────────────────────────────────────────────────
     $(document).on('click', '#paginationContainer .pagination a', function (e) {
         e.preventDefault();
         const url = $(this).attr('href');
         if (url) loadLeads(url);
     });
 
-    // Sorting
+    // ── SORTING ───────────────────────────────────────────────────────
     $(document).on('click', '.sortable', function () {
         const col = $(this).data('column');
         if (currentSort.column === col) {
@@ -727,7 +959,7 @@ $(document).ready(function () {
         loadLeads();
     });
 
-    // ── QUICK STATUS TABS ────────────────────────────────────
+    // ── QUICK STATUS TABS ─────────────────────────────────────────────
     $(document).on('click', '.status-tab', function () {
         $('.status-tab').removeClass('active');
         $(this).addClass('active');
@@ -735,8 +967,9 @@ $(document).ready(function () {
         loadLeads();
     });
 
-    // ── CHECKBOXES ───────────────────────────────────────────
-    $('#selectAll').on('change', function () {
+    // ── CHECKBOXES ────────────────────────────────────────────────────
+    const $selectAll = $('#selectAll');
+    $selectAll.on('change', function () {
         $('.lead-checkbox').prop('checked', $(this).is(':checked'));
         updateBulkBtn();
     });
@@ -745,112 +978,95 @@ $(document).ready(function () {
         updateBulkBtn();
         const total   = $('.lead-checkbox').length;
         const checked = $('.lead-checkbox:checked').length;
-        $('#selectAll').prop('checked', total === checked && total > 0);
+        $selectAll.prop('checked', total > 0 && total === checked);
     });
 
     function updateBulkBtn() {
         const n = $('.lead-checkbox:checked').length;
         $('#bulkcount').text(n);
-        n > 0 ? $('#bulkAssignBtn').removeClass('d-none') : $('#bulkAssignBtn').addClass('d-none');
+        $('#bulkAssignBtn').toggleClass('d-none', n === 0);
     }
 
-    @if(in_array(auth()->user()->role, ['super_admin', 'lead_manager']))
+    function getSelectedIds() {
+        return $('.lead-checkbox:checked').map(function () { return $(this).val(); }).get();
+    }
 
-    // ── SINGLE ASSIGN ────────────────────────────────────────────────────
+    // ── SINGLE ASSIGN ─────────────────────────────────────────────────
+    @if(auth()->user()->canAssignLeads())
     $(document).on('click', '.assignLeadBtn', function () {
         const btn = $(this);
         $('#assignLeadId').val(btn.data('id'));
         $('#assignLeadCode').text(btn.data('code'));
         $('#assignLeadName').text(btn.data('name'));
         $('#assignNotes').val('');
-
+        $('#assignTelecaller').val('').trigger('change');
         const assignee = btn.data('assignee');
-        if (assignee) {
-            $('#currentAssigneeLabel').text(assignee);
-            $('#currentAssignmentBlock').show();
-        } else {
-            $('#currentAssignmentBlock').hide();
-        }
-
-        $('#assignTelecaller').val('');
+        $('#currentAssigneeLabel').text(assignee);
+        $('#currentAssignmentBlock').toggle(!!assignee);
         $('#assignLeadModal').modal('show');
     });
 
     $('#assignLeadForm').on('submit', function (e) {
         e.preventDefault();
-
-        const leadId     = $('#assignLeadId').val();
         const telecaller = $('#assignTelecaller').val();
-        const notes      = $('#assignNotes').val();
-
         if (!telecaller) {
             Swal.fire({ icon: 'warning', title: 'Select Telecaller', text: 'Please choose a telecaller.' });
             return;
         }
-
-        const $btn = $(this).find('[type=submit]');
-        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Assigning...');
+        const btn = $(this).find('[type=submit]');
+        btn.prop('disabled', true)
+           .html('<span class="spinner-border spinner-border-sm me-1"></span>Assigning...');
 
         $.ajax({
-            url:  '/edu-leads/' + leadId + '/assign',
+            url:  '/edu-leads/' + $('#assignLeadId').val() + '/assign',
             type: 'POST',
-            data: { assigned_to: telecaller, notes: notes },
+            data: { assigned_to: telecaller, notes: $('#assignNotes').val() },
             success: function (res) {
                 $('#assignLeadModal').modal('hide');
-                // res.telecaller_name is returned by the fixed controller
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Assigned!',
-                    html: 'Lead assigned to <strong>' + (res.telecaller_name || 'telecaller') + '</strong>',
-                    timer: 2500,
-                    showConfirmButton: false
-                }).then(() => loadLeads());
+                    icon: 'success', title: 'Assigned!',
+                    html: 'Lead assigned to <strong>' + res.telecaller_name + '</strong>',
+                    timer: 2500, showConfirmButton: false
+                }).then(loadLeads);
             },
             error: function (xhr) {
-                $btn.prop('disabled', false).html('<i class="las la-check me-1"></i>Assign Lead');
+                btn.prop('disabled', false).html('<i class="las la-check me-1"></i>Assign Lead');
                 Swal.fire({ icon: 'error', title: 'Error', text: xhr.responseJSON?.message || 'Assignment failed.' });
             }
         });
     });
 
-    // ── BULK ASSIGN — open modal with lead list ──────────────────────────
+    // ── BULK ASSIGN ───────────────────────────────────────────────────
     $('#bulkAssignBtn').on('click', function () {
         const selected = getSelectedIds();
         $('#selectedCount').text(selected.length);
-        $('#bulkTelecaller').val('');
+        $('#bulkTelecaller').val('').trigger('change');
         $('#bulkNotes').val('');
+        const list = $('#selectedLeadsList').empty();
 
-        // Build selected leads list
-        const listEl = $('#selectedLeadsList');
-        listEl.empty();
-
-        if (selected.length === 0) {
-            listEl.html('<p class="text-muted text-center py-2 mb-0 small">No leads selected</p>');
+        if (!selected.length) {
+            list.html('<p class="text-muted text-center py-2 mb-0 small">No leads selected</p>');
         } else {
             selected.forEach(function (id) {
-                const row = $('input.lead-checkbox[value="' + id + '"]').closest('tr');
-                const code     = row.find('td:nth-child(2)').text().trim();
+                const row      = $(`input.lead-checkbox[value="${id}"]`).closest('tr');
+                const code     = row.find('[data-label="code"]').text().trim();
                 const name     = row.find('.lead-name-link').text().trim();
-                const assignee = row.find('.badge.bg-secondary').text().trim() || '';
-
-                const item = $('<div class="bulk-lead-item">' +
-                    '<span class="bulk-lead-code">' + code + '</span>' +
-                    '<span class="bulk-lead-name">' + name + '</span>' +
-                    (assignee ? '<span class="bulk-lead-assignee">→ ' + assignee + '</span>' : '') +
-                    '</div>');
-                listEl.append(item);
+                const assignee = row.find('.assigned-to-name').text().trim();
+                list.append(`
+                    <div class="bulk-lead-item">
+                        <span class="badge bg-secondary">${code}</span>
+                        <span class="fw-semibold">${name}</span>
+                        ${assignee ? `<span class="text-muted small ms-auto">${assignee}</span>` : ''}
+                    </div>`);
             });
         }
-
         $('#bulkAssignModal').modal('show');
     });
 
     $('#bulkAssignForm').on('submit', function (e) {
         e.preventDefault();
-
         const selected   = getSelectedIds();
         const telecaller = $('#bulkTelecaller').val();
-        const notes      = $('#bulkNotes').val();
 
         if (!selected.length) {
             Swal.fire({ icon: 'warning', title: 'Nothing Selected', text: 'Select at least one lead.' });
@@ -862,20 +1078,17 @@ $(document).ready(function () {
         }
 
         $('#bulkAssignModal').modal('hide');
-
         $.ajax({
             url:  '{{ route("edu-leads.bulk-assign") }}',
             type: 'POST',
-            data: { lead_ids: selected, assigned_to: telecaller, notes: notes },
+            data: { lead_ids: selected, assigned_to: telecaller, notes: $('#bulkNotes').val() },
             success: function (res) {
                 Swal.fire({
-                    icon:  'success',
-                    title: 'Success!',
-                    html:  '<strong>' + res.count + '</strong> leads assigned to <strong>' + res.telecaller_name + '</strong>',
+                    icon: 'success', title: 'Success!',
+                    html: '<strong>' + res.count + '</strong> leads assigned to <strong>' + res.telecaller_name + '</strong>',
                     timer: 3000
-                }).then(() => {
-                    $('.lead-checkbox').prop('checked', false);
-                    $('#selectAll').prop('checked', false);
+                }).then(function () {
+                    $('.lead-checkbox, #selectAll').prop('checked', false);
                     updateBulkBtn();
                     loadLeads();
                 });
@@ -885,47 +1098,38 @@ $(document).ready(function () {
             }
         });
     });
-
     @endif
 
-    function getSelectedIds() {
-        const ids = [];
-        $('.lead-checkbox:checked').each(function () { ids.push($(this).val()); });
-        return ids;
-    }
-
-    // ── DELETE LEAD ──────────────────────────────────────────
+    // ── DELETE LEAD ───────────────────────────────────────────────────
     $(document).on('click', '.deleteLeadBtn', function () {
         const id   = $(this).data('id');
         const name = $(this).data('name');
-
         Swal.fire({
             title: 'Delete Lead?',
-            html: 'Are you sure you want to delete <strong>' + name + '</strong>?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, Delete',
-            confirmButtonColor: '#dc3545',
+            html:  'Are you sure you want to delete <strong>' + name + '</strong>?',
+            icon:  'warning', showCancelButton: true,
+            confirmButtonText: 'Yes, Delete', confirmButtonColor: '#dc3545',
             cancelButtonColor: '#6c757d'
         }).then(result => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: '/edu-leads/' + id,
-                    type: 'DELETE',
-                    success: function (res) {
-                        if (res.success) {
-                            Swal.fire({ icon: 'success', title: 'Deleted!', text: res.message, timer: 2000, showConfirmButton: false })
-                                .then(() => loadLeads());
-                        }
-                    },
-                    error: function (xhr) {
-                        Swal.fire({ icon: 'error', title: 'Error', text: xhr.responseJSON?.message || 'Could not delete lead.' });
+            if (!result.isConfirmed) return;
+            $.ajax({
+                url:  '/edu-leads/' + id,
+                type: 'DELETE',
+                success: function (res) {
+                    if (res.success) {
+                        Swal.fire({ icon: 'success', title: 'Deleted!', text: res.message, timer: 2000, showConfirmButton: false })
+                            .then(loadLeads);
                     }
-                });
-            }
+                },
+                error: function (xhr) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: xhr.responseJSON?.message || 'Could not delete lead.' });
+                }
+            });
         });
     });
 
+    // ── INITIALISE ────────────────────────────────────────────────────
+    prePopulateFilters();
 });
 </script>
 @endsection

@@ -16,7 +16,6 @@
     @yield('extra-css')
 
     <style>
-        /* ── Avatar ─────────────────────────────────────────── */
         .avatar-circle {
             width: 35px; height: 35px; border-radius: 50%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -35,12 +34,10 @@
         }
         .avatar-initials-large { color: white; font-weight: 700; font-size: 18px; letter-spacing: 1px; }
 
-        /* ── Dropdown ───────────────────────────────────────── */
         .dropdown-menu { border: none; box-shadow: 0 10px 30px rgba(0,0,0,.15); }
         .dropdown-item { transition: all .2s; font-weight: 500; }
         .dropdown-item:hover { background-color: #f8f9fa; padding-left: 1.25rem; }
 
-        /* ── Profile sidebar card ───────────────────────────── */
         .profile-sidebar-card {
             background: rgba(102,126,234,.1);
             border-radius: 10px; padding: 12px; margin: 10px;
@@ -57,22 +54,20 @@
             font-size: 16px; font-weight: 700; color: white;
             letter-spacing: 1px; flex-shrink: 0;
         }
-        .profile-sidebar-info { flex-grow: 1; min-width: 0; }
-        .profile-sidebar-name {
+        .profile-sidebar-info  { flex-grow: 1; min-width: 0; }
+        .profile-sidebar-name  {
             font-size: 14px; font-weight: 600; color: #ffffff;
             margin-bottom: 2px; white-space: nowrap;
             overflow: hidden; text-overflow: ellipsis;
         }
-        .profile-sidebar-role { font-size: 12px; color: #667eea; font-weight: 500; }
+        .profile-sidebar-role  { font-size: 12px; color: #667eea; font-weight: 500; }
 
         .account-label {
             text-transform: uppercase; font-size: 11px; font-weight: 600;
             color: #a0aec0; padding: 0 20px; margin-top: auto; margin-bottom: 8px;
         }
 
-        /* ── Misc ───────────────────────────────────────────── */
         .table-loading { opacity: .6; pointer-events: none; }
-
         .sortable { cursor: pointer; user-select: none; }
         .sortable:hover { background-color: #f8f9fa; }
         .sortable.asc::after  { content: " ▲"; font-size: 10px; }
@@ -85,7 +80,7 @@
 
 <body>
 
-<!-- ── Top Bar ──────────────────────────────────────────────────────── -->
+<!-- ── Top Bar ─────────────────────────────────────────────────── -->
 <div class="topbar d-print-none">
     <div class="container-fluid">
         <nav class="topbar-custom d-flex justify-content-between" id="topbar-custom">
@@ -147,12 +142,11 @@
         </nav>
     </div>
 </div>
-<!-- ── Top Bar End ───────────────────────────────────────────────────── -->
+<!-- ── Top Bar End ──────────────────────────────────────────────── -->
 
-<!-- ── Sidebar ──────────────────────────────────────────────────────── -->
+<!-- ── Sidebar ─────────────────────────────────────────────────── -->
 <div class="startbar d-print-none">
 
-    {{-- Brand --}}
     <div class="brand justify-content-start">
         <a href="{{ route('dashboard') }}" class="logo">
             <span>
@@ -167,7 +161,6 @@
         </a>
     </div>
 
-    {{-- Sidebar menu --}}
     <div class="startbar-menu">
         <div class="startbar-collapse" id="startbarCollapse" data-simplebar>
             <div class="d-flex align-items-start flex-column w-100">
@@ -175,7 +168,6 @@
 
                     <li class="menu-label mt-2"><span>Main Menu</span></li>
 
-                    {{-- Dashboard --}}
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
                            href="{{ route('dashboard') }}">
@@ -184,35 +176,47 @@
                         </a>
                     </li>
 
-                    {{-- ── Education CRM section ────────────────────────── --}}
+                    {{-- ── Education CRM ──────────────────────────── --}}
                     <li class="menu-label mt-3"><span>🎓 Education CRM</span></li>
 
                     @php
                         try {
-                            $authRole = auth()->user()->role;
-                            $authId   = auth()->id();
+                            $authUser   = auth()->user();
+                            $authRole   = $authUser->role;
+                            $authId     = $authUser->id;
 
-                            // Hot leads (super_admin sees all)
-                            $hotLeadsCount = \App\Models\EduLead::where('interest_level', 'hot')
-                                ->where('final_status', 'pending')->count();
+                            // Hot leads — scoped by role
+                            $hotQuery = \App\Models\EduLead::where('interest_level', 'hot')
+                                ->where('final_status', 'pending');
 
-                            // Overdue follow-ups — role-scoped
+                            if ($authRole === 'telecaller') {
+                                $hotQuery->where('assigned_to', $authId);
+                            } elseif ($authRole === 'lead_manager') {
+                                $hotQuery->where('branch_id', $authUser->branch_id);
+                            }
+                            $hotLeadsCount = $hotQuery->count();
+
+                            // Overdue follow-ups — scoped by role
                             $overdueQuery = \App\Models\EduLeadFollowup::where('status', 'pending')
                                 ->whereDate('followup_date', '<', today());
 
-                            if ($authRole === 'telecallers') {
-                                $myOverdueCount = (clone $overdueQuery)->where('assigned_to', $authId)->count();
+                            if ($authRole === 'telecaller') {
+                                $overdueQuery->where('assigned_to', $authId);
+                            } elseif ($authRole === 'lead_manager') {
+                                $overdueQuery->whereHas('eduLead', fn($q) =>
+                                    $q->where('branch_id', $authUser->branch_id)
+                                );
                             }
                             $overdueFollowupsCount = $overdueQuery->count();
 
-                            // Lead manager — own pending leads
-                            if ($authRole === 'lead_manager') {
-                                $myPendingLeads = \App\Models\EduLead::where('created_by', $authId)
-                                    ->where('final_status', 'pending')->count();
-                            }
+                            // My assigned pending leads (telecaller)
+                            $myPendingLeads = $authRole === 'telecaller'
+                                ? \App\Models\EduLead::where('assigned_to', $authId)
+                                    ->where('final_status', 'pending')->count()
+                                : 0;
+
                         } catch (\Exception $e) {
-                            $hotLeadsCount = $overdueFollowupsCount = 0;
-                            $myOverdueCount = $myPendingLeads = 0;
+                            $hotLeadsCount = $overdueFollowupsCount = $myPendingLeads = 0;
                         }
                     @endphp
 
@@ -222,25 +226,19 @@
                            href="{{ route('edu-leads.index') }}">
                             <i class="las la-graduation-cap menu-icon"></i>
                             <span>Education Leads
-                                @if($authRole === 'super_admin' && ($hotLeadsCount ?? 0) > 0)
-                                    <span class="badge bg-danger ms-2 badge-pulse">
-                                        🔥 {{ $hotLeadsCount }}
-                                    </span>
-                                @elseif($authRole === 'lead_manager' && ($myPendingLeads ?? 0) > 0)
-                                    <span class="badge bg-warning text-dark ms-2">
-                                        {{ $myPendingLeads }}
-                                    </span>
-                                @elseif($authRole === 'telecallers' && ($myOverdueCount ?? 0) > 0)
-                                    <span class="badge bg-danger ms-2 badge-pulse">
-                                        <i class="las la-bell"></i> {{ $myOverdueCount }}
-                                    </span>
+                                @if(in_array($authRole, ['super_admin', 'operation_head']) && $hotLeadsCount > 0)
+                                    <span class="badge bg-danger ms-2 badge-pulse">🔥 {{ $hotLeadsCount }}</span>
+                                @elseif($authRole === 'lead_manager' && $hotLeadsCount > 0)
+                                    <span class="badge bg-danger ms-2 badge-pulse">🔥 {{ $hotLeadsCount }}</span>
+                                @elseif($authRole === 'telecaller' && $myPendingLeads > 0)
+                                    <span class="badge bg-warning text-dark ms-2">{{ $myPendingLeads }}</span>
                                 @endif
                             </span>
                         </a>
                     </li>
 
-                    {{-- Overdue Follow-ups (non-telecaller roles only) --}}
-                    @if(($overdueFollowupsCount ?? 0) > 0 && $authRole !== 'telecallers')
+                    {{-- Overdue Follow-ups (visible to all roles that have any) --}}
+                    @if($overdueFollowupsCount > 0)
                     <li class="nav-item">
                         <a class="nav-link text-danger"
                            href="{{ route('edu-leads.index') }}?filter=overdue">
@@ -252,8 +250,8 @@
                     </li>
                     @endif
 
-                    {{-- ── Quick Actions (super_admin & lead_manager) ──────── --}}
-                    @if(in_array($authRole, ['super_admin', 'lead_manager']))
+                    {{-- Quick Actions — all roles that can create --}}
+                    @if($authUser->canCreateLeads())
                     <li class="menu-label mt-3"><span>Quick Actions</span></li>
 
                     <li class="nav-item">
@@ -263,7 +261,10 @@
                             <span>New Lead</span>
                         </a>
                     </li>
+                    @endif
 
+                    {{-- Bulk Import & Export — only managers and above --}}
+                    @if(in_array($authRole, ['super_admin', 'operation_head', 'lead_manager']))
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('edu-leads.bulk-import') ? 'active' : '' }}"
                            href="{{ route('edu-leads.bulk-import') }}">
@@ -271,7 +272,6 @@
                             <span>Bulk Import</span>
                         </a>
                     </li>
-
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('edu-leads.export') }}">
                             <i class="las la-file-download menu-icon"></i>
@@ -280,8 +280,8 @@
                     </li>
                     @endif
 
-                    {{-- ── Administration (super_admin only) ──────────────── --}}
-                    @if($authRole === 'super_admin')
+                    {{-- Administration — super_admin & operation_head --}}
+                    @if(in_array($authRole, ['super_admin', 'operation_head']))
                     <li class="menu-label mt-3"><span>Administration</span></li>
 
                     <li class="nav-item">
@@ -292,22 +292,18 @@
                         </a>
                     </li>
 
+                    @if($authRole === 'super_admin')
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('users.performance*') ? 'active' : '' }}"
                            href="{{ route('users.performance') }}">
                             <i class="las la-trophy menu-icon"></i>
-                            <span>Performance
-                                @if(($hotLeadsCount ?? 0) > 0)
-                                    <span class="badge bg-warning text-dark ms-1">
-                                        {{ $hotLeadsCount }} 🔥
-                                    </span>
-                                @endif
-                            </span>
+                            <span>Performance</span>
                         </a>
                     </li>
                     @endif
+                    @endif
 
-                    {{-- ── Account ──────────────────────────────────────────── --}}
+                    {{-- Account --}}
                     <div class="account-label mt-auto pt-3">ACCOUNT</div>
 
                     <a href="{{ route('profile.show') }}" class="profile-sidebar-card text-decoration-none">
@@ -331,9 +327,9 @@
 
 </div>
 <div class="startbar-overlay d-print-none"></div>
-<!-- ── Sidebar End ───────────────────────────────────────────────────── -->
+<!-- ── Sidebar End ──────────────────────────────────────────────── -->
 
-<!-- ── Page Wrapper ─────────────────────────────────────────────────── -->
+<!-- ── Page Wrapper ────────────────────────────────────────────── -->
 <div class="page-wrapper">
     <div class="page-content">
         <div class="container-fluid">
@@ -342,8 +338,7 @@
             <div class="row mb-3">
                 <div class="col-12">
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="las la-check-circle me-2"></i>
-                        {{ session('success') }}
+                        <i class="las la-check-circle me-2"></i> {{ session('success') }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 </div>
@@ -354,8 +349,7 @@
             <div class="row mb-3">
                 <div class="col-12">
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="las la-exclamation-circle me-2"></i>
-                        {{ session('error') }}
+                        <i class="las la-exclamation-circle me-2"></i> {{ session('error') }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 </div>
@@ -381,7 +375,7 @@
 
             @yield('content')
 
-        </div><!-- /container-fluid -->
+        </div>
 
         <footer class="footer text-center text-sm-start d-print-none">
             <div class="container-fluid">
@@ -401,10 +395,9 @@
                 </div>
             </div>
         </footer>
-    </div><!-- /page-content -->
-</div><!-- /page-wrapper -->
+    </div>
+</div>
 
-<!-- ── Scripts ──────────────────────────────────────────────────────── -->
 <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="{{ asset('assets/libs/simplebar/simplebar.min.js') }}"></script>

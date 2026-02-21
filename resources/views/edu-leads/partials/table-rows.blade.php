@@ -1,18 +1,23 @@
 @php
-$statusLabels = [
-    'pending'        => ['label' => 'Pending',        'class' => 'fs-pending'],
-    'contacted'      => ['label' => 'Contacted',      'class' => 'fs-contacted'],
-    'follow_up'      => ['label' => 'Follow Up',      'class' => 'fs-follow_up'],
-    'admitted'       => ['label' => 'Admitted',       'class' => 'fs-admitted'],
-    'not_interested' => ['label' => 'Not Interested', 'class' => 'fs-not_interested'],
-    'dropped'        => ['label' => 'Dropped',        'class' => 'fs-dropped'],
-];
-$interestIcons = ['hot' => '🔥', 'warm' => '☀️', 'cold' => '❄️'];
+    /** @var \App\Models\User $authUser */
+    $authUser = auth()->user();
+
+    $statusLabels = [
+        'pending'        => ['label' => '⏳ Pending',        'class' => 'fs-pending'],
+        'contacted'      => ['label' => '📞 Contacted',      'class' => 'fs-contacted'],
+        'follow_up'      => ['label' => '🔔 Follow Up',      'class' => 'fs-follow_up'],
+        'admitted'       => ['label' => '✅ Admitted',        'class' => 'fs-admitted'],
+        'not_interested' => ['label' => '❌ Not Interested',  'class' => 'fs-not_interested'],
+        'dropped'        => ['label' => '🚫 Dropped',         'class' => 'fs-dropped'],
+    ];
+
+    $interestIcons = ['hot' => '🔥', 'warm' => '☀️', 'cold' => '❄️'];
 @endphp
 
 @forelse($leads as $lead)
 <tr>
-    @if(in_array(auth()->user()->role, ['super_admin', 'lead_manager']))
+    {{-- Checkbox (canAssignLeads only) --}}
+    @if($authUser->canAssignLeads())
     <td class="checkbox-col">
         <div class="checkbox-wrapper">
             <input type="checkbox" class="custom-checkbox lead-checkbox" value="{{ $lead->id }}">
@@ -22,14 +27,17 @@ $interestIcons = ['hot' => '🔥', 'warm' => '☀️', 'cold' => '❄️'];
 
     {{-- Lead Code --}}
     <td>
-        <span class="text-muted small fw-semibold">{{ $lead->lead_code }}</span>
+        <span class="text-muted small fw-semibold" data-label="code">{{ $lead->lead_code }}</span>
     </td>
 
     {{-- Name --}}
     <td>
-        <a href="{{ route('edu-leads.show', $lead->id) }}" class="lead-name-link">
+        <a href="{{ route('edu-leads.show', $lead->id) }}" class="lead-name-link fw-semibold">
             {{ $lead->name }}
         </a>
+        @if($lead->institution_type)
+            <div class="mt-1">{!! $lead->institution_type_badge !!}</div>
+        @endif
     </td>
 
     {{-- Phone --}}
@@ -37,13 +45,89 @@ $interestIcons = ['hot' => '🔥', 'warm' => '☀️', 'cold' => '❄️'];
         <a href="tel:{{ $lead->phone }}" class="text-body text-decoration-underline small">
             {{ $lead->phone }}
         </a>
+        @if($lead->whatsapp_number && $lead->whatsapp_number !== $lead->phone)
+            <div>
+                <a href="https://wa.me/{{ preg_replace('/\D/', '', $lead->whatsapp_number) }}"
+                   target="_blank" class="text-success small" title="WhatsApp">
+                    <i class="lab la-whatsapp"></i> WA
+                </a>
+            </div>
+        @endif
     </td>
 
-    {{-- Country --}}
-    <td>{{ $lead->country ?? '—' }}</td>
+    {{-- Agent --}}
+    <td>
+        @if($lead->agent_name)
+            <span class="small text-muted">
+                <i class="las la-user-tie"></i> {{ $lead->agent_name }}
+            </span>
+        @else
+            <span class="text-muted">—</span>
+        @endif
+    </td>
+
+    {{-- Institution --}}
+    <td>
+        <span class="small text-muted" title="{{ $lead->institution_summary }}">
+            {{ Str::limit($lead->institution_summary, 28) }}
+        </span>
+    </td>
+
+    {{-- Department --}}
+    <td>
+        @php
+            $dept = match($lead->institution_type) {
+                'school'  => $lead->school_department,
+                'college' => $lead->college_department,
+                default   => null,
+            };
+        @endphp
+        @if($dept)
+            <span class="small text-muted">{{ $dept }}</span>
+        @else
+            <span class="text-muted">—</span>
+        @endif
+    </td>
+
+    {{-- Preferred Country --}}
+    <td>
+        @if($lead->country)
+            <span class="small">{{ $lead->country }}</span>
+        @else
+            <span class="text-muted">—</span>
+        @endif
+    </td>
+
+    {{-- State / District --}}
+    <td>
+        @if($lead->state || $lead->district)
+            <span class="small text-muted">
+                {{ implode(', ', array_filter([$lead->state, $lead->district])) }}
+            </span>
+        @else
+            <span class="text-muted">—</span>
+        @endif
+    </td>
 
     {{-- Course --}}
-    <td>{{ $lead->course->name ?? '—' }}</td>
+    <td>
+        @if($lead->course)
+            <span class="small fw-semibold">{{ $lead->course->name }}</span>
+            @if($lead->course->programme)
+                <div class="text-muted" style="font-size:11px;">{{ $lead->course->programme->name }}</div>
+            @endif
+        @elseif($lead->course_interested)
+            <span class="small text-muted fst-italic">{{ Str::limit($lead->course_interested, 25) }}</span>
+        @else
+            <span class="text-muted">—</span>
+        @endif
+        {{-- Addon course --}}
+        @if($lead->addon_course)
+            <div class="text-info" style="font-size:11px;" title="Addon Course">
+                + {{ Str::limit($lead->addon_course, 20) }}
+            </div>
+        @endif
+    </td>
 
     {{-- Interest Level --}}
     <td>
@@ -51,10 +135,8 @@ $interestIcons = ['hot' => '🔥', 'warm' => '☀️', 'cold' => '❄️'];
             <span class="badge
                 @if($lead->interest_level === 'hot')    bg-danger
                 @elseif($lead->interest_level === 'warm') bg-warning text-dark
-                @else bg-info text-dark
-                @endif">
-                {{ $interestIcons[$lead->interest_level] ?? '' }}
-                {{ ucfirst($lead->interest_level) }}
+                @else bg-info text-dark @endif">
+                {{ $interestIcons[$lead->interest_level] ?? '' }} {{ ucfirst($lead->interest_level) }}
             </span>
         @else
             <span class="text-muted small">—</span>
@@ -64,50 +146,77 @@ $interestIcons = ['hot' => '🔥', 'warm' => '☀️', 'cold' => '❄️'];
     {{-- Final Status --}}
     <td>
         @php
-            $s = $statusLabels[$lead->final_status] ?? ['label' => ucfirst($lead->final_status), 'class' => 'fs-pending'];
+            $s = $statusLabels[$lead->final_status] ?? [
+                'label' => ucfirst(str_replace('_', ' ', $lead->final_status ?? '')),
+                'class' => 'fs-pending'
+            ];
         @endphp
         <span class="fs-badge {{ $s['class'] }}">{{ $s['label'] }}</span>
     </td>
 
     {{-- Source --}}
-    <td>{{ $lead->leadSource->name ?? '—' }}</td>
+    <td>
+        <span class="small">{{ $lead->leadSource->name ?? '—' }}</span>
+    </td>
 
-    {{-- Assigned To --}}
+    {{-- Assigned To (telecaller) --}}
     <td>
         @if($lead->assignedTo)
-            <span class="badge bg-secondary">{{ $lead->assignedTo->name }}</span>
+            <span class="badge bg-secondary assigned-to-name">{{ $lead->assignedTo->name }}</span>
+            @if($lead->assignedTo->branch)
+                <div style="font-size:11px;" class="text-muted">{{ $lead->assignedTo->branch->name }}</div>
+            @endif
         @else
             <span class="badge bg-light text-muted border">Unassigned</span>
         @endif
     </td>
 
-    {{-- Created --}}
-    <td><span class="text-muted small">{{ $lead->created_at->format('d M Y') }}</span></td>
+    {{-- Created + Follow-up indicator --}}
+    <td>
+        <span class="text-muted small">{{ $lead->created_at->format('d M Y') }}</span>
+        @php $fDate = $lead->followup_date ? \Carbon\Carbon::parse($lead->followup_date) : null; @endphp
+        @if($fDate)
+            @if($fDate->isPast() && $lead->followup_status !== 'completed')
+                <div>
+                    <span class="badge bg-danger" style="font-size:10px;" title="Overdue follow-up">
+                        <i class="las la-clock"></i> Overdue
+                    </span>
+                </div>
+            @elseif($fDate->isToday())
+                <div>
+                    <span class="badge bg-warning text-dark" style="font-size:10px;">
+                        <i class="las la-bell"></i> Today
+                    </span>
+                </div>
+            @endif
+        @endif
+    </td>
 
     {{-- Actions --}}
     <td>
         <div class="action-icons">
-            {{-- View --}}
+            {{-- View: all roles --}}
             <a href="{{ route('edu-leads.show', $lead->id) }}" title="View" class="text-info">
                 <i class="las la-eye fs-18"></i>
             </a>
 
+            {{-- Edit: own assigned (telecaller) or branch (lead_manager) or above --}}
             @if(
-                auth()->user()->role === 'super_admin' ||
-                (auth()->user()->role === 'lead_manager' && $lead->created_by === auth()->id()) ||
-                (auth()->user()->role === 'telecallers'  && $lead->assigned_to === auth()->id())
+                $authUser->isSuperAdmin() ||
+                $authUser->isOperationHead() ||
+                ($authUser->isLeadManager() && $lead->branch_id === $authUser->branch_id) ||
+                ($authUser->isTelecaller() && $lead->assigned_to == $authUser->id)
             )
-            {{-- Edit --}}
             <a href="{{ route('edu-leads.edit', $lead->id) }}" title="Edit" class="text-secondary">
                 <i class="las la-pen fs-18"></i>
             </a>
             @endif
 
-            @if(in_array(auth()->user()->role, ['super_admin', 'lead_manager']))
-            {{-- Single Assign --}}
+            {{-- Assign: canAssignLeads --}}
+            @if($authUser->canAssignLeads())
             <a href="javascript:void(0)"
                class="assignLeadBtn text-primary"
-               title="Assign"
+               title="Assign Lead"
                data-id="{{ $lead->id }}"
                data-code="{{ $lead->lead_code }}"
                data-name="{{ $lead->name }}"
@@ -116,11 +225,11 @@ $interestIcons = ['hot' => '🔥', 'warm' => '☀️', 'cold' => '❄️'];
             </a>
             @endif
 
-            @if(auth()->user()->role === 'super_admin')
-            {{-- Delete --}}
+            {{-- Delete: super_admin only --}}
+            @if($authUser->canDelete())
             <a href="javascript:void(0)"
                class="deleteLeadBtn text-danger"
-               title="Delete"
+               title="Delete Lead"
                data-id="{{ $lead->id }}"
                data-name="{{ $lead->name }}">
                 <i class="las la-trash-alt fs-18"></i>
@@ -131,8 +240,9 @@ $interestIcons = ['hot' => '🔥', 'warm' => '☀️', 'cold' => '❄️'];
 </tr>
 @empty
 <tr>
-    <td colspan="12" class="text-center py-5 text-muted">
-        <i class="las la-graduation-cap" style="font-size:3rem; opacity:.2; display:block; margin-bottom:8px;"></i>
+    <td colspan="16" class="text-center py-5 text-muted">
+        <i class="las la-graduation-cap"
+           style="font-size:3rem;opacity:.2;display:block;margin-bottom:8px;"></i>
         No leads found matching your filters
     </td>
 </tr>

@@ -15,16 +15,47 @@ class EduLead extends Model
         'lead_code',
         'created_by',
         'assigned_to',
+        'branch_id',
         'lead_source_id',
         'course_id',
+        'program_id',
         'name',
         'email',
         'phone',
         'whatsapp_number',
         'description',
-        'course_interested',
-        'country',
+        'preferred_state',
+
+        // Agent
+        'agent_name',           // ← NEW: name of telecaller/agent who sourced
+
+        // Institution
+        'institution_type',
+        'school',
+        'school_department',
         'college',
+        'college_department',
+
+        // Programme & Course interest
+        'course_interested',
+        'addon_course',         // ← NEW: secondary course interest
+        'program_interested',
+        'country',              // preferred country to study
+
+        // Location
+        'state',                // ← NEW
+        'district',             // ← NEW
+
+        // Application & payment tracking
+        'application_number',   // ← NEW (static)
+        'whatsapp_link',        // ← NEW
+        'application_form_url', // ← NEW
+        'booking_payment',      // ← NEW
+        'fees_collection',      // ← NEW
+        'cancellation_reason',  // ← NEW
+        'cancelled_at',         // ← NEW
+
+        // Call & Follow-up
         'call_date',
         'call_status',
         'interest_level',
@@ -38,15 +69,19 @@ class EduLead extends Model
     ];
 
     protected $casts = [
-        'call_date' => 'date',
-        'followup_date' => 'date',
-        'admitted_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'call_date'       => 'date',
+        'followup_date'   => 'date',
+        'admitted_at'     => 'datetime',
+        'cancelled_at'    => 'datetime',
+        'booking_payment' => 'decimal:2',
+        'fees_collection' => 'decimal:2',
+        'created_at'      => 'datetime',
+        'updated_at'      => 'datetime',
+        'deleted_at'      => 'datetime',
     ];
 
-    // Auto-generate lead code
+    // ── Boot ─────────────────────────────────────────────────────────
+
     protected static function boot()
     {
         parent::boot();
@@ -56,14 +91,31 @@ class EduLead extends Model
                 $lead->lead_code = self::generateLeadCode();
             }
         });
+
+        static::updated(function ($lead) {
+            $changes = [];
+
+            if ($lead->wasChanged('final_status')) {
+                $changes['old_status'] = $lead->getOriginal('final_status');
+                $changes['new_status'] = $lead->final_status;
+            }
+
+            if ($lead->wasChanged('interest_level')) {
+                $changes['old_interest_level'] = $lead->getOriginal('interest_level');
+                $changes['new_interest_level'] = $lead->interest_level;
+            }
+
+            if (!empty($changes)) {
+                $lead->statusHistory()->create(array_merge($changes, [
+                    'user_id' => auth()->id(),
+                ]));
+            }
+        });
     }
 
-    /**
-     * Generate unique lead code: EDU-2026-0001
-     */
     public static function generateLeadCode(): string
     {
-        $year = date('Y');
+        $year   = date('Y');
         $prefix = 'EDU';
 
         $lastLead = self::withTrashed()
@@ -71,17 +123,20 @@ class EduLead extends Model
             ->orderBy('id', 'desc')
             ->first();
 
-        if ($lastLead) {
-            $lastNumber = (int) substr($lastLead->lead_code, -4);
-            $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-        } else {
-            $newNumber = '0001';
-        }
+        $newNumber = $lastLead
+            ? str_pad((int) substr($lastLead->lead_code, -4) + 1, 4, '0', STR_PAD_LEFT)
+            : '0001';
 
         return "{$prefix}-{$year}-{$newNumber}";
     }
 
-    // Relationships
+    // ── Relationships ─────────────────────────────────────────────────
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -100,6 +155,11 @@ class EduLead extends Model
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class, 'course_id');
+    }
+
+    public function program(): BelongsTo
+    {
+        return $this->belongsTo(Programme::class, 'program_id');
     }
 
     public function callLogs(): HasMany
@@ -122,62 +182,96 @@ class EduLead extends Model
         return $this->hasMany(EduLeadStatusHistory::class, 'edu_lead_id');
     }
 
-    // Scopes
-    public function scopeHot($query)
+    // ── Scopes ────────────────────────────────────────────────────────
+
+    public function scopeHot($query)           { return $query->where('interest_level', 'hot'); }
+    public function scopeWarm($query)          { return $query->where('interest_level', 'warm'); }
+    public function scopeCold($query)          { return $query->where('interest_level', 'cold'); }
+    public function scopePending($query)       { return $query->where('final_status', 'pending'); }
+    public function scopeAdmitted($query)      { return $query->where('final_status', 'admitted'); }
+    public function scopeNotInterested($query) { return $query->where('final_status', 'not_interested'); }
+    public function scopeFromSchool($query)    { return $query->where('institution_type', 'school'); }
+    public function scopeFromCollege($query)   { return $query->where('institution_type', 'college'); }
+
+    /**
+     * Scope visibility based on the authenticated user's role.
+     * - telecaller   → only their own assigned leads
+     * - lead_manager → all leads in their branch
+     * - operation_head / super_admin → all leads
+     */
+    public function scopeVisibleTo($query, User $user)
     {
-        return $query->where('interest_level', 'hot');
+        if ($user->isTelecaller()) {
+            return $query->where('assigned_to', $user->id);
+        }
+
+        if ($user->isLeadManager()) {
+            return $query->where('branch_id', $user->branch_id);
+        }
+
+        // super_admin and operation_head see everything
+        return $query;
     }
 
-    public function scopeWarm($query)
+    // ── Accessors ─────────────────────────────────────────────────────
+
+    public function getInstitutionSummaryAttribute(): string
     {
-        return $query->where('interest_level', 'warm');
+        if ($this->institution_type === 'school') {
+            $parts = array_filter([
+                $this->school,
+                $this->school_department ? $this->school_department . ' Dept.' : null,
+            ]);
+            return implode(' — ', $parts) ?: 'N/A';
+        }
+
+        if ($this->institution_type === 'college') {
+            $parts = array_filter([
+                $this->college,
+                $this->college_department ? $this->college_department . ' Dept.' : null,
+            ]);
+            return implode(' — ', $parts) ?: 'N/A';
+        }
+
+        return 'N/A';
     }
 
-    public function scopeCold($query)
+    public function getProgramLabelAttribute(): string
     {
-        return $query->where('interest_level', 'cold');
+        return $this->program?->name ?? $this->program_interested ?? $this->course_interested ?? 'N/A';
     }
 
-    public function scopePending($query)
-    {
-        return $query->where('final_status', 'pending');
-    }
-
-    public function scopeAdmitted($query)
-    {
-        return $query->where('final_status', 'admitted');
-    }
-
-    public function scopeNotInterested($query)
-    {
-        return $query->where('final_status', 'not_interested');
-    }
-
-    // Accessors
-    public function getInterestLevelBadgeAttribute()
+    public function getInterestLevelBadgeAttribute(): string
     {
         $badges = [
-            'hot' => '<span class="badge bg-danger">🔥 Hot</span>',
-            'warm' => '<span class="badge bg-warning">☀️ Warm</span>',
-            'cold' => '<span class="badge bg-info">❄️ Cold</span>',
+            'hot'  => '<span class="badge bg-danger">🔥 Hot</span>',
+            'warm' => '<span class="badge bg-warning text-dark">☀️ Warm</span>',
+            'cold' => '<span class="badge bg-info text-dark">❄️ Cold</span>',
         ];
-
         return $badges[$this->interest_level] ?? '<span class="badge bg-secondary">N/A</span>';
     }
 
-    public function getStatusBadgeAttribute()
+    public function getStatusBadgeAttribute(): string
     {
         $badges = [
-            'pending' => '<span class="badge bg-warning">Pending</span>',
-            'connected' => '<span class="badge bg-info">Connected</span>',
-            'not_connected' => '<span class="badge bg-secondary">Not Connected</span>',
-            'interested' => '<span class="badge bg-success">Interested</span>',
-            'not_interested' => '<span class="badge bg-danger">Not Interested</span>',
+            'pending'             => '<span class="badge bg-warning text-dark">Pending</span>',
+            'connected'           => '<span class="badge bg-info text-dark">Connected</span>',
+            'not_connected'       => '<span class="badge bg-secondary">Not Connected</span>',
+            'interested'          => '<span class="badge bg-success">Interested</span>',
+            'not_interested'      => '<span class="badge bg-danger">Not Interested</span>',
             'follow_up_scheduled' => '<span class="badge bg-primary">Follow-up Scheduled</span>',
-            'admitted' => '<span class="badge bg-success">✅ Admitted</span>',
-            'closed' => '<span class="badge bg-dark">Closed</span>',
+            'admitted'            => '<span class="badge bg-success">✅ Admitted</span>',
+            'closed'              => '<span class="badge bg-dark">Closed</span>',
         ];
-
         return $badges[$this->status] ?? '<span class="badge bg-secondary">N/A</span>';
+    }
+
+    public function getInstitutionTypeBadgeAttribute(): string
+    {
+        return match($this->institution_type) {
+            'school'  => '<span class="badge bg-primary">🏫 School</span>',
+            'college' => '<span class="badge bg-success">🎓 College</span>',
+            default   => '<span class="badge bg-secondary">N/A</span>',
+        };
     }
 }

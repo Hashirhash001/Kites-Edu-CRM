@@ -56,6 +56,9 @@ Route::middleware(['auth', 'active'])->group(function () {
     // EDUCATION LEADS - ALL ROUTES
     // ============================================================
 
+    Route::patch('edu-leads/{eduLead}/status', [EduLeadController::class, 'updateStatus'])
+     ->name('edu-leads.updateStatus');
+
     Route::prefix('edu-leads')->name('edu-leads.')->middleware(['auth'])->group(function () {
         Route::get('/bulk-import', [EduLeadBulkImportController::class, 'bulkImport'])->name('bulk-import');
         Route::get('/download-template', [EduLeadBulkImportController::class, 'downloadTemplate'])->name('download-template');
@@ -64,6 +67,9 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/bulk-import/progress/{id}', [EduLeadBulkImportController::class, 'getImportProgress'])->name('import-progress');
         Route::get('/download-failed/{id}', [EduLeadBulkImportController::class, 'downloadFailedRows'])->name('download-failed-rows');
     });
+
+    Route::get('edu-leads/programs-by-type',   [EduLeadController::class, 'getProgramsByType'])->name('edu-leads.programs-by-type');
+    Route::get('edu-leads/courses-by-country', [EduLeadController::class, 'getCoursesByCountry'])->name('edu-leads.courses-by-country');
 
     // Export - BEFORE resource route
     Route::get('/edu-leads/export', [EduLeadController::class, 'export'])

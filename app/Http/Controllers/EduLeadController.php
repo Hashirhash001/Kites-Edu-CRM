@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\IndiaGeoHelper;
+use App\Models\Branch;
 use App\Models\Course;
 use App\Models\EduCallLog;
 use App\Models\EduLead;
@@ -9,11 +11,10 @@ use App\Models\EduLeadFollowup;
 use App\Models\EduLeadNote;
 use App\Models\EduLeadSource;
 use App\Models\EduLeadStatusHistory;
+use App\Models\Programme;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class EduLeadController extends Controller
@@ -23,73 +24,56 @@ class EduLeadController extends Controller
         $this->middleware('auth');
     }
 
-    /**
-     * Display a listing of education leads
-     */
+    // =========================================================================
+    // INDEX
+    // =========================================================================
     public function index(Request $request)
     {
         $user = Auth::user();
 
-        // ── Base query (shared for status counts + pagination) ──────────────
-        $baseQuery = EduLead::with(['course', 'leadSource', 'createdBy', 'assignedTo']);
-
-        // Role-based access
-        if ($user->role === 'super_admin') {
-            // sees all
-        } elseif ($user->role === 'lead_manager') {
-            $baseQuery->where('created_by', $user->id);
-        } elseif ($user->role === 'telecallers') {
-            $baseQuery->where('assigned_to', $user->id);
-        } else {
+        if (!$user->canCreateLeads()) {
             abort(403, 'Unauthorized');
         }
 
-        // ── Apply all filters EXCEPT final_status to base ──────────────────
-        if ($request->filled('interest_level')) {
-            $baseQuery->where('interest_level', $request->interest_level);
-        }
-        if ($request->filled('lead_source_id') && $request->lead_source_id != 0) {
-            $baseQuery->where('lead_source_id', $request->lead_source_id);
-        }
-        if ($request->filled('course_id')) {
-            $baseQuery->where('course_id', $request->course_id);
-        }
-        if ($request->filled('country')) {
-            $baseQuery->where('country', $request->country);
-        }
-        if ($request->filled('date_from')) {
-            $baseQuery->whereDate('created_at', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $baseQuery->whereDate('created_at', '<=', $request->date_to);
-        }
+        $baseQuery = EduLead::with(['course.programme', 'leadSource', 'createdBy', 'assignedTo', 'branch']);
+        $baseQuery->visibleTo($user);
+
+        if ($request->filled('interest_level'))    $baseQuery->where('interest_level',  $request->interest_level);
+        if ($request->filled('lead_source_id') && $request->lead_source_id != 0)
+                                                   $baseQuery->where('lead_source_id',  $request->lead_source_id);
+        if ($request->filled('course_id'))         $baseQuery->where('course_id',       $request->course_id);
+        if ($request->filled('programme_id'))      $baseQuery->whereHas('course', fn($q) => $q->where('programme_id', $request->programme_id));
+        if ($request->filled('institution_type'))  $baseQuery->where('institution_type', $request->institution_type);
+        if ($request->filled('state'))             $baseQuery->where('state',    'like', '%' . $request->state    . '%');
+        if ($request->filled('district'))          $baseQuery->where('district', 'like', '%' . $request->district . '%');
+        if ($request->filled('preferred_state'))   $baseQuery->where('preferred_state', $request->preferred_state);
+        if ($request->filled('branch_id') && ($user->isSuperAdmin() || $user->isOperationHead()))
+                                                   $baseQuery->where('branch_id', $request->branch_id);
+        if ($request->filled('date_from'))         $baseQuery->whereDate('created_at', '>=', $request->date_from);
+        if ($request->filled('date_to'))           $baseQuery->whereDate('created_at', '<=', $request->date_to);
+        if ($request->filled('school_department')) $baseQuery->whereRaw('LOWER(TRIM(school_department)) = ?', [strtolower(trim($request->school_department))]);
+        if ($request->filled('college_department'))$baseQuery->whereRaw('LOWER(TRIM(college_department)) = ?', [strtolower(trim($request->college_department))]);
         if ($request->filled('assigned_to')) {
-            if ($user->role === 'telecallers') {
-                if ($request->assigned_to === 'me') {
-                    $baseQuery->where('assigned_to', $user->id);
-                } elseif ($request->assigned_to === 'unassigned') {
-                    $baseQuery->whereNull('assigned_to');
-                }
-            } else {
-                if ($request->assigned_to === 'unassigned') {
-                    $baseQuery->whereNull('assigned_to');
-                } else {
-                    $baseQuery->where('assigned_to', $request->assigned_to);
-                }
-            }
+            $request->assigned_to === 'unassigned'
+                ? $baseQuery->whereNull('assigned_to')
+                : $baseQuery->where('assigned_to', $request->assigned_to);
         }
+        if ($request->filled('agent_name'))        $baseQuery->where('agent_name', 'like', '%' . $request->agent_name . '%');
         if ($request->filled('search')) {
-            $search = '%' . $request->search . '%';
-            $baseQuery->where(function ($q) use ($search) {
-                $q->where('name', 'like', $search)
-                  ->orWhere('email', 'like', $search)
-                  ->orWhere('phone', 'like', $search)
-                  ->orWhere('whatsapp_number', 'like', $search)
-                  ->orWhere('lead_code', 'like', $search);
-            });
+            $s = '%' . $request->search . '%';
+            $baseQuery->where(fn($q) => $q
+                ->where('name',               'like', $s)
+                ->orWhere('email',            'like', $s)
+                ->orWhere('phone',            'like', $s)
+                ->orWhere('whatsapp_number',  'like', $s)
+                ->orWhere('lead_code',        'like', $s)
+                ->orWhere('school',           'like', $s)
+                ->orWhere('college',          'like', $s)
+                ->orWhere('agent_name',       'like', $s)
+                ->orWhere('application_number','like', $s)
+            );
         }
 
-        // ── STATUS COUNTS — always computed on the base query (no status filter) ──
         $statusCounts = [
             'all'            => (clone $baseQuery)->count(),
             'pending'        => (clone $baseQuery)->where('final_status', 'pending')->count(),
@@ -100,480 +84,351 @@ class EduLeadController extends Controller
             'dropped'        => (clone $baseQuery)->where('final_status', 'dropped')->count(),
         ];
 
-        // ── NOW apply final_status for actual results ───────────────────────
+        $institutionCounts = [
+            'school'  => (clone $baseQuery)->where('institution_type', 'school')->count(),
+            'college' => (clone $baseQuery)->where('institution_type', 'college')->count(),
+        ];
+
         $query = clone $baseQuery;
         if ($request->filled('final_status')) {
             $query->where('final_status', $request->final_status);
         }
 
-        // ── Sorting & Pagination ────────────────────────────────────────────
         $sortColumn    = $request->get('sort_column', 'created_at');
         $sortDirection = $request->get('sort_direction', 'desc');
-
-        $perPage = $request->get('per_page', 15);
-        if (!in_array($perPage, [15, 30, 50, 100])) {
-            $perPage = 15;
-        }
+        $perPage = in_array($request->get('per_page', 15), [15, 30, 50, 100])
+            ? $request->get('per_page', 15) : 15;
 
         $leads = $query->orderBy($sortColumn, $sortDirection)->paginate($perPage);
 
-        // ── Extra counts ───────────────────────────────────────────────────
         $hotLeadsCount = EduLead::where('interest_level', 'hot')
             ->where('final_status', 'pending')
-            ->when($user->role === 'lead_manager', fn($q) => $q->where('created_by', $user->id))
-            ->when($user->role === 'telecallers',  fn($q) => $q->where('assigned_to', $user->id))
+            ->visibleTo($user)
             ->count();
 
         $pendingFollowupsCount = EduLeadFollowup::where('status', 'pending')
             ->whereDate('followup_date', '<=', today())
-            ->when($user->role !== 'super_admin', fn($q) => $q->where('assigned_to', $user->id))
+            ->when($user->isTelecaller(),  fn($q) => $q->where('assigned_to', $user->id))
+            ->when($user->isLeadManager(), fn($q) => $q->whereHas('eduLead', fn($lq) => $lq->where('branch_id', $user->branch_id)))
             ->count();
 
-        // ── Dropdowns ──────────────────────────────────────────────────────
-        $courses     = Course::where('is_active', true)->orderBy('name')->get();
-        $leadSources = EduLeadSource::where('is_active', true)->orderBy('name')->get();
-        $telecallers = User::where('role', 'telecallers')
-            ->where('is_active', true)
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get();
-        $countries = Course::where('is_active', true)
-            ->whereNotNull('country')
-            ->distinct()
-            ->pluck('country')
-            ->sort()
-            ->values();
+        $courses         = Course::active()->with('programme')->orderBy('name')->get();
+        $programmes      = Programme::active()->orderBy('name')->get();
+        $leadSources     = EduLeadSource::where('is_active', true)->orderBy('name')->get();
+        $branches        = Branch::active()->get();
+        $assignableUsers = $this->getAssignableUsers($user);
+        $states          = IndiaGeoHelper::states();
 
-        // ── AJAX response ──────────────────────────────────────────────────
         if ($request->ajax()) {
             return response()->json([
-                'success'      => true,
-                'html'         => view('edu-leads.partials.table-rows', compact('leads'))->render(),
-                'pagination'   => $leads->links('pagination::bootstrap-5')->render(),
-                'total'        => $leads->total(),
-                'per_page'     => $leads->perPage(),
-                'current_page' => $leads->currentPage(),
-                'from'         => $leads->firstItem() ?? 0,
-                'to'           => $leads->lastItem()  ?? 0,
-                'status_counts' => $statusCounts,
+                'success'            => true,
+                'html'               => view('edu-leads.partials.table-rows', compact('leads'))->render(),
+                'pagination'         => $leads->links('pagination::bootstrap-5')->render(),
+                'total'              => $leads->total(),
+                'per_page'           => $leads->perPage(),
+                'current_page'       => $leads->currentPage(),
+                'from'               => $leads->firstItem() ?? 0,
+                'to'                 => $leads->lastItem()  ?? 0,
+                'status_counts'      => $statusCounts,
+                'institution_counts' => $institutionCounts,
             ]);
         }
 
         return view('edu-leads.index', compact(
-            'leads',
-            'hotLeadsCount',
-            'pendingFollowupsCount',
-            'courses',
-            'leadSources',
-            'telecallers',
-            'countries',
-            'statusCounts'
+            'leads', 'hotLeadsCount', 'pendingFollowupsCount',
+            'courses', 'programmes', 'leadSources', 'branches',
+            'assignableUsers', 'statusCounts', 'institutionCounts', 'states'
         ));
     }
 
-    /**
-     * Show the form for creating a new lead
-     */
+    // =========================================================================
+    // CREATE
+    // =========================================================================
     public function create()
     {
         $user = Auth::user();
 
-        if (!in_array($user->role, ['super_admin', 'lead_manager', 'telecallers'])) {
+        if (!$user->canCreateLeads()) {
             abort(403, 'Unauthorized to create leads');
         }
 
-        $courses = Course::where('is_active', true)->orderBy('name')->get();
-        $leadSources = EduLeadSource::where('is_active', true)->orderBy('name')->get();
-        $telecallers = User::where('role', 'telecallers')
-            ->where('is_active', true)
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get();
+        $courses            = Course::active()->with('programme')->orderBy('name')->get();
+        $programmes         = Programme::active()->orderBy('name')->get();
+        $leadSources        = EduLeadSource::where('is_active', true)->orderBy('name')->get();
+        $branches           = Branch::active()->get();
+        $userBranchId       = $user->branch_id;
+        $coursesByProgramme = $courses->groupBy('programme_id');
+        $states             = IndiaGeoHelper::states();
+        $districtMap        = IndiaGeoHelper::districtMap();
 
-        $countries = Course::where('is_active', true)
-            ->whereNotNull('country')
-            ->distinct()
-            ->pluck('country')
-            ->sort()
-            ->values();
-
-        return view('edu-leads.create', compact('courses', 'leadSources', 'telecallers', 'countries'));
+        return view('edu-leads.create', compact(
+            'courses', 'programmes', 'leadSources', 'branches',
+            'userBranchId', 'coursesByProgramme',
+            'states', 'districtMap'
+        ));
     }
 
-    /**
-     * Store a newly created lead
-     */
+    // =========================================================================
+    // STORE
+    // =========================================================================
     public function store(Request $request)
     {
         try {
             $user = Auth::user();
 
-            // Authorization check
-            if (!in_array($user->role, ['super_admin', 'lead_manager', 'telecallers'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                    'errors' => ['authorization' => ['You are not authorized to create leads']]
-                ], 403);
+            if (!$user->canCreateLeads()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
 
-            //status and final_status are now NULLABLE
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'nullable|email|max:255',
-                'phone' => 'required|string|max:20|unique:edu_leads,phone',
-                'whatsapp_number' => 'nullable|string|max:20',
-                'description' => 'nullable|string',
-                'course_interested' => 'nullable|string|max:255',
-                'country' => 'nullable|string|max:100',
-                'college' => 'nullable|string|max:255',
-                'course_id' => 'nullable|exists:courses,id',
-                'lead_source_id' => 'required|exists:edu_lead_sources,id',
-                'assigned_to' => 'nullable|exists:users,id',
-                'interest_level' => 'nullable|in:hot,warm,cold',
-                'final_status' => 'nullable|in:pending,contacted,not_interested,follow_up,admitted,dropped',
-                'status' => 'nullable|in:pending,connected,not_connected,interested,not_interested,follow_up_scheduled,admitted,closed',
-                'remarks' => 'nullable|string',
-            ]);
+            $validated = $request->validate($this->leadValidationRules());
 
-            // ✅ SET DEFAULTS for status fields
-            $validated['final_status'] = $validated['final_status'] ?? 'pending';
-            $validated['status'] = $validated['status'] ?? 'pending';
+            // Build full application number from AJK- prefix + suffix
+            if (!empty($validated['application_number_suffix'])) {
+                $validated['application_number'] = 'AJK-' . trim($validated['application_number_suffix']);
+            }
+            unset($validated['application_number_suffix']);
+
+            $validated['final_status']   = $validated['final_status']   ?? 'pending';
+            $validated['status']         = $validated['status']         ?? 'pending';
             $validated['interest_level'] = $validated['interest_level'] ?? null;
 
-            // Determine assigned_to
-            $assignedTo = $validated['assigned_to'] ?? null;
-            if ($user->role === 'telecallers' && !$assignedTo) {
-                $assignedTo = $user->id;
+            // Force branch for lead_manager and telecaller
+            $branchId = ($user->isLeadManager() || $user->isTelecaller())
+                ? $user->branch_id
+                : ($validated['branch_id'] ?? null);
+
+            // Telecallers are auto-set as agent
+            if ($user->isTelecaller() && empty($validated['agent_name'])) {
+                $validated['agent_name'] = $user->name;
             }
 
-            // Create lead
-            $lead = EduLead::create([
-                'name' => $validated['name'],
-                'email' => $validated['email'] ?? null,
-                'phone' => $validated['phone'],
-                'whatsapp_number' => $validated['whatsapp_number'] ?? $validated['phone'],
-                'description' => $validated['description'] ?? null,
-                'course_interested' => $validated['course_interested'] ?? null,
-                'country' => $validated['country'] ?? null,
-                'college' => $validated['college'] ?? null,
-                'course_id' => $validated['course_id'] ?? null,
-                'lead_source_id' => $validated['lead_source_id'],
-                'assigned_to' => $assignedTo,
-                'interest_level' => $validated['interest_level'],
-                'final_status' => $validated['final_status'],
-                'status' => $validated['status'],
-                'remarks' => $validated['remarks'] ?? null,
-                'created_by' => $user->id,
-            ]);
+            $lead = EduLead::create(array_merge($validated, [
+                'branch_id'   => $branchId,
+                'created_by'  => $user->id,
+                'assigned_to' => $user->isTelecaller()
+                    ? $user->id
+                    : ($validated['assigned_to'] ?? null),
+            ]));
 
-            Log::info('Education lead created successfully', [
-                'lead_id' => $lead->id,
-                'lead_code' => $lead->lead_code,
-                'created_by' => $user->id
-            ]);
+            Log::info('Education lead created', ['lead_id' => $lead->id, 'created_by' => $user->id]);
 
-            // ✅ ALWAYS return JSON for AJAX
             return response()->json([
-                'success' => true,
-                'message' => 'Lead created successfully!',
-                'lead_id' => $lead->id,
-                'lead_code' => $lead->lead_code,
-                'name' => $lead->name,
-                'redirect_url' => route('edu-leads.show', $lead->id)
+                'success'      => true,
+                'message'      => 'Lead created successfully!',
+                'lead_id'      => $lead->id,
+                'lead_code'    => $lead->lead_code,
+                'redirect_url' => route('edu-leads.show', $lead->id),
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Lead validation error', [
-                'errors' => $e->errors(),
-                'user_id' => auth()->id()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Please fix the errors below',
-                'errors' => $e->errors()
-            ], 422);
-
+            return response()->json(['success' => false, 'message' => 'Please fix the errors below', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
-            Log::error('Lead creation error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'user_id' => auth()->id()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error creating lead: ' . $e->getMessage(),
-                'errors' => ['general' => [$e->getMessage()]]
-            ], 500);
+            Log::error('Lead creation error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error creating lead: ' . $e->getMessage()], 500);
         }
     }
 
-    /**
-     * Display the specified lead
-     */
+    // =========================================================================
+    // SHOW
+    // =========================================================================
     public function show(EduLead $eduLead)
     {
         $user = Auth::user();
 
-        // Authorization check (NO BRANCH)
-        if ($user->role === 'telecallers' && $eduLead->assigned_to != $user->id) {
-            abort(403, 'Unauthorized');
+        if ($user->isTelecaller() && $eduLead->assigned_to !== $user->id) {
+            abort(403, 'You can only view your own assigned leads.');
         }
 
-        if ($user->role === 'lead_manager' && $eduLead->created_by != $user->id) {
-            abort(403, 'You can only view your own leads.');
+        if ($user->isLeadManager() && $eduLead->branch_id !== $user->branch_id) {
+            abort(403, 'You can only view leads from your branch.');
         }
 
-        // Load relationships
         $eduLead->load([
-            'course',
-            'leadSource',
-            'createdBy',
-            'assignedTo',
+            'course.programme', 'leadSource', 'createdBy', 'assignedTo.branch', 'branch',
             'callLogs.user',
             'notes.createdBy',
-            'followups' => function($query) {
-                $query->with(['assignedToUser', 'createdBy'])
-                      ->orderBy('followup_date', 'asc')
-                      ->orderBy('followup_time', 'asc');
-            }
+            'followups' => fn($q) => $q->with('assignedToUser', 'createdBy')
+                                       ->orderBy('followup_date')->orderBy('followup_time'),
+            'statusHistory.user',
         ]);
 
         return view('edu-leads.show', compact('eduLead'));
     }
 
-    /**
-     * Show the form for editing the specified lead
-     */
+    // =========================================================================
+    // EDIT
+    // =========================================================================
     public function edit(EduLead $eduLead)
     {
         $user = Auth::user();
 
-        // Authorization (NO BRANCH)
-        if (!in_array($user->role, ['super_admin', 'lead_manager', 'telecallers'])) {
+        if (!$user->canCreateLeads()) {
             abort(403, 'Unauthorized');
         }
 
-        if ($user->role === 'lead_manager' && $eduLead->created_by != $user->id) {
-            abort(403, 'You can only edit your own leads');
+        if ($user->isTelecaller() && $eduLead->assigned_to !== $user->id) {
+            abort(403, 'You can only edit your own assigned leads.');
         }
 
-        if ($user->role === 'telecallers' && $eduLead->assigned_to != $user->id) {
-            abort(403, 'Unauthorized');
+        if ($user->isLeadManager() && $eduLead->branch_id !== $user->branch_id) {
+            abort(403, 'You can only edit leads from your branch.');
         }
 
-        $courses = Course::where('is_active', true)->orderBy('name')->get();
-        $leadSources = EduLeadSource::where('is_active', true)->orderBy('name')->get();
-        $telecallers = User::where('role', 'telecallers')
-            ->where('is_active', true)
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get();
+        $eduLead->load('course.programme', 'leadSource', 'assignedTo.branch', 'branch');
 
-        $countries = Course::where('is_active', true)
-            ->whereNotNull('country')
-            ->distinct()
-            ->pluck('country')
-            ->sort()
-            ->values();
+        $courses            = Course::active()->with('programme')->orderBy('name')->get();
+        $programmes         = Programme::active()->orderBy('name')->get();
+        $leadSources        = EduLeadSource::where('is_active', true)->orderBy('name')->get();
+        $branches           = Branch::active()->get();
+        $coursesByProgramme = $courses->groupBy('programme_id');
+        $assignableUsers    = $this->getAssignableUsers($user);
+        $states             = IndiaGeoHelper::states();
+        $districtMap        = IndiaGeoHelper::districtMap();
 
-        return view('edu-leads.edit', compact('eduLead', 'courses', 'leadSources', 'telecallers', 'countries'));
+        return view('edu-leads.edit', compact(
+            'eduLead', 'courses', 'programmes', 'leadSources', 'branches',
+            'coursesByProgramme', 'assignableUsers',
+            'states', 'districtMap'
+        ));
     }
 
-    /**
-     * Update the specified lead
-     */
+    // =========================================================================
+    // UPDATE
+    // =========================================================================
     public function update(Request $request, EduLead $eduLead)
     {
         try {
             $user = Auth::user();
 
-            // Authorization (NO BRANCH)
-            if (!in_array($user->role, ['super_admin', 'lead_manager', 'telecallers'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                    'errors' => ['authorization' => ['You are not authorized to update this lead']]
-                ], 403);
+            if (!$user->canCreateLeads()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
 
-            if ($user->role === 'telecallers' && $eduLead->assigned_to != $user->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                    'errors' => ['authorization' => ['You can only edit your assigned leads']]
-                ], 403);
+            if ($user->isTelecaller() && $eduLead->assigned_to !== $user->id) {
+                return response()->json(['success' => false, 'message' => 'You can only edit your own assigned leads.'], 403);
             }
 
-            if ($user->role === 'lead_manager' && $eduLead->created_by != $user->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                    'errors' => ['authorization' => ['You can only edit your own leads']]
-                ], 403);
+            if ($user->isLeadManager() && $eduLead->branch_id !== $user->branch_id) {
+                return response()->json(['success' => false, 'message' => 'You can only edit leads from your branch.'], 403);
             }
 
-            // ✅ FIXED VALIDATION - status fields are nullable
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'nullable|email|max:255',
-                'phone' => 'required|string|max:20|unique:edu_leads,phone,' . $eduLead->id,
-                'whatsapp_number' => 'nullable|string|max:20',
-                'description' => 'nullable|string',
-                'course_interested' => 'nullable|string|max:255',
-                'country' => 'nullable|string|max:100',
-                'college' => 'nullable|string|max:255',
-                'course_id' => 'nullable|exists:courses,id',
-                'lead_source_id' => 'required|exists:edu_lead_sources,id',
-                'assigned_to' => 'nullable|exists:users,id',
-                'interest_level' => 'nullable|in:hot,warm,cold',
-                'final_status' => 'nullable|in:pending,contacted,not_interested,follow_up,admitted,dropped',
-                'status' => 'nullable|in:pending,connected,not_connected,interested,not_interested,follow_up_scheduled,admitted,closed',
-                'remarks' => 'nullable|string',
-                'next_action' => 'nullable|string',
-            ]);
+            $validated = $request->validate($this->leadValidationRules($eduLead->id));
 
-            // Keep existing values if not provided
+            // Build full application number from AJK- prefix + suffix
+            if (array_key_exists('application_number_suffix', $validated)) {
+                $suffix = trim($validated['application_number_suffix'] ?? '');
+                $validated['application_number'] = $suffix ? 'AJK-' . $suffix : null;
+                unset($validated['application_number_suffix']);
+            }
+
             $validated['final_status'] = $validated['final_status'] ?? $eduLead->final_status;
-            $validated['status'] = $validated['status'] ?? $eduLead->status;
+            $validated['status']       = $validated['status']       ?? $eduLead->status;
 
-            if ($user->role === 'telecallers') {
-                $validated['assigned_to'] = $user->id;
+            // Preserve branch for lead_manager and telecaller
+            if ($user->isLeadManager() || $user->isTelecaller()) {
+                $validated['branch_id'] = $user->branch_id;
             }
 
-            // Track status changes for history
-            $statusChanged = $eduLead->status !== $validated['status'];
-            $interestChanged = $eduLead->interest_level !== ($validated['interest_level'] ?? $eduLead->interest_level);
-            $oldStatus = $eduLead->status;
-            $oldInterest = $eduLead->interest_level;
-
-            // Check if admitted
-            if ($validated['final_status'] === 'admitted' && $eduLead->final_status !== 'admitted') {
+            // Track admitted_at timestamp
+            if (($validated['final_status'] ?? null) === 'admitted' && $eduLead->final_status !== 'admitted') {
                 $validated['admitted_at'] = now();
             }
 
-            // Update lead
-            $eduLead->update($validated);
-
-            // Log status change to history
-            if ($statusChanged || $interestChanged) {
-                EduLeadStatusHistory::create([
-                    'edu_lead_id' => $eduLead->id,
-                    'user_id' => $user->id,
-                    'old_status' => $statusChanged ? $oldStatus : null,
-                    'new_status' => $statusChanged ? $validated['status'] : $eduLead->status,
-                    'old_interest_level' => $interestChanged ? $oldInterest : null,
-                    'new_interest_level' => $interestChanged ? ($validated['interest_level'] ?? $eduLead->interest_level) : null,
-                    'remarks' => $validated['remarks'] ?? null,
-                ]);
-
-                Log::info('Education lead status changed', [
-                    'lead_id' => $eduLead->id,
-                    'old_status' => $oldStatus,
-                    'new_status' => $validated['status'],
-                    'updated_by' => $user->id
-                ]);
+            // Track cancellation timestamp
+            if (($validated['final_status'] ?? null) === 'dropped' && $eduLead->final_status !== 'dropped') {
+                $validated['cancelled_at'] = now();
             }
 
-            Log::info('Education lead updated successfully', [
-                'lead_id' => $eduLead->id,
-                'updated_by' => $user->id
-            ]);
+            $eduLead->update($validated);
 
-            // ✅ ALWAYS return JSON
+            Log::info('Education lead updated', ['lead_id' => $eduLead->id, 'updated_by' => $user->id]);
+
             return response()->json([
-                'success' => true,
-                'message' => 'Lead updated successfully!',
-                'lead_id' => $eduLead->id,
-                'lead_code' => $eduLead->lead_code,
-                'redirect_url' => route('edu-leads.show', $eduLead->id)
+                'success'      => true,
+                'message'      => 'Lead updated successfully!',
+                'lead_id'      => $eduLead->id,
+                'lead_code'    => $eduLead->lead_code,
+                'redirect_url' => route('edu-leads.show', $eduLead->id),
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Lead update validation error', [
-                'errors' => $e->errors(),
-                'user_id' => auth()->id(),
-                'lead_id' => $eduLead->id
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Please fix the errors below',
-                'errors' => $e->errors()
-            ], 422);
-
+            return response()->json(['success' => false, 'message' => 'Please fix the errors below', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
-            Log::error('Lead update error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'user_id' => auth()->id(),
-                'lead_id' => $eduLead->id
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error updating lead: ' . $e->getMessage(),
-                'errors' => ['general' => [$e->getMessage()]]
-            ], 500);
+            Log::error('Lead update error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error updating lead: ' . $e->getMessage()], 500);
         }
     }
 
-    /**
-     * Remove the specified lead
-     */
+    // =========================================================================
+    // UPDATE STATUS
+    // =========================================================================
+    public function updateStatus(Request $request, EduLead $eduLead)
+    {
+        $user = Auth::user();
+
+        $canChange = $user->isSuperAdmin()
+            || $user->isOperationHead()
+            || ($user->isLeadManager() && $eduLead->branch_id === $user->branch_id)
+            || $eduLead->assigned_to === $user->id;
+
+        if (!$canChange) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'final_status' => ['required', \Illuminate\Validation\Rule::in([
+                'pending', 'contacted', 'follow_up', 'admitted', 'not_interested', 'dropped',
+            ])],
+        ]);
+
+        $eduLead->update($validated);
+
+        return response()->json([
+            'success'      => true,
+            'message'      => 'Status updated successfully.',
+            'status_class' => 'status-' . $validated['final_status'],
+        ]);
+    }
+
+    // =========================================================================
+    // DESTROY
+    // =========================================================================
     public function destroy(EduLead $eduLead)
     {
         try {
             $user = Auth::user();
 
-            // Authorization
-            if (!in_array($user->role, ['super_admin', 'lead_manager'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized'
-                ], 403);
-            }
-
-            if ($user->role === 'lead_manager' && $eduLead->created_by != $user->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You can only delete your own leads'
-                ], 403);
+            if (!$user->canDelete()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized — only Super Admin can delete leads.'], 403);
             }
 
             $leadName = $eduLead->name;
             $eduLead->delete();
 
-            Log::info('Education lead deleted', [
-                'lead_name' => $leadName,
-                'deleted_by' => $user->id
-            ]);
+            Log::info('Education lead deleted', ['lead_name' => $leadName, 'deleted_by' => $user->id]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Lead deleted successfully!'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Lead deleted successfully!']);
 
         } catch (\Exception $e) {
             Log::error('Lead delete error: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error deleting lead'
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error deleting lead'], 500);
         }
     }
 
-    /**
-     * Assign lead to telecaller (NO BRANCH VALIDATION)
-     */
+    // =========================================================================
+    // ASSIGN LEAD
+    // =========================================================================
     public function assignLead(Request $request, EduLead $eduLead)
     {
         try {
             $user = Auth::user();
 
-            if (!in_array($user->role, ['super_admin', 'lead_manager'])) {
+            if (!$user->canAssignLeads()) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            }
+
+            if ($user->isLeadManager() && $eduLead->branch_id !== $user->branch_id) {
+                return response()->json(['success' => false, 'message' => 'You can only assign leads from your branch.'], 403);
             }
 
             $validated = $request->validate([
@@ -581,7 +436,11 @@ class EduLeadController extends Controller
                 'notes'       => 'nullable|string',
             ]);
 
-            $telecaller = User::findOrFail($validated['assigned_to']);
+            $assignee = User::findOrFail($validated['assigned_to']);
+
+            if ($user->isLeadManager() && $assignee->branch_id !== $user->branch_id) {
+                return response()->json(['success' => false, 'message' => 'You can only assign to telecallers in your branch.'], 403);
+            }
 
             $eduLead->update(['assigned_to' => $validated['assigned_to']]);
 
@@ -593,16 +452,10 @@ class EduLeadController extends Controller
                 ]);
             }
 
-            Log::info('Education lead assigned', [
-                'lead_id'     => $eduLead->id,
-                'assigned_to' => $telecaller->name,
-                'assigned_by' => $user->id,
-            ]);
-
             return response()->json([
                 'success'         => true,
-                'message'         => 'Lead assigned to ' . $telecaller->name . ' successfully!',
-                'telecaller_name' => $telecaller->name,   // ← THIS WAS MISSING
+                'message'         => 'Lead assigned to ' . $assignee->name . ' successfully!',
+                'telecaller_name' => $assignee->name,
             ]);
 
         } catch (\Exception $e) {
@@ -611,15 +464,15 @@ class EduLeadController extends Controller
         }
     }
 
-    /**
-     * Bulk assign leads to telecaller
-     */
+    // =========================================================================
+    // BULK ASSIGN
+    // =========================================================================
     public function bulkAssign(Request $request)
     {
         try {
             $user = Auth::user();
 
-            if (!in_array($user->role, ['super_admin', 'lead_manager'])) {
+            if (!$user->canAssignLeads()) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
 
@@ -630,35 +483,31 @@ class EduLeadController extends Controller
                 'notes'       => 'nullable|string',
             ]);
 
-            $telecaller = User::find($validated['assigned_to']);
-            $count      = 0;
+            $assignee = User::find($validated['assigned_to']);
+            $count    = 0;
 
             foreach ($validated['lead_ids'] as $leadId) {
                 $lead = EduLead::find($leadId);
-                if ($lead) {
-                    $lead->update(['assigned_to' => $validated['assigned_to']]);
-                    if ($request->filled('notes')) {
-                        EduLeadNote::create([
-                            'edu_lead_id' => $lead->id,
-                            'created_by'  => $user->id,
-                            'note'        => 'Bulk Assignment Note: ' . $validated['notes'],
-                        ]);
-                    }
-                    $count++;
-                }
-            }
+                if (!$lead) continue;
+                if ($user->isLeadManager() && $lead->branch_id !== $user->branch_id) continue;
 
-            Log::info('Bulk education lead assignment', [
-                'count'       => $count,
-                'assigned_to' => $telecaller->name,
-                'assigned_by' => $user->id,
-            ]);
+                $lead->update(['assigned_to' => $validated['assigned_to']]);
+
+                if ($request->filled('notes')) {
+                    EduLeadNote::create([
+                        'edu_lead_id' => $lead->id,
+                        'created_by'  => $user->id,
+                        'note'        => 'Bulk Assignment Note: ' . $validated['notes'],
+                    ]);
+                }
+                $count++;
+            }
 
             return response()->json([
                 'success'         => true,
                 'message'         => 'Bulk assignment completed!',
                 'count'           => $count,
-                'telecaller_name' => $telecaller->name,
+                'telecaller_name' => $assignee->name,
             ]);
 
         } catch (\Exception $e) {
@@ -667,75 +516,139 @@ class EduLeadController extends Controller
         }
     }
 
-    /**
-     * Add call log
-     */
+    // =========================================================================
+    // ADD CALL LOG
+    // =========================================================================
     public function addCall(Request $request, EduLead $eduLead)
     {
         try {
-            // Validate
             $validated = $request->validate([
                 'call_datetime' => 'required|date',
-                'interest_level' => 'nullable|in:hot,warm,cold',
-                'remarks' => 'nullable|string',
-                'next_action' => 'nullable|string',
-                'followup_date' => 'nullable|date|after:today',
-                // 'call_status' => 'nullable|string', // ← MADE OPTIONAL (or remove completely)
+                'call_status'   => 'required|in:connected,not_connected',
+                'duration'      => 'nullable|string|max:50',
+                'remarks'       => 'nullable|string',
+                'next_action'   => 'nullable|string',
+                'followup_date' => 'nullable|date|after_or_equal:today',
             ]);
 
-            // Create call log
+            // ── Create the call log ────────────────────────────────────────
             $callLog = $eduLead->callLogs()->create([
                 'call_datetime' => $validated['call_datetime'],
-                'interest_level' => $validated['interest_level'] ?? null,
-                'remarks' => $validated['remarks'] ?? null,
-                'next_action' => $validated['next_action'] ?? null,
-                'user_id' => auth()->id(),
-                // 'call_status' => $validated['call_status'] ?? null, // ← MADE OPTIONAL
+                'call_status'   => $validated['call_status'],
+                'duration'      => $validated['duration']    ?? null,
+                'remarks'       => $validated['remarks']     ?? null,
+                'next_action'   => $validated['next_action'] ?? null,
+                'user_id'       => auth()->id(),
             ]);
 
-            // If followup_date provided, create followup
+            // ── Update lead's call status on the lead itself ───────────────
+            $eduLead->update(['status' => $validated['call_status']]);
+
+            // ── Auto-create followup if date is provided ───────────────────
             if (!empty($validated['followup_date'])) {
+
+                $notePrefix = $validated['call_status'] === 'connected'
+                    ? 'Follow-up from connected call on '
+                    : 'Retry call — not connected on ';
+
                 $eduLead->followups()->create([
                     'followup_date' => $validated['followup_date'],
-                    'priority' => 'medium',
-                    'notes' => 'Follow-up from call on ' . now()->format('d M Y'),
-                    'assigned_to' => $eduLead->assigned_to ?? auth()->id(),
-                    'created_by' => auth()->id(),
-                    'status' => 'pending',
+                    'priority'      => 'medium',
+                    'notes'         => $notePrefix . now()->format('d M Y'),
+                    'assigned_to'   => $eduLead->assigned_to ?? auth()->id(),
+                    'created_by'    => auth()->id(),
+                    'status'        => 'pending',
+                ]);
+
+                $eduLead->update([
+                    'followup_date'   => $validated['followup_date'],
+                    'followup_status' => 'pending',
                 ]);
             }
+
+            // ── Build inline HTML for JS prepend (no full reload) ─────────
+            $callLog->load('user');
+
+            $callStatusBadge = $callLog->call_status === 'connected'
+                ? '<span class="badge bg-success"><i class="las la-phone me-1"></i>Connected</span>'
+                : '<span class="badge bg-danger"><i class="las la-phone-slash me-1"></i>Not Connected</span>';
+
+            $remarksHtml = $callLog->remarks
+                ? '<div class="mb-1 p-2 bg-light rounded small">
+                    <i class="las la-comment-alt me-1 text-muted"></i>'
+                    . e($callLog->remarks) .
+                '</div>'
+                : '';
+
+            $durationHtml = $callLog->duration
+                ? '<p class="mb-1 small text-muted">
+                    <i class="las la-stopwatch me-1"></i>Duration: ' . e($callLog->duration) .
+                '</p>'
+                : '';
+
+            $nextActionHtml = $callLog->next_action
+                ? '<p class="mb-0 small text-muted">
+                    <i class="las la-arrow-right me-1"></i>
+                    <strong>Next:</strong> ' . e($callLog->next_action) .
+                '</p>'
+                : '';
+
+            $deleteBtn = '<button class="btn btn-sm btn-outline-danger deleteCall ms-2 flex-shrink-0"
+                                data-id="' . $callLog->id . '" title="Delete Call">
+                            <i class="las la-trash"></i>
+                        </button>';
+
+            $html = '
+                <div class="call-log-item" id="call-' . $callLog->id . '">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                                <strong>' . e($callLog->user->name ?? '—') . '</strong>
+                                ' . $callStatusBadge . '
+                                <small class="text-muted ms-auto">
+                                    <i class="las la-clock me-1"></i>
+                                    ' . $callLog->call_datetime->format('d M Y, h:i A') . '
+                                </small>
+                            </div>
+                            ' . $durationHtml . '
+                            ' . $remarksHtml . '
+                            ' . $nextActionHtml . '
+                        </div>
+                        ' . $deleteBtn . '
+                    </div>
+                </div>
+            ';
 
             return response()->json([
                 'success' => true,
                 'message' => 'Call logged successfully!',
-                'data' => $callLog->load('user')
+                'html'    => $html,
+                'data'    => $callLog,
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation error: ' . implode(', ', $e->validator->errors()->all()),
-                'errors' => $e->validator->errors()
+                'errors'  => $e->validator->errors(),
             ], 422);
 
         } catch (\Exception $e) {
             Log::error('Error logging call: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error logging call: ' . $e->getMessage()
+                'message' => 'Error logging call: ' . $e->getMessage(),
             ], 500);
         }
     }
 
-    /**
-     * Add followup
-     */
+    // =========================================================================
+    // ADD FOLLOWUP
+    // =========================================================================
     public function addFollowup(Request $request, EduLead $eduLead)
     {
         $user = Auth::user();
 
-        // Authorization: telecallers can only add to their assigned leads
-        if ($user->role === 'telecallers' && $eduLead->assigned_to != $user->id) {
+        if ($user->isLeadManager() && $eduLead->branch_id !== $user->branch_id) {
             abort(403, 'Unauthorized');
         }
 
@@ -743,370 +656,226 @@ class EduLeadController extends Controller
             $validated = $request->validate([
                 'followup_date' => 'required|date|after_or_equal:today',
                 'followup_time' => 'nullable|date_format:H:i',
-                'priority' => 'required|in:low,medium,high',
-                'notes' => 'nullable|string|max:1000',
+                'priority'      => 'required|in:low,medium,high',
+                'notes'         => 'nullable|string|max:1000',
             ]);
 
             EduLeadFollowup::create([
-                'edu_lead_id' => $eduLead->id,
+                'edu_lead_id'   => $eduLead->id,
                 'followup_date' => $validated['followup_date'],
                 'followup_time' => $validated['followup_time'] ?? null,
-                'priority' => $validated['priority'],
-                'notes' => $validated['notes'] ?? null,
-                'assigned_to' => $eduLead->assigned_to ?? auth()->id(),
-                'created_by' => auth()->id(),
-                'status' => 'pending',
+                'priority'      => $validated['priority'],
+                'notes'         => $validated['notes']         ?? null,
+                'assigned_to'   => $eduLead->assigned_to       ?? auth()->id(),
+                'created_by'    => auth()->id(),
+                'status'        => 'pending',
             ]);
 
-            // Update lead followup fields
             $eduLead->update([
-                'followup_date' => $validated['followup_date'],
-                'followup_status' => 'pending'
+                'followup_date'   => $validated['followup_date'],
+                'followup_status' => 'pending',
             ]);
 
-            Log::info('Followup scheduled for education lead', [
-                'lead_id' => $eduLead->id,
-                'created_by' => auth()->id()
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Followup scheduled successfully!'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Followup scheduled successfully!']);
 
         } catch (\Exception $e) {
             Log::error('Add followup error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error scheduling followup: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error scheduling followup'], 500);
         }
     }
 
-    /**
-     * Complete followup
-     */
+    // =========================================================================
+    // COMPLETE FOLLOWUP
+    // =========================================================================
     public function completeFollowup(EduLeadFollowup $followup)
     {
-        if ($followup->status != 'pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Already completed'
-            ]);
+        if ($followup->status !== 'pending') {
+            return response()->json(['success' => false, 'message' => 'Already completed']);
         }
 
-        $followup->update([
-            'status' => 'completed',
-            'completed_at' => now()
-        ]);
+        $followup->update(['status' => 'completed', 'completed_at' => now()]);
+        $followup->eduLead->update(['followup_status' => 'completed']);
 
-        // Update lead followup status
-        $followup->eduLead->update([
-            'followup_status' => 'completed'
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Follow-up marked as completed!'
-        ]);
+        return response()->json(['success' => true, 'message' => 'Follow-up marked as completed!']);
     }
 
-    /**
-     * Add note
-     */
+    // =========================================================================
+    // ADD NOTE
+    // =========================================================================
     public function addNote(Request $request, EduLead $eduLead)
     {
         $user = Auth::user();
 
-        // Authorization
-        if ($user->role === 'telecallers' && $eduLead->assigned_to != $user->id) {
+        if ($user->isLeadManager() && $eduLead->branch_id !== $user->branch_id) {
             abort(403, 'Unauthorized');
         }
 
         try {
-            $validated = $request->validate([
-                'note' => 'required|string',
-            ]);
+            $validated = $request->validate(['note' => 'required|string']);
 
             $note = EduLeadNote::create([
                 'edu_lead_id' => $eduLead->id,
-                'created_by' => auth()->id(),
-                'note' => $validated['note'],
-            ]);
-
-            Log::info('Note added to education lead', [
-                'lead_id' => $eduLead->id,
-                'note_id' => $note->id
+                'created_by'  => auth()->id(),
+                'note'        => $validated['note'],
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Note added successfully!',
-                'note' => $note->load('createdBy')
+                'note'    => $note->load('createdBy'),
             ]);
 
         } catch (\Exception $e) {
             Log::error('Add note error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error adding note'
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error adding note'], 500);
         }
     }
 
-    /**
-     * Delete a followup
-     */
+    // =========================================================================
+    // DELETE FOLLOWUP
+    // =========================================================================
     public function deleteFollowup(EduLeadFollowup $followup)
     {
-        try {
-            $user = Auth::user();
+        $user = Auth::user();
 
-            // Authorization
-            if ($user->role !== 'super_admin' &&
-                $user->role !== 'lead_manager' &&
-                $followup->created_by !== $user->id &&
-                $followup->assigned_to !== $user->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized to delete this followup'
-                ], 403);
-            }
-
-            // Don't allow deletion of completed followups (optional)
-            if ($followup->status === 'completed') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cannot delete completed followups'
-                ], 400);
-            }
-
-            $followup->delete();
-
-            Log::info('Followup deleted', [
-                'followup_id' => $followup->id,
-                'edu_lead_id' => $followup->edu_lead_id,
-                'deleted_by' => $user->id
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Followup deleted successfully!'
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Delete followup error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error deleting followup'
-            ], 500);
+        if (!$user->isSuperAdmin() &&
+            $followup->created_by  !== $user->id &&
+            $followup->assigned_to !== $user->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
+
+        if ($followup->status === 'completed') {
+            return response()->json(['success' => false, 'message' => 'Cannot delete completed followups'], 400);
+        }
+
+        $followup->delete();
+        return response()->json(['success' => true, 'message' => 'Followup deleted successfully!']);
     }
 
-    /**
-     * Delete a call log
-     */
+    // =========================================================================
+    // DELETE CALL LOG
+    // =========================================================================
     public function deleteCall(EduCallLog $call)
     {
-        try {
-            $user = Auth::user();
+        $user = Auth::user();
 
-            // Authorization: super admin, lead manager, or creator
-            if ($user->role !== 'super_admin' &&
-                $user->role !== 'lead_manager' &&
-                $call->user_id !== $user->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized to delete this call log'
-                ], 403);
-            }
-
-            $call->delete();
-
-            Log::info('Call log deleted', [
-                'call_id' => $call->id,
-                'edu_lead_id' => $call->edu_lead_id,
-                'deleted_by' => $user->id
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Call log deleted successfully!'
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Delete call error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error deleting call log'
-            ], 500);
+        if (!$user->isSuperAdmin() && !$user->isOperationHead() &&
+            !$user->isLeadManager() && $call->user_id !== $user->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
+
+        $call->delete();
+        return response()->json(['success' => true, 'message' => 'Call log deleted successfully!']);
     }
 
-    /**
-     * Delete a note
-     */
+    // =========================================================================
+    // DELETE NOTE
+    // =========================================================================
     public function deleteNote(EduLeadNote $note)
     {
-        try {
-            $user = Auth::user();
+        $user = Auth::user();
 
-            // Authorization: super admin, lead manager, or creator
-            if ($user->role !== 'super_admin' &&
-                $user->role !== 'lead_manager' &&
-                $note->created_by !== $user->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized to delete this note'
-                ], 403);
-            }
-
-            $note->delete();
-
-            Log::info('Note deleted', [
-                'note_id' => $note->id,
-                'edu_lead_id' => $note->edu_lead_id,
-                'deleted_by' => $user->id
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Note deleted successfully!'
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Delete note error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error deleting note'
-            ], 500);
+        if (!$user->isSuperAdmin() && !$user->isOperationHead() &&
+            !$user->isLeadManager() && $note->created_by !== $user->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
+
+        $note->delete();
+        return response()->json(['success' => true, 'message' => 'Note deleted successfully!']);
     }
 
-    /**
-     * Export leads to CSV (NO BRANCH)
-     */
+    // =========================================================================
+    // EXPORT CSV
+    // =========================================================================
     public function export(Request $request)
     {
         try {
-            $user = Auth::user();
+            $user  = Auth::user();
+            $query = EduLead::with(['course.programme', 'leadSource', 'createdBy', 'assignedTo', 'branch']);
 
-            // Base query (NO BRANCH)
-            $query = EduLead::with(['course', 'leadSource', 'createdBy', 'assignedTo']);
+            if ($user->isLeadManager()) $query->where('branch_id', $user->branch_id);
 
-            // Role-based access
-            if ($user->role === 'lead_manager') {
-                $query->where('created_by', $user->id);
-            } elseif ($user->role === 'telecallers') {
-                $query->where('assigned_to', $user->id);
-            }
+            if ($request->filled('interest_level'))    $query->where('interest_level',  $request->interest_level);
+            if ($request->filled('final_status'))      $query->where('final_status',    $request->final_status);
+            if ($request->filled('lead_source_id'))    $query->where('lead_source_id',  $request->lead_source_id);
+            if ($request->filled('course_id'))         $query->where('course_id',       $request->course_id);
+            if ($request->filled('programme_id'))      $query->whereHas('course', fn($q) => $q->where('programme_id', $request->programme_id));
+            if ($request->filled('institution_type'))  $query->where('institution_type', $request->institution_type);
+            if ($request->filled('state'))             $query->where('state',            $request->state);
+            if ($request->filled('district'))          $query->where('district',         $request->district);
+            if ($request->filled('preferred_state'))   $query->where('preferred_state',  $request->preferred_state);
+            if ($request->filled('branch_id'))         $query->where('branch_id',        $request->branch_id);
+            if ($request->filled('date_from'))         $query->whereDate('created_at',  '>=', $request->date_from);
+            if ($request->filled('date_to'))           $query->whereDate('created_at',  '<=', $request->date_to);
+            if ($request->filled('school_department')) $query->where('school_department', $request->school_department);
+            if ($request->filled('college_department'))$query->where('college_department',$request->college_department);
 
-            // Apply all filters from request
-            if ($request->filled('interest_level')) {
-                $query->where('interest_level', $request->interest_level);
-            }
-
-            if ($request->filled('final_status')) {
-                $query->where('final_status', $request->final_status);
-            }
-
-            if ($request->filled('lead_source_id')) {
-                $query->where('lead_source_id', $request->lead_source_id);
-            }
-
-            if ($request->filled('course_id')) {
-                $query->where('course_id', $request->course_id);
-            }
-
-            if ($request->filled('country')) {
-                $query->where('country', $request->country);
-            }
-
-            if ($request->filled('date_from')) {
-                $query->whereDate('created_at', '>=', $request->date_from);
-            }
-
-            if ($request->filled('date_to')) {
-                $query->whereDate('created_at', '<=', $request->date_to);
-            }
-
-            if ($request->filled('search')) {
-                $search = '%' . $request->search . '%';
-                $query->where(function($q) use ($search) {
-                    $q->where('name', 'like', $search)
-                      ->orWhere('email', 'like', $search)
-                      ->orWhere('phone', 'like', $search)
-                      ->orWhere('whatsapp_number', 'like', $search)
-                      ->orWhere('lead_code', 'like', $search);
-                });
-            }
-
-            $leads = $query->get();
-
-            // Create CSV
+            $leads    = $query->get();
             $filename = 'education_leads_' . date('Y-m-d_His') . '.csv';
-            $headers = [
-                'Content-Type' => 'text/csv',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-            ];
 
-            $callback = function() use ($leads) {
+            $callback = function () use ($leads) {
                 $file = fopen('php://output', 'w');
+                fwrite($file, "\xEF\xBB\xBF"); // UTF-8 BOM
 
-                // CSV Headers
                 fputcsv($file, [
-                    'Lead Code',
-                    'Name',
-                    'Email',
-                    'Phone',
-                    'WhatsApp',
-                    'Course Interested',
-                    'Country',
-                    'College',
-                    'Course',
-                    'Lead Source',
-                    'Interest Level',
-                    'Final Status',
-                    'Status',
-                    'Assigned To',
-                    'Created By',
-                    'Created At',
-                    'Call Date',
-                    'Call Status',
-                    'Followup Date',
-                    'Remarks'
+                    'Lead Code', 'Name', 'Email', 'Phone', 'WhatsApp',
+                    'State', 'District', 'Preferred State',
+                    'Branch', 'Institution Type',
+                    'School', 'School Department',
+                    'College', 'College Department',
+                    'Programme', 'Course', 'Addon Course',
+                    'Application No.', 'Lead Source', 'Agent Name',
+                    'Interest Level', 'Final Status', 'Call Status',
+                    'WhatsApp Link', 'Application Form URL',
+                    'Booking Payment', 'Fees Collection', 'Cancellation Reason',
+                    'Assigned To', 'Created By', 'Created At',
+                    'Followup Date', 'Remarks',
                 ]);
 
-                // CSV Data
                 foreach ($leads as $lead) {
                     fputcsv($file, [
                         $lead->lead_code,
                         $lead->name,
-                        $lead->email ?? '',
+                        $lead->email                           ?? '',
                         $lead->phone,
-                        $lead->whatsapp_number ?? '',
-                        $lead->course_interested ?? '',
-                        $lead->country ?? '',
-                        $lead->college ?? '',
-                        $lead->course ? $lead->course->name : '',
-                        $lead->leadSource ? $lead->leadSource->name : '',
-                        ucfirst($lead->interest_level ?? ''),
+                        $lead->whatsapp_number                 ?? '',
+                        $lead->state                           ?? '',
+                        $lead->district                        ?? '',
+                        $lead->preferred_state                 ?? '',
+                        $lead->branch?->name                   ?? '',
+                        ucfirst($lead->institution_type        ?? ''),
+                        $lead->school                          ?? '',
+                        $lead->school_department               ?? '',
+                        $lead->college                         ?? '',
+                        $lead->college_department              ?? '',
+                        $lead->course?->programme?->name       ?? '',
+                        $lead->course?->name                   ?? '',
+                        $lead->addon_course                    ?? '',
+                        $lead->application_number              ?? '',
+                        $lead->leadSource?->name               ?? '',
+                        $lead->agent_name                      ?? '',
+                        ucfirst($lead->interest_level          ?? ''),
                         ucfirst(str_replace('_', ' ', $lead->final_status)),
-                        ucfirst(str_replace('_', ' ', $lead->status)),
-                        $lead->assignedTo ? $lead->assignedTo->name : 'Unassigned',
-                        $lead->createdBy ? $lead->createdBy->name : '',
+                        ucfirst(str_replace('_', ' ', $lead->status        ?? '')),
+                        $lead->whatsapp_link                   ?? '',
+                        $lead->application_form_url            ?? '',
+                        $lead->booking_payment                 ?? '',
+                        $lead->fees_collection                 ?? '',
+                        $lead->cancellation_reason             ?? '',
+                        $lead->assignedTo?->name               ?? 'Unassigned',
+                        $lead->createdBy?->name                ?? '',
                         $lead->created_at->format('d-m-Y H:i'),
-                        $lead->call_date ? $lead->call_date->format('d-m-Y') : '',
-                        $lead->call_status ? ucfirst(str_replace('_', ' ', $lead->call_status)) : '',
-                        $lead->followup_date ? $lead->followup_date->format('d-m-Y') : '',
-                        $lead->remarks ?? ''
+                        $lead->followup_date?->format('d-m-Y') ?? '',
+                        $lead->remarks                         ?? '',
                     ]);
                 }
-
                 fclose($file);
             };
 
-            return response()->stream($callback, 200, $headers);
+            return response()->stream($callback, 200, [
+                'Content-Type'        => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Export error: ' . $e->getMessage());
@@ -1114,67 +883,164 @@ class EduLeadController extends Controller
         }
     }
 
-    /**
-     * Get today's followups for dashboard
-     */
+    // =========================================================================
+    // GET COURSES BY PROGRAMME (AJAX)
+    // =========================================================================
+    public function getCoursesByProgramme(Request $request)
+    {
+        $courses = Course::active()
+            ->when($request->input('programme_id'), fn($q) => $q->where('programme_id', $request->programme_id))
+            ->orderBy('name')
+            ->get(['id', 'name', 'duration', 'programme_id']);
+
+        return response()->json(['success' => true, 'courses' => $courses]);
+    }
+
+    // =========================================================================
+    // GET DISTRICTS BY STATE (AJAX)
+    // =========================================================================
+    public function getDistrictsByState(Request $request)
+    {
+        $state     = $request->input('state', '');
+        $districts = IndiaGeoHelper::districts($state);
+
+        return response()->json(['success' => true, 'districts' => $districts]);
+    }
+
+    // =========================================================================
+    // TODAY'S FOLLOWUPS (dashboard widget)
+    // =========================================================================
     public function getTodayFollowups()
     {
-        $user = Auth::user();
+        $user  = Auth::user();
 
         $query = EduLeadFollowup::with(['eduLead', 'assignedToUser'])
             ->where('status', 'pending')
             ->whereDate('followup_date', today())
-            ->orderBy('followup_time', 'asc');
+            ->orderBy('followup_time');
 
-        if ($user->role !== 'super_admin') {
-            $query->where('assigned_to', $user->id);
+        if ($user->isLeadManager()) {
+            $query->whereHas('eduLead', fn($q) => $q->where('branch_id', $user->branch_id));
         }
 
-        $followups = $query->get();
-
-        return response()->json([
-            'success' => true,
-            'followups' => $followups
-        ]);
+        return response()->json(['success' => true, 'followups' => $query->get()]);
     }
 
+    // =========================================================================
+    // QUICK SEARCH
+    // =========================================================================
     public function quickSearch(Request $request)
     {
-        $user  = auth()->user();
+        $user  = Auth::user();
         $query = $request->input('query', '');
 
-        if (strlen($query) < 2) {
-            return response()->json(['leads' => []]);
+        if (strlen($query) < 2) return response()->json(['leads' => []]);
+
+        $leadsQuery = EduLead::with(['course.programme', 'assignedTo', 'leadSource', 'branch'])
+            ->where(fn($q) => $q
+                ->where('name',               'like', "%{$query}%")
+                ->orWhere('phone',            'like', "%{$query}%")
+                ->orWhere('email',            'like', "%{$query}%")
+                ->orWhere('lead_code',        'like', "%{$query}%")
+                ->orWhere('application_number','like', "%{$query}%")
+                ->orWhere('school',           'like', "%{$query}%")
+                ->orWhere('college',          'like', "%{$query}%")
+            );
+
+        if ($user->isLeadManager()) {
+            $leadsQuery->where('branch_id', $user->branch_id);
         }
 
-        $leadsQuery = EduLead::with(['course', 'assignedTo', 'leadSource'])
-            ->where(function ($q) use ($query) {
-                $q->where('name',  'like', "%{$query}%")
-                ->orWhere('phone', 'like', "%{$query}%")
-                ->orWhere('email', 'like', "%{$query}%")
-                ->orWhere('lead_code', 'like', "%{$query}%");
-            });
-
-        // Telecallers only see their assigned leads
-        if ($user->role === 'telecallers') {
-            $leadsQuery->where('assigned_to', $user->id);
-        }
-
-        $leads = $leadsQuery->limit(8)->get()->map(function ($lead) {
-            return [
-                'id'          => $lead->id,
-                'lead_code'   => $lead->lead_code,
-                'name'        => $lead->name,
-                'phone'       => $lead->phone,
-                'email'       => $lead->email,
-                'status'      => $lead->final_status,
-                'course'      => $lead->course->name ?? 'N/A',
-                'assigned_to' => $lead->assignedTo->name ?? 'Unassigned',
-                'url'         => route('edu-leads.show', $lead->id),
-            ];
-        });
+        $leads = $leadsQuery->limit(8)->get()->map(fn($lead) => [
+            'id'               => $lead->id,
+            'lead_code'        => $lead->lead_code,
+            'name'             => $lead->name,
+            'phone'            => $lead->phone,
+            'email'            => $lead->email,
+            'status'           => $lead->final_status,
+            'branch'           => $lead->branch?->name             ?? 'N/A',
+            'institution_type' => ucfirst($lead->institution_type  ?? ''),
+            'institution'      => $lead->institution_summary,
+            'programme'        => $lead->course?->programme?->name ?? 'N/A',
+            'course'           => $lead->course?->name             ?? 'N/A',
+            'assigned_to'      => $lead->assignedTo?->name         ?? 'Unassigned',
+            'url'              => route('edu-leads.show', $lead->id),
+        ]);
 
         return response()->json(['leads' => $leads]);
     }
 
+    // =========================================================================
+    // PRIVATE HELPERS
+    // =========================================================================
+    private function getAssignableUsers(User $user): \Illuminate\Support\Collection
+    {
+        if ($user->isSuperAdmin() || $user->isOperationHead()) {
+            return User::telecallers()->active()
+                ->with('branch:id,name')
+                ->select('id', 'name', 'branch_id')
+                ->orderBy('name')
+                ->get();
+        }
+
+        if ($user->isLeadManager()) {
+            return User::telecallers()->active()
+                ->where('branch_id', $user->branch_id)
+                ->select('id', 'name', 'branch_id')
+                ->orderBy('name')
+                ->get();
+        }
+
+        return collect();
+    }
+
+    private function leadValidationRules(?int $leadId = null): array
+    {
+        return [
+            // Basic
+            'name'            => 'required|string|max:255',
+            'email'           => 'nullable|email|max:255',
+            'phone'           => 'required|string|max:20|unique:edu_leads,phone' . ($leadId ? ',' . $leadId : ''),
+            'whatsapp_number' => 'nullable|string|max:20',
+            'description'     => 'nullable|string',
+
+            // Location
+            'state'           => 'nullable|string|max:100',
+            'district'        => 'nullable|string|max:100',
+            'preferred_state' => 'nullable|string|max:100',  // ← new
+
+            // Agent
+            'agent_name'      => 'nullable|string|max:255',
+
+            // Institution
+            'institution_type'   => 'nullable|in:school,college,other',
+            'school'             => 'nullable|string|max:255',
+            'school_department'  => 'nullable|string|max:255',
+            'college'            => 'nullable|string|max:255',
+            'college_department' => 'nullable|string|max:255',
+
+            // Programme & Course
+            'course_id'          => 'nullable|exists:courses,id',
+            'addon_course'       => 'nullable|string|max:255',
+
+            // Application & Payment
+            'application_number_suffix' => 'nullable|string|max:50',  // ← suffix only; full AJK- built in controller
+            'whatsapp_link'             => 'nullable|url|max:500',
+            'application_form_url'      => 'nullable|url|max:500',
+            'booking_payment'           => 'nullable|numeric|min:0',
+            'fees_collection'           => 'nullable|numeric|min:0',
+            'cancellation_reason'       => 'nullable|string',
+
+            // CRM
+            'lead_source_id'  => 'required|exists:edu_lead_sources,id',
+            'assigned_to'     => 'nullable|exists:users,id',
+            'branch_id'       => 'nullable|exists:branches,id',
+            'interest_level'  => 'nullable|in:hot,warm,cold',
+            'final_status'    => 'nullable|in:pending,contacted,not_interested,follow_up,admitted,dropped',
+            'status'          => 'nullable|in:pending,connected,not_connected,interested,not_interested,follow_up_scheduled,admitted,closed',
+            'remarks'         => 'nullable|string',
+            'next_action'     => 'nullable|string',
+            'followup_date'   => 'nullable|date',
+        ];
+    }
 }

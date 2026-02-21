@@ -17,19 +17,13 @@ class EduLeadStatusHistory extends Model
         'remarks',
     ];
 
-    protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-    ];
-
-    // Relationships
-    public function eduLead(): BelongsTo
-    {
-        return $this->belongsTo(EduLead::class, 'edu_lead_id');
-    }
-
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class);
+    }
+
+    public function eduLead(): BelongsTo
+    {
+        return $this->belongsTo(EduLead::class);
     }
 }

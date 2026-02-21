@@ -11,251 +11,129 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, SoftDeletes;
 
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'phone',
-        'role',
-        'branch_id',
-        'is_active',
+    const ROLES = [
+        'super_admin'    => 'Super Admin',
+        'operation_head' => 'Operation Head',
+        'lead_manager'   => 'Lead Manager',
+        'telecaller'     => 'Telecaller',       // ← NEW
     ];
 
-    protected $hidden = [
-        'password',
-        'remember_token',
+    // Roles that don't require a branch
+    const BRANCH_FREE_ROLES = ['super_admin', 'operation_head'];
+
+    protected $fillable = [
+        'name', 'email', 'password',
+        'phone', 'role', 'branch_id', 'is_active',
     ];
+
+    protected $hidden = ['password', 'remember_token'];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'is_active' => 'boolean',
+            'password'          => 'hashed',
+            'is_active'         => 'boolean',
         ];
     }
 
-    // ==================== RELATIONSHIPS ====================
+    // ── Relationships ─────────────────────────────────────────────────
 
-    // ---------- EDUCATION CRM RELATIONSHIPS ----------
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
-    /**
-     * Get education leads created by this user
-     */
     public function createdEduLeads()
     {
         return $this->hasMany(EduLead::class, 'created_by');
     }
 
-    /**
-     * Get education leads assigned to this user (for telecallers)
-     */
     public function assignedEduLeads()
     {
         return $this->hasMany(EduLead::class, 'assigned_to');
     }
 
-    /**
-     * Get call logs made by this user
-     */
     public function eduCallLogs()
     {
         return $this->hasMany(EduCallLog::class, 'user_id');
     }
 
-    /**
-     * Get notes created by this user
-     */
     public function eduLeadNotes()
     {
         return $this->hasMany(EduLeadNote::class, 'created_by');
     }
 
-    /**
-     * Get followups assigned to this user
-     */
     public function assignedEduFollowups()
     {
         return $this->hasMany(EduLeadFollowup::class, 'assigned_to');
     }
 
-    /**
-     * Get followups created by this user
-     */
     public function createdEduFollowups()
     {
         return $this->hasMany(EduLeadFollowup::class, 'created_by');
     }
 
-    /**
-     * Get status history changes made by this user
-     */
     public function eduLeadStatusChanges()
     {
         return $this->hasMany(EduLeadStatusHistory::class, 'user_id');
     }
 
-    /**
-     * Get import records by this user
-     */
     public function eduLeadImports()
     {
         return $this->hasMany(EduLeadImport::class, 'user_id');
     }
 
-    // ==================== ROLE HELPER METHODS ====================
+    // ── Role Helpers ──────────────────────────────────────────────────
 
-    public function isSuperAdmin()
+    public function isSuperAdmin():    bool { return $this->role === 'super_admin'; }
+    public function isOperationHead(): bool { return $this->role === 'operation_head'; }
+    public function isLeadManager():   bool { return $this->role === 'lead_manager'; }
+    public function isTelecaller():    bool { return $this->role === 'telecaller'; }  // ← NEW
+    public function isActive():        bool { return $this->is_active; }
+
+    public function requiresBranch(): bool
     {
-        return $this->role === 'super_admin';
+        return !in_array($this->role, self::BRANCH_FREE_ROLES);
     }
 
-    public function isLeadManager()
+    public function getRoleLabelAttribute(): string
     {
-        return $this->role === 'lead_manager';
+        return self::ROLES[$this->role] ?? ucfirst($this->role);
     }
 
-    public function isFieldStaff()
+    public function canDelete(): bool
     {
-        return $this->role === 'field_staff';
+        return $this->isSuperAdmin();
     }
 
-    public function isTelecaller()
+    public function canManageUsers(): bool
     {
-        return $this->role === 'telecallers';
-    }
-
-    public function isReportingUser()
-    {
-        return $this->role === 'reporting_user';
-    }
-
-    // Status helper
-    public function isActive()
-    {
-        return $this->is_active;
-    }
-
-    // ==================== EDUCATION CRM PERFORMANCE METRICS ====================
-
-    /**
-     * Get total calls made today
-     */
-    public function getTodayCallsCountAttribute()
-    {
-        return $this->eduCallLogs()
-            ->whereDate('call_datetime', today())
-            ->count();
+        return $this->isSuperAdmin();
     }
 
     /**
-     * Get connected calls made today
+     * Can this user assign leads?
+     * super_admin, operation_head, lead_manager only
      */
-    public function getConnectedCallsTodayAttribute()
+    public function canAssignLeads(): bool
     {
-        return $this->eduCallLogs()
-            ->whereDate('call_datetime', today())
-            ->where('call_status', 'connected')
-            ->count();
+        return in_array($this->role, ['super_admin', 'operation_head', 'lead_manager']);
     }
 
     /**
-     * Get hot leads assigned today
+     * Can this user create leads?
+     * All roles except none — telecallers can create too
      */
-    public function getHotLeadsTodayAttribute()
+    public function canCreateLeads(): bool
     {
-        return $this->assignedEduLeads()
-            ->where('interest_level', 'hot')
-            ->whereDate('updated_at', today())
-            ->count();
+        return in_array($this->role, ['super_admin', 'operation_head', 'lead_manager', 'telecaller']);
     }
 
-    /**
-     * Get total admissions closed by this user
-     */
-    public function getAdmissionsClosedAttribute()
-    {
-        return $this->assignedEduLeads()
-            ->where('final_status', 'admitted')
-            ->count();
-    }
+    // ── Scopes ────────────────────────────────────────────────────────
 
-    /**
-     * Get pending followups for today
-     */
-    public function getPendingFollowupsTodayAttribute()
-    {
-        return $this->assignedEduFollowups()
-            ->whereDate('followup_date', today())
-            ->where('status', 'pending')
-            ->count();
-    }
-
-    /**
-     * Get overdue followups
-     */
-    public function getOverdueFollowupsAttribute()
-    {
-        return $this->assignedEduFollowups()
-            ->where('followup_date', '<', today())
-            ->where('status', 'pending')
-            ->count();
-    }
-
-    /**
-     * Get total hot leads assigned to this user
-     */
-    public function getTotalHotLeadsAttribute()
-    {
-        return $this->assignedEduLeads()
-            ->where('interest_level', 'hot')
-            ->where('final_status', 'pending')
-            ->count();
-    }
-
-    /**
-     * Get conversion rate (admitted / total assigned)
-     */
-    public function getConversionRateAttribute()
-    {
-        $totalAssigned = $this->assignedEduLeads()->count();
-        if ($totalAssigned == 0) return 0;
-
-        $admitted = $this->assignedEduLeads()->where('final_status', 'admitted')->count();
-        return round(($admitted / $totalAssigned) * 100, 2);
-    }
-
-    // ==================== SCOPES ====================
-
-    /**
-     * Scope for active users
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
-
-    /**
-     * Scope for telecallers
-     */
-    public function scopeTelecallers($query)
-    {
-        return $query->where('role', 'telecallers');
-    }
-
-    /**
-     * Scope for lead managers
-     */
-    public function scopeLeadManagers($query)
-    {
-        return $query->where('role', 'lead_manager');
-    }
-
-    /**
-     * Scope for users in a specific branch
-     */
-    public function scopeInBranch($query, $branchId)
-    {
-        return $query->where('branch_id', $branchId);
-    }
+    public function scopeActive($query)        { return $query->where('is_active', true); }
+    public function scopeLeadManagers($query)  { return $query->where('role', 'lead_manager'); }
+    public function scopeTelecallers($query)   { return $query->where('role', 'telecaller'); }  // ← NEW
+    public function scopeInBranch($query, $id) { return $query->where('branch_id', $id); }
 }

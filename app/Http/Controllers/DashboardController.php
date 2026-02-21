@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use Carbon\Carbon;
 use App\Models\User;
+use App\Models\Branch;
 use App\Models\EduLead;
 use App\Models\EduLeadFollowup;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -17,172 +19,236 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
-        $user = auth()->user();
+        /** @var User $user */
+        $user = Auth::user();
 
-        // ── SUPER ADMIN ──────────────────────────────────────────────
-        if ($user->role === 'super_admin') {
-
-            // Quick Stats
-            $totalUsers      = User::count();
-            $activeUsers     = User::where('is_active', true)->count();
-            $totalLeads      = EduLead::count();
-            $pendingLeads    = EduLead::where('final_status', 'pending')->count();
-            $admittedLeads   = EduLead::where('final_status', 'admitted')->count();
-            $hotLeads        = EduLead::where('interest_level', 'hot')->count();
-
-            // This week / month admitted counts
-            $admittedThisWeek = EduLead::where('final_status', 'admitted')
-                ->whereBetween('admitted_at', [now()->startOfWeek(), now()->endOfWeek()])
-                ->count();
-
-            $admittedThisMonth = EduLead::where('final_status', 'admitted')
-                ->whereYear('admitted_at', now()->year)
-                ->whereMonth('admitted_at', now()->month)
-                ->count();
-
-            // Followup counts
-            $followupData = $this->getFollowupData($user);
-
-            // User role breakdown
-            $roleStats = [
-                'super_admin'   => User::where('role', 'super_admin')->count(),
-                'lead_manager'  => User::where('role', 'lead_manager')->count(),
-                'telecallers'   => User::where('role', 'telecallers')->count(),
-            ];
-
-            return view('dashboard', compact(
-                'totalUsers',
-                'activeUsers',
-                'totalLeads',
-                'pendingLeads',
-                'admittedLeads',
-                'hotLeads',
-                'admittedThisWeek',
-                'admittedThisMonth',
-                'followupData',
-                'roleStats'
+        // ── SUPER ADMIN ───────────────────────────────────────────────
+        if ($user->isSuperAdmin()) {
+            return view('dashboard', array_merge(
+                $this->globalLeadStats(),
+                $this->admissionStats(),
+                $this->institutionStats(),
+                [
+                    'totalUsers'  => User::count(),
+                    'activeUsers' => User::active()->count(),
+                    'roleStats'   => [
+                        'super_admin'    => User::where('role', 'super_admin')->count(),
+                        'operation_head' => User::where('role', 'operation_head')->count(),
+                        'lead_manager'   => User::where('role', 'lead_manager')->count(),
+                    ],
+                    'branchStats'  => $this->getBranchStats(detailed: true),
+                    'followupData' => $this->getFollowupData($user),
+                ]
             ));
         }
 
-        // ── LEAD MANAGER ─────────────────────────────────────────────
-        if ($user->role === 'lead_manager') {
-
-            $myLeads         = EduLead::where('created_by', $user->id)->count();
-            $myPending       = EduLead::where('created_by', $user->id)->where('final_status', 'pending')->count();
-            $myAdmitted      = EduLead::where('created_by', $user->id)->where('final_status', 'admitted')->count();
-            $myHot           = EduLead::where('created_by', $user->id)->where('interest_level', 'hot')->count();
-
-            $admittedThisWeek = EduLead::where('created_by', $user->id)
-                ->where('final_status', 'admitted')
-                ->whereBetween('admitted_at', [now()->startOfWeek(), now()->endOfWeek()])
-                ->count();
-
-            $admittedThisMonth = EduLead::where('created_by', $user->id)
-                ->where('final_status', 'admitted')
-                ->whereYear('admitted_at', now()->year)
-                ->whereMonth('admitted_at', now()->month)
-                ->count();
-
-            $followupData = $this->getFollowupData($user);
-
-            return view('dashboard', compact(
-                'myLeads',
-                'myPending',
-                'myAdmitted',
-                'myHot',
-                'admittedThisWeek',
-                'admittedThisMonth',
-                'followupData'
+        // ── OPERATION HEAD ────────────────────────────────────────────
+        if ($user->isOperationHead()) {
+            return view('dashboard', array_merge(
+                $this->globalLeadStats(),
+                $this->admissionStats(),
+                $this->institutionStats(),
+                [
+                    'branchStats'  => $this->getBranchStats(detailed: false),
+                    'followupData' => $this->getFollowupData($user),
+                ]
             ));
         }
 
-        // ── TELECALLERS ───────────────────────────────────────────────
-        if ($user->role === 'telecallers') {
+        // ── LEAD MANAGER (branch-scoped) ──────────────────────────────
+        if ($user->isLeadManager()) {
+            $branchId = $user->branch_id;
+            $q        = EduLead::where('branch_id', $branchId);
 
-            $telecallerStats = [
-                'total'          => EduLead::where('assigned_to', $user->id)->count(),
-                'pending'        => EduLead::where('assigned_to', $user->id)->where('final_status', 'pending')->count(),
-                'contacted'      => EduLead::where('assigned_to', $user->id)->where('final_status', 'contacted')->count(),
-                'follow_up'      => EduLead::where('assigned_to', $user->id)->where('final_status', 'follow_up')->count(),
-                'not_interested' => EduLead::where('assigned_to', $user->id)->where('final_status', 'not_interested')->count(),
-                'admitted'       => EduLead::where('assigned_to', $user->id)->where('final_status', 'admitted')->count(),
-            ];
-
-            $followupData = $this->getFollowupData($user);
-
-            return view('dashboard', compact('followupData', 'telecallerStats'));
+            return view('dashboard', array_merge(
+                $this->branchLeadStats($branchId),
+                $this->admissionStats($branchId),
+                $this->institutionStats($branchId),
+                [
+                    'followupData' => $this->getFollowupData($user),
+                    'teamStats' => [
+                        'total_leads'    => (clone $q)->count(),
+                        'pending'        => (clone $q)->where('final_status', 'pending')->count(),
+                        'contacted'      => (clone $q)->where('final_status', 'contacted')->count(),
+                        'follow_up'      => (clone $q)->where('final_status', 'follow_up')->count(),
+                        'admitted'       => (clone $q)->where('final_status', 'admitted')->count(),
+                        'not_interested' => (clone $q)->where('final_status', 'not_interested')->count(),
+                        'dropped'        => (clone $q)->where('final_status', 'dropped')->count(),
+                    ],
+                ]
+            ));
         }
 
+        // Fallback
         return view('dashboard');
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // PRIVATE: Build followup data array
-    // ─────────────────────────────────────────────────────────────────
-    private function getFollowupData($user)
-    {
-        $query = EduLeadFollowup::with(['eduLead', 'assignedToUser'])
-            ->where('status', 'pending');
+    // ══════════════════════════════════════════════════════════════════
+    // PRIVATE HELPERS
+    // ══════════════════════════════════════════════════════════════════
 
-        // Role-based scoping
-        if ($user->role === 'super_admin') {
-            // See all pending followups
-        } elseif ($user->role === 'lead_manager') {
-            // Own leads\'s followups + followups assigned to them
-            $query->where(function ($q) use ($user) {
-                $q->where('assigned_to', $user->id)
-                  ->orWhereHas('eduLead', function ($lq) use ($user) {
-                      $lq->where('created_by', $user->id);
-                  });
-            });
+    /**
+     * Global lead stats (all branches) — for super_admin & operation_head.
+     */
+    private function globalLeadStats(): array
+    {
+        return [
+            'totalLeads'     => EduLead::count(),
+            'pendingLeads'   => EduLead::where('final_status', 'pending')->count(),
+            'contactedLeads' => EduLead::where('final_status', 'contacted')->count(),
+            'followUpLeads'  => EduLead::where('final_status', 'follow_up')->count(),
+            'admittedLeads'  => EduLead::where('final_status', 'admitted')->count(),
+            'droppedLeads'   => EduLead::where('final_status', 'dropped')->count(),
+            'hotLeads'       => EduLead::where('interest_level', 'hot')->count(),
+            'warmLeads'      => EduLead::where('interest_level', 'warm')->count(),
+            'coldLeads'      => EduLead::where('interest_level', 'cold')->count(),
+        ];
+    }
+
+    /**
+     * Branch-scoped lead stats — for lead_manager.
+     */
+    private function branchLeadStats(int $branchId): array
+    {
+        $q = EduLead::where('branch_id', $branchId);
+
+        return [
+            'myLeads'     => (clone $q)->count(),
+            'myPending'   => (clone $q)->where('final_status', 'pending')->count(),
+            'myContacted' => (clone $q)->where('final_status', 'contacted')->count(),
+            'myFollowUp'  => (clone $q)->where('final_status', 'follow_up')->count(),
+            'myAdmitted'  => (clone $q)->where('final_status', 'admitted')->count(),
+            'myDropped'   => (clone $q)->where('final_status', 'dropped')->count(),
+            'myHot'       => (clone $q)->where('interest_level', 'hot')->count(),
+            'myWarm'      => (clone $q)->where('interest_level', 'warm')->count(),
+            'myCold'      => (clone $q)->where('interest_level', 'cold')->count(),
+        ];
+    }
+
+    /**
+     * Institution type & department stats.
+     * Pass $branchId to scope to a branch, null for global.
+     */
+    private function institutionStats(?int $branchId = null): array
+    {
+        $base = EduLead::query();
+        if ($branchId) $base->where('branch_id', $branchId);
+
+        $school  = (clone $base)->where('institution_type', 'school');
+        $college = (clone $base)->where('institution_type', 'college');
+
+        // School streams
+        $schoolDepts = [];
+        foreach (['Science', 'Commerce', 'Arts', 'Vocational', 'Other'] as $stream) {
+            $schoolDepts[$stream] = (clone $school)->where('school_department', $stream)->count();
+        }
+
+        // College departments
+        $collegeDepts = [];
+        foreach (['Engineering', 'Medical', 'Arts', 'Commerce', 'Science', 'Law', 'Management', 'Other'] as $dept) {
+            $collegeDepts[$dept] = (clone $college)->where('college_department', $dept)->count();
+        }
+
+        return [
+            'schoolLeads'   => (clone $school)->count(),
+            'collegeLeads'  => (clone $college)->count(),
+            'otherInstLeads'=> (clone $base)->where('institution_type', 'other')->count(),
+            'schoolDepts'   => $schoolDepts,
+            'collegeDepts'  => $collegeDepts,
+        ];
+    }
+
+    /**
+     * Admission time-based stats.
+     */
+    private function admissionStats(?int $branchId = null): array
+    {
+        $base = EduLead::where('final_status', 'admitted');
+        if ($branchId) $base->where('branch_id', $branchId);
+
+        return [
+            'admittedToday'     => (clone $base)->whereDate('admitted_at', today())->count(),
+            'admittedThisWeek'  => (clone $base)->whereBetween('admitted_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+            'admittedThisMonth' => (clone $base)->whereYear('admitted_at', now()->year)->whereMonth('admitted_at', now()->month)->count(),
+            'admittedThisYear'  => (clone $base)->whereYear('admitted_at', now()->year)->count(),
+        ];
+    }
+
+    /**
+     * Per-branch lead counts.
+     */
+    private function getBranchStats(bool $detailed = false): \Illuminate\Database\Eloquent\Collection
+    {
+        $counts = [
+            'eduLeads as total_leads',
+            'eduLeads as admitted_leads'  => fn($q) => $q->where('final_status', 'admitted'),
+            'eduLeads as pending_leads'   => fn($q) => $q->where('final_status', 'pending'),
+            'eduLeads as follow_up_leads' => fn($q) => $q->where('final_status', 'follow_up'),
+        ];
+
+        if ($detailed) {
+            $counts['eduLeads as hot_leads']  = fn($q) => $q->where('interest_level', 'hot');
+            $counts['eduLeads as warm_leads'] = fn($q) => $q->where('interest_level', 'warm');
+        }
+
+        return Branch::active()
+            ->withCount($counts)
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * Follow-up data for the dashboard widget.
+     */
+    private function getFollowupData(User $user): array
+    {
+        $query = EduLeadFollowup::with([
+            'eduLead:id,name,lead_code,phone,final_status,interest_level',
+            'assignedToUser:id,name',
+        ])->where('status', 'pending');
+
+        if ($user->isSuperAdmin() || $user->isOperationHead()) {
+            // All branches — no scope
+        } elseif ($user->isLeadManager()) {
+            $branchId = $user->branch_id;
+            $query->whereHas('eduLead', fn($q) => $q->where('branch_id', $branchId));
         } else {
-            // Telecallers: only assigned to them
             $query->where('assigned_to', $user->id);
         }
 
-        // ── COUNTS ───────────────────────────────────────────────────
-        $overdue   = (clone $query)->whereDate('followup_date', '<', today())->count();
-        $today     = (clone $query)->whereDate('followup_date', today())->count();
-        $thisWeek  = (clone $query)->whereBetween('followup_date', [now()->startOfWeek(), now()->endOfWeek()])->count();
-        $thisMonth = (clone $query)->whereBetween('followup_date', [now()->startOfMonth(), now()->endOfMonth()])->count();
+        $priorityOrder = "CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END";
 
-        // ── IMMEDIATE (Today + Overdue) ───────────────────────────────
+        $overdue    = (clone $query)->whereDate('followup_date', '<', today())->count();
+        $todayCount = (clone $query)->whereDate('followup_date', today())->count();
+        $thisWeek   = (clone $query)->whereBetween('followup_date', [now()->startOfWeek(), now()->endOfWeek()])->count();
+        $thisMonth  = (clone $query)->whereBetween('followup_date', [now()->startOfMonth(), now()->endOfMonth()])->count();
+
         $immediate = (clone $query)
             ->whereDate('followup_date', '<=', today())
-            ->orderByRaw("CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END")
+            ->orderByRaw($priorityOrder)
             ->orderBy('followup_date')
             ->orderBy('followup_time')
-            ->limit(20)
-            ->get();
+            ->limit(20)->get();
 
-        // ── THIS WEEK (future days only) ─────────────────────────────
         $thisWeekFollowups = (clone $query)
             ->whereDate('followup_date', '>', today())
             ->whereDate('followup_date', '<=', now()->endOfWeek())
-            ->orderByRaw("CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END")
+            ->orderByRaw($priorityOrder)
             ->orderBy('followup_date')
             ->orderBy('followup_time')
-            ->limit(20)
-            ->get();
+            ->limit(20)->get();
 
-        // ── THIS MONTH (after this week) ─────────────────────────────
         $thisMonthFollowups = (clone $query)
             ->whereDate('followup_date', '>', now()->endOfWeek())
             ->whereDate('followup_date', '<=', now()->endOfMonth())
-            ->orderByRaw("CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END")
+            ->orderByRaw($priorityOrder)
             ->orderBy('followup_date')
             ->orderBy('followup_time')
-            ->limit(30)
-            ->get();
+            ->limit(30)->get();
 
         return compact(
-            'overdue',
-            'today',
-            'thisWeek',
-            'thisMonth',
-            'immediate',
-            'thisWeekFollowups',
-            'thisMonthFollowups'
+            'overdue', 'todayCount', 'thisWeek', 'thisMonth',
+            'immediate', 'thisWeekFollowups', 'thisMonthFollowups'
         );
     }
 }

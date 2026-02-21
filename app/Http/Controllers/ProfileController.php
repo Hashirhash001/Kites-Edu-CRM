@@ -18,10 +18,10 @@ class ProfileController extends Controller
     // ── SHOW ─────────────────────────────────────────────────────────────
     public function show()
     {
-        $user = Auth::user()->loadCount([
+        $user = Auth::user()->load('branch')->loadCount([   // ← add ->load('branch')
             'assignedEduLeads',
-            'assignedEduLeads as hot_leads_count'      => fn ($q) => $q->where('interest_level', 'hot'),
-            'assignedEduLeads as admitted_leads_count'  => fn ($q) => $q->where('final_status', 'admitted'),
+            'assignedEduLeads as hot_leads_count'     => fn($q) => $q->where('interest_level', 'hot'),
+            'assignedEduLeads as admitted_leads_count' => fn($q) => $q->where('final_status', 'admitted'),
             'createdEduLeads',
         ]);
 

@@ -480,10 +480,13 @@ class EduLeadBulkImportController extends Controller
                         // Telecaller
                         $assignedTo = null;
                         if (!empty($row['calling_staff'])) {
-                            $tc = User::where('role', 'telecallers')->where('is_active', true)
-                                ->whereRaw('LOWER(name) = ?', [strtolower(trim($row['calling_staff']))])->first()
-                                ?? User::where('role', 'telecallers')->where('is_active', true)
-                                    ->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower(trim($row['calling_staff'])) . '%'])->first();
+                            $tc = User::where('is_active', true)
+                                ->whereIn('role', ['lead_manager', 'operation_head', 'super_admin'])
+                                ->whereRaw('LOWER(name) = ?', [strtolower(trim($row['calling_staff']))])
+                                ->first()
+                                ?? User::where('is_active', true)
+                                    ->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower(trim($row['calling_staff'])) . '%'])
+                                    ->first();
                             if ($tc) $assignedTo = $tc->id;
                         }
 
@@ -522,6 +525,11 @@ class EduLeadBulkImportController extends Controller
                             $country = $cc;
                         }
 
+                        // ── Determine branch ───────────────────────────────────────────
+                        $branchId = auth()->user()->role === 'lead_manager'
+                            ? auth()->user()->branch_id
+                            : null;   // super_admin/operation_head imports have no forced branch
+
                         EduLead::create([
                             'name'              => $row['student_name'],
                             'phone'             => $phone,
@@ -537,6 +545,7 @@ class EduLeadBulkImportController extends Controller
                             'status'            => 'pending',
                             'remarks'           => !empty($row['remarks']) ? $row['remarks'] : null,
                             'followup_date'     => $this->parseDate($row['followup_date']),
+                            'branch_id'   => $branchId,
                             'created_by'        => auth()->id(),
                         ]);
 
