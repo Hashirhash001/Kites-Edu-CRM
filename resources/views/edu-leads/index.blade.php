@@ -1100,30 +1100,43 @@ $(document).ready(function () {
     });
     @endif
 
-    // ── DELETE LEAD ───────────────────────────────────────────────────
+    // ── DELETE LEAD ───────────────────────────────────────────────
     $(document).on('click', '.deleteLeadBtn', function () {
-        const id   = $(this).data('id');
-        const name = $(this).data('name');
+        const id   = $(this).attr('data-id');    // ← .attr() not .data()
+        const name = $(this).attr('data-name');  // ← .attr() not .data()
+
         Swal.fire({
-            title: 'Delete Lead?',
-            html:  'Are you sure you want to delete <strong>' + name + '</strong>?',
-            icon:  'warning', showCancelButton: true,
-            confirmButtonText: 'Yes, Delete', confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d'
+            title             : 'Delete Lead?',
+            html              : `Are you sure you want to delete <strong>${name}</strong>?`,
+            icon              : 'warning',
+            showCancelButton  : true,
+            confirmButtonText : 'Yes, Delete',
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor : '#6c757d',
         }).then(result => {
             if (!result.isConfirmed) return;
+
             $.ajax({
-                url:  '/edu-leads/' + id,
-                type: 'DELETE',
+                url    : `/edu-leads/${id}`,
+                type   : 'DELETE',
                 success: function (res) {
                     if (res.success) {
-                        Swal.fire({ icon: 'success', title: 'Deleted!', text: res.message, timer: 2000, showConfirmButton: false })
-                            .then(loadLeads);
+                        Swal.fire({
+                            icon             : 'success',
+                            title            : 'Deleted!',
+                            text             : res.message,
+                            timer            : 2000,
+                            showConfirmButton : false,
+                        }).then(() => loadLeads());
                     }
                 },
                 error: function (xhr) {
-                    Swal.fire({ icon: 'error', title: 'Error', text: xhr.responseJSON?.message || 'Could not delete lead.' });
-                }
+                    Swal.fire({
+                        icon : 'error',
+                        title: 'Error',
+                        text : xhr.responseJSON?.message ?? 'Could not delete lead.',
+                    });
+                },
             });
         });
     });

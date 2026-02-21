@@ -89,15 +89,6 @@
         @endif
     </td>
 
-    {{-- Preferred Country --}}
-    <td>
-        @if($lead->country)
-            <span class="small">{{ $lead->country }}</span>
-        @else
-            <span class="text-muted">—</span>
-        @endif
-    </td>
-
     {{-- State / District --}}
     <td>
         @if($lead->state || $lead->district)
@@ -106,6 +97,17 @@
             </span>
         @else
             <span class="text-muted">—</span>
+        @endif
+    </td>
+
+    <td>
+        @if ($lead->preferred_state)
+            <span class="small text-muted">
+                <i class="las la-user-tie"></i> {{ $lead->preferred_state }}
+            </span>
+        @else
+            <span class="text-muted">—</span>
+
         @endif
     </td>
 

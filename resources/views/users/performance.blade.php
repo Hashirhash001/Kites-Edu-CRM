@@ -4,154 +4,251 @@
 
 @section('extra-css')
 <style>
+    /* ── Background ───────────────────────────────────────────────── */
     body { background: #f7f9fc; }
-
     body::before {
         content: '';
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background:
-            radial-gradient(circle at 20% 50%, rgba(99,102,241,.08), transparent 50%),
-            radial-gradient(circle at 80% 80%, rgba(236,72,153,.08), transparent 50%),
-            radial-gradient(circle at 40% 20%, rgba(139,92,246,.08), transparent 50%);
+            radial-gradient(circle at 20% 50%, rgba(99,102,241,.06), transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(236,72,153,.06), transparent 50%),
+            radial-gradient(circle at 40% 20%, rgba(139,92,246,.06), transparent 50%);
         pointer-events: none; z-index: 0;
     }
-
     .content-wrapper { position: relative; z-index: 1; }
 
-    /* ── Glass card ───────────────────────────────────── */
-    .glass-card {
+    /* ── Page title ───────────────────────────────────────────────── */
+    .page-title-box {
         background: rgba(255,255,255,.98);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(99,102,241,.1);
-        box-shadow: 0 8px 32px rgba(99,102,241,.08);
-        border-radius: 20px;
-        transition: all .4s cubic-bezier(.4,0,.2,1);
-        color: #1e293b;
-    }
-    .glass-card:hover { transform: translateY(-8px); box-shadow: 0 20px 60px rgba(0,0,0,.15); }
-
-    /* ── Stat card ────────────────────────────────────── */
-    .stat-card {
-        background: white; border-radius: 16px;
+        border-radius: 14px;
+        padding: 18px 22px !important;
         box-shadow: 0 4px 20px rgba(99,102,241,.08);
-        border: 1px solid rgba(99,102,241,.05);
-        transition: all .3s ease; color: #1e293b;
     }
-    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 12px 35px rgba(0,0,0,.12); }
-    .stat-card:hover .stat-icon { transform: scale(1.15) rotate(5deg); }
-    .stat-icon { transition: transform .3s ease; }
+    .page-title {
+        background: linear-gradient(135deg,#4f46e5,#7c3aed);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800; margin: 0;
+    }
 
-    /* ── Rank badges ──────────────────────────────────── */
+    /* ── Filter card ──────────────────────────────────────────────── */
+    .filter-card {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(99,102,241,.07);
+        border: 1px solid rgba(99,102,241,.08);
+    }
+    #applyFilter {
+        background: linear-gradient(135deg,#4f46e5,#7c3aed) !important;
+        border: none; font-weight: 700;
+    }
+
+    /* ── Summary stat cards ───────────────────────────────────────── */
+    .stat-card {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(99,102,241,.07);
+        border: 1px solid rgba(99,102,241,.06);
+        transition: transform .25s ease, box-shadow .25s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 28px rgba(99,102,241,.13);
+    }
+    .stat-card:hover .stat-icon { transform: scale(1.12) rotate(4deg); }
+    .stat-icon { transition: transform .25s ease; flex-shrink: 0; }
+    .stat-label { font-size: .78rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stat-value { font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
+    .stat-sub   { font-size: .72rem; }
+
+    /* ── Rank badges ──────────────────────────────────────────────── */
     .rank-badge {
-        width: 65px; height: 65px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-weight: 800; font-size: 1.5rem;
-        position: relative;
-        box-shadow: 0 8px 20px rgba(0,0,0,.2);
-        transition: all .3s ease;
+        border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-weight: 800; position: relative;
+        box-shadow: 0 6px 16px rgba(0,0,0,.18);
+        transition: transform .25s ease;
+        flex-shrink: 0;
     }
-    .rank-badge:hover { transform: scale(1.1) rotate(5deg); }
+    .rank-badge:hover { transform: scale(1.08) rotate(4deg); }
+    .rank-badge-lg { width: 62px; height: 62px; font-size: 1.4rem; }
+    .rank-badge-sm { width: 38px; height: 38px; font-size: .85rem; }
 
-    .rank-1 {
-        background: linear-gradient(135deg,#FFD700,#FFA500,#FFD700);
-        color: #fff; box-shadow: 0 10px 30px rgba(255,215,0,.4);
-    }
+    .rank-1 { background: linear-gradient(135deg,#FFD700,#FFA500); color:#fff; box-shadow:0 8px 22px rgba(255,200,0,.4); }
+    .rank-2 { background: linear-gradient(135deg,#E0E0E0,#B0B0B0); color:#555; box-shadow:0 8px 22px rgba(180,180,180,.4); }
+    .rank-3 { background: linear-gradient(135deg,#E8A87C,#CD7F32); color:#fff; box-shadow:0 8px 22px rgba(200,140,60,.4); }
+    .rank-other { background: linear-gradient(135deg,#a8edea,#fed6e3); color:#555; }
+
     .rank-1::after {
-        content: '👑'; position: absolute; top: -35px;
-        font-size: 2.5rem;
+        content: '👑'; position: absolute; top: -30px; font-size: 1.8rem;
         animation: crownFloat 2s ease-in-out infinite;
-        filter: drop-shadow(0 5px 10px rgba(0,0,0,.3));
     }
-    .rank-2 {
-        background: linear-gradient(135deg,#E8E8E8,#C0C0C0,#E8E8E8);
-        color: #555; box-shadow: 0 10px 30px rgba(192,192,192,.4);
-    }
-    .rank-3 {
-        background: linear-gradient(135deg,#E9967A,#CD7F32,#E9967A);
-        color: #fff; box-shadow: 0 10px 30px rgba(205,127,50,.4);
-    }
-    .rank-other {
-        background: linear-gradient(135deg,#a8edea,#fed6e3);
-        color: #555; box-shadow: 0 5px 15px rgba(0,0,0,.15);
-    }
-
     @keyframes crownFloat {
         0%,100% { transform: translateY(0) rotate(-5deg); }
-        50%      { transform: translateY(-8px) rotate(5deg); }
+        50%      { transform: translateY(-6px) rotate(5deg); }
     }
 
-    /* ── Winner card animation ────────────────────────── */
-    .winner-card { animation: slideInScale .6s cubic-bezier(.34,1.56,.64,1) both; }
-    .winner-card:nth-child(1) { animation-delay: .1s; }
-    .winner-card:nth-child(2) { animation-delay: .2s; }
-    .winner-card:nth-child(3) { animation-delay: .3s; }
+    /* ── Winner cards ─────────────────────────────────────────────── */
+    .winner-card {
+        animation: slideInScale .55s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    .winner-card:nth-child(1) { animation-delay:.08s; }
+    .winner-card:nth-child(2) { animation-delay:.16s; }
+    .winner-card:nth-child(3) { animation-delay:.24s; }
     @keyframes slideInScale {
-        from { opacity: 0; transform: translateY(30px) scale(.9); }
-        to   { opacity: 1; transform: translateY(0) scale(1); }
+        from { opacity: 0; transform: translateY(24px) scale(.92); }
+        to   { opacity: 1; transform: translateY(0)    scale(1); }
     }
 
-    /* ── Progress ─────────────────────────────────────── */
-    .progress-thin { height: 8px; background: rgba(0,0,0,.05); border-radius: 10px; overflow: hidden; }
-    .progress-bar-gradient {
-        background: linear-gradient(90deg,#667eea,#764ba2);
-        transition: width 1s ease-in-out;
+    .glass-card {
+        background: #fff;
+        border: 1px solid rgba(99,102,241,.1);
+        box-shadow: 0 6px 24px rgba(99,102,241,.08);
+        border-radius: 18px;
+        transition: transform .3s ease, box-shadow .3s ease;
     }
-    .progress-bar-green {
-        background: linear-gradient(90deg,#10b981,#059669);
-        transition: width 1s ease-in-out;
+    .glass-card:hover { transform: translateY(-5px); box-shadow: 0 16px 40px rgba(0,0,0,.12); }
+
+    /* ── Progress bars ────────────────────────────────────────────── */
+    .prog-wrap { height: 6px; background: rgba(0,0,0,.07); border-radius: 8px; overflow: hidden; }
+    .prog-fill-purple { height: 100%; background: linear-gradient(90deg,#667eea,#764ba2); border-radius: 8px; transition: width 1s ease; }
+    .prog-fill-green  { height: 100%; background: linear-gradient(90deg,#10b981,#059669); border-radius: 8px; transition: width 1s ease; }
+
+    /* ── Value highlight box in winner cards ──────────────────────── */
+    .value-highlight {
+        background: linear-gradient(135deg,rgba(16,185,129,.07),rgba(6,182,212,.07));
+        border-radius: 10px; padding: 12px;
+        border: 1.5px solid rgba(16,185,129,.18);
     }
 
-    /* ── Table ────────────────────────────────────────── */
-    .leaderboard-table { border-collapse: separate; border-spacing: 0; width: 100%; }
+    /* ── Medal emoji ──────────────────────────────────────────────── */
+    .medal-emoji {
+        font-size: 2.4rem; display: inline-block;
+        animation: medalPulse 2s ease-in-out infinite;
+    }
+    @keyframes medalPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+    /* ── Role chips ───────────────────────────────────────────────── */
+    .role-chip          { display:inline-block; font-size:.7rem; font-weight:700; padding:.22em .6em; border-radius:20px; }
+    .role-lead_manager  { background:#dcfce7; color:#15803d; }
+    .role-telecaller    { background:#dbeafe; color:#1d4ed8; }
+    .role-super_admin   { background:#ede9fe; color:#6d28d9; }
+    .role-operation_head{ background:#cffafe; color:#0e7490; }
+
+    /* ── Call chips ───────────────────────────────────────────────── */
+    .call-chip {
+        display:inline-flex; align-items:center; gap:3px;
+        font-size:.7rem; font-weight:700;
+        padding:.2em .5em; border-radius:20px; white-space:nowrap;
+    }
+    .call-connected     { background:#dcfce7; color:#15803d; }
+    .call-not-connected { background:#fee2e2; color:#b91c1c; }
+
+    /* ── Leaderboard table ────────────────────────────────────────── */
+    .table-outer {
+        overflow-x: auto;
+        overflow-y: visible;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+
+        /* Custom slim scrollbar */
+        scrollbar-width: thin;
+        scrollbar-color: rgba(99,102,241,.4) rgba(99,102,241,.08);
+    }
+
+    /* Webkit scrollbar (Chrome/Safari) */
+    .table-outer::-webkit-scrollbar {
+        height: 6px;
+    }
+    .table-outer::-webkit-scrollbar-track {
+        background: rgba(99,102,241,.06);
+        border-radius: 10px;
+    }
+    .table-outer::-webkit-scrollbar-thumb {
+        background: rgba(99,102,241,.35);
+        border-radius: 10px;
+    }
+    .table-outer::-webkit-scrollbar-thumb:hover {
+        background: rgba(99,102,241,.6);
+    }
+    .leaderboard-table {
+        min-width: 1200px;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
     .leaderboard-table thead th {
-        background: rgba(99,102,241,.08); color: #1e293b;
-        font-weight: 700; text-transform: uppercase;
-        font-size: .72rem; letter-spacing: .5px;
-        padding: 14px 12px; border: none;
+        background: rgba(99,102,241,.07);
+        color: #374151;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: .68rem;
+        letter-spacing: .45px;
+        padding: 11px 10px;
+        border: none;
         white-space: nowrap;
     }
     .leaderboard-table tbody tr {
-        background: white; transition: all .3s ease;
-        box-shadow: 0 2px 8px rgba(99,102,241,.04);
-        color: #1e293b;
+        background: #fff;
+        transition: background .2s ease, transform .2s ease;
     }
     .leaderboard-table tbody tr:hover {
-        background: linear-gradient(90deg,rgba(102,126,234,.05),rgba(255,255,255,1));
-        box-shadow: 0 8px 20px rgba(102,126,234,.2);
-        transform: translateY(-2px);
+        background: #f5f3ff;
+        transform: translateY(-1px);
     }
     .leaderboard-table tbody td {
-        padding: 12px; vertical-align: middle;
-        border: none; border-top: 6px solid transparent;
+        padding: 10px; vertical-align: middle;
+        border: none;
+        border-top: 1px solid #f1f5f9;
+        font-size: .8rem;
     }
     .leaderboard-table tbody tr:first-child td { border-top: none; }
 
-    /* ── Role chips ───────────────────────────────────── */
-    .role-chip {
-        display: inline-block; font-size: .72rem; font-weight: 700;
-        padding: .25em .65em; border-radius: 20px;
+    /* Sticky first two columns */
+    .leaderboard-table th:nth-child(1),
+    .leaderboard-table td:nth-child(1) {
+        position: sticky; left: 0; z-index: 2;
+        background: inherit;
+        box-shadow: 2px 0 5px rgba(0,0,0,.05);
+        min-width: 52px;
     }
-    .role-lead_manager   { background: #dcfce7; color: #15803d; }
-    .role-telecaller     { background: #dbeafe; color: #1d4ed8; }
-    .role-super_admin    { background: #ede9fe; color: #6d28d9; }
-    .role-operation_head { background: #cffafe; color: #0e7490; }
-
-    /* ── Call stat chips ──────────────────────────────── */
-    .call-chip {
-        display: inline-flex; align-items: center; gap: 3px;
-        font-size: .72rem; font-weight: 700;
-        padding: .2em .55em; border-radius: 20px; white-space: nowrap;
+    .leaderboard-table th:nth-child(2),
+    .leaderboard-table td:nth-child(2) {
+        position: sticky; left: 52px; z-index: 2;
+        background: inherit;
+        box-shadow: 2px 0 5px rgba(0,0,0,.04);
+        min-width: 140px;
     }
-    .call-connected     { background: #dcfce7; color: #15803d; }
-    .call-not-connected { background: #fee2e2; color: #b91c1c; }
-    .call-rate          { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+    .leaderboard-table thead th:nth-child(1),
+    .leaderboard-table thead th:nth-child(2) {
+        background: rgba(99,102,241,.07);
+        z-index: 3;
+    }
 
-    /* ── Misc ─────────────────────────────────────────── */
-    .badge { font-weight: 600; padding: .4em .8em; transition: all .2s ease; }
-    .badge:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+    /* Score column highlight */
+    .leaderboard-table th:last-child,
+    .leaderboard-table td:last-child {
+        background: rgba(99,102,241,.04);
+    }
 
+    /* ── Badge & misc ─────────────────────────────────────────────── */
+    .badge { font-weight: 600; padding: .35em .7em; }
+
+    /* ── Spinner ──────────────────────────────────────────────────── */
+    .spinner-professional {
+        width: 44px; height: 44px;
+        border: 4px solid rgba(102,126,234,.18);
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Confetti ─────────────────────────────────────────────────── */
     .confetti-piece {
-        position: fixed; width: 8px; height: 12px; top: -10px;
+        position: fixed; width: 7px; height: 11px; top: -10px;
         z-index: 9999; pointer-events: none;
         animation: confetti-fall linear forwards;
     }
@@ -160,62 +257,20 @@
         100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
     }
 
-    .page-title-box {
-        background: rgba(255,255,255,.98); border-radius: 16px;
-        padding: 24px !important;
-        box-shadow: 0 4px 20px rgba(99,102,241,.08);
-        backdrop-filter: blur(10px);
-    }
-    .page-title {
-        background: linear-gradient(135deg,#4f46e5,#7c3aed);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        background-clip: text; font-weight: 800; margin: 0;
-    }
-
-    .filter-card {
-        background: rgba(255,255,255,.98); border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(99,102,241,.08); border: none; color: #1e293b;
-    }
-
-    .spinner-professional {
-        width: 50px; height: 50px;
-        border: 4px solid rgba(102,126,234,.2);
-        border-top: 4px solid #667eea;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .medal-emoji {
-        font-size: 3rem; display: inline-block;
-        animation: medalPulse 2s ease-in-out infinite;
-        filter: drop-shadow(0 4px 8px rgba(0,0,0,.2));
-    }
-    @keyframes medalPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-
-    .value-highlight {
-        background: linear-gradient(135deg,rgba(16,185,129,.08),rgba(6,182,212,.08));
-        border-radius: 12px; padding: 14px;
-        border: 2px solid rgba(16,185,129,.2);
-    }
-
-    .fade-in-up { animation: fadeInUp .6s ease-out; }
+    /* ── Fade in up ───────────────────────────────────────────────── */
+    .fade-in-up { animation: fadeInUp .5s ease-out both; }
     @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(20px); }
+        from { opacity: 0; transform: translateY(16px); }
         to   { opacity: 1; transform: translateY(0); }
     }
 
     h1,h2,h3,h4,h5,h6 { color: #1e293b; }
     .text-muted { color: #64748b !important; }
 
-    #applyFilter {
-        background: linear-gradient(135deg,#4f46e5,#7c3aed) !important;
-        border: none;
-    }
-
-    @media (max-width: 768px) {
-        .rank-badge { width: 50px; height: 50px; font-size: 1.2rem; }
-        .rank-1::after { font-size: 2rem; top: -28px; }
+    @media (max-width: 576px) {
+        .stat-value { font-size: 1.2rem; }
+        .rank-badge-lg { width: 48px; height: 48px; font-size: 1.1rem; }
+        .rank-1::after { font-size: 1.4rem; top: -24px; }
     }
 </style>
 @endsection
@@ -226,11 +281,11 @@
 <div id="confettiContainer"></div>
 
 {{-- ── Page Title ──────────────────────────────────────────────── --}}
-<div class="row mb-4 mt-4">
+<div class="row mb-3">
     <div class="col-12">
-        <div class="page-title-box d-md-flex justify-content-md-between align-items-center">
-            <h4 class="page-title">
-                <i class="las la-trophy me-2" style="font-size:2rem;"></i>
+        <div class="page-title-box d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h4 class="page-title mb-0">
+                <i class="las la-trophy me-2" style="font-size:1.6rem; vertical-align:middle;"></i>
                 Performance Leaderboard
             </h4>
             <ol class="breadcrumb mb-0" style="background:transparent;">
@@ -242,16 +297,15 @@
 </div>
 
 {{-- ── Filters ─────────────────────────────────────────────────── --}}
-<div class="row mb-4">
+<div class="row mb-3">
     <div class="col-12">
-        <div class="card filter-card border-0">
-            <div class="card-body">
-                <div class="row align-items-end g-3">
+        <div class="card filter-card border-0 mb-0">
+            <div class="card-body py-3">
+                <div class="row g-2 align-items-end">
 
-                    {{-- Period --}}
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold">⏱️ Time Period</label>
-                        <select class="form-select shadow-sm" id="periodSelect" style="border-radius:10px;">
+                    <div class="col-xl-3 col-lg-3 col-md-6 col-12">
+                        <label class="form-label fw-semibold small mb-1">⏱️ Time Period</label>
+                        <select class="form-select form-select-sm" id="periodSelect">
                             <option value="day">Today</option>
                             <option value="week">This Week</option>
                             <option value="month" selected>This Month</option>
@@ -263,32 +317,28 @@
                         </select>
                     </div>
 
-                    {{-- Custom dates --}}
-                    <div class="col-md-2" id="startDateDiv" style="display:none;">
-                        <label class="form-label fw-bold">📅 Start Date</label>
-                        <input type="date" class="form-control shadow-sm" id="startDate"
-                               style="border-radius:10px;">
-                    </div>
-                    <div class="col-md-2" id="endDateDiv" style="display:none;">
-                        <label class="form-label fw-bold">📅 End Date</label>
-                        <input type="date" class="form-control shadow-sm" id="endDate"
-                               style="border-radius:10px;">
+                    <div class="col-xl-2 col-lg-2 col-md-6 col-6" id="startDateDiv" style="display:none;">
+                        <label class="form-label fw-semibold small mb-1">📅 Start</label>
+                        <input type="date" class="form-control form-control-sm" id="startDate">
                     </div>
 
-                    {{-- Role filter — NEW --}}
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold">👤 Role</label>
-                        <select class="form-select shadow-sm" id="roleFilter" style="border-radius:10px;">
+                    <div class="col-xl-2 col-lg-2 col-md-6 col-6" id="endDateDiv" style="display:none;">
+                        <label class="form-label fw-semibold small mb-1">📅 End</label>
+                        <input type="date" class="form-control form-control-sm" id="endDate">
+                    </div>
+
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+                        <label class="form-label fw-semibold small mb-1">👤 Role</label>
+                        <select class="form-select form-select-sm" id="roleFilter">
                             <option value="">All Staff</option>
                             <option value="lead_manager">Lead Managers</option>
                             <option value="telecaller">Telecallers</option>
                         </select>
                     </div>
 
-                    {{-- Branch --}}
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold">🏢 Branch</label>
-                        <select class="form-select shadow-sm" id="branchFilter" style="border-radius:10px;">
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+                        <label class="form-label fw-semibold small mb-1">🏢 Branch</label>
+                        <select class="form-select form-select-sm" id="branchFilter">
                             <option value="">All Branches</option>
                             @foreach($branches as $branch)
                                 <option value="{{ $branch->id }}">{{ $branch->name }}</option>
@@ -296,10 +346,8 @@
                         </select>
                     </div>
 
-                    {{-- Apply --}}
-                    <div class="col-md-1">
-                        <button type="button" class="btn btn-primary w-100 shadow" id="applyFilter"
-                                style="border-radius:10px; font-weight:bold;">
+                    <div class="col-xl-1 col-lg-1 col-md-4 col-12">
+                        <button type="button" class="btn btn-primary btn-sm w-100" id="applyFilter">
                             <i class="las la-filter me-1"></i>Apply
                         </button>
                     </div>
@@ -311,72 +359,67 @@
 </div>
 
 {{-- ── Summary Cards ───────────────────────────────────────────── --}}
-<div class="row mb-4" id="summaryCards">
+<div class="row g-3 mb-4" id="summaryCards">
     {{-- Populated via AJAX --}}
 </div>
 
 {{-- ── Top 3 Podium ────────────────────────────────────────────── --}}
 <div class="row mb-4">
-    <div class="col-12">
-        <div class="text-center mb-3">
-            <h3 class="fw-bold">
-                <i class="las la-medal me-2" style="font-size:2rem; vertical-align:middle;"></i>
-                Top Performers
-            </h3>
-            <p class="text-muted">Celebrating excellence in lead management</p>
-        </div>
+    <div class="col-12 text-center mb-2">
+        <h4 class="fw-bold mb-1">
+            <i class="las la-medal me-2" style="font-size:1.6rem;vertical-align:middle;"></i>
+            Top Performers
+        </h4>
+        <p class="text-muted small mb-0">Celebrating excellence in lead management</p>
     </div>
     <div class="col-12">
-        <div class="row justify-content-center" id="topPerformersContainer">
-            <div class="col-12 text-center py-5">
-                <div class="spinner-professional mx-auto"></div>
-                <p class="text-muted mt-3">Loading champions...</p>
+        <div class="row justify-content-center g-3" id="topPerformersContainer">
+            <div class="col-12 text-center py-4">
+                <div class="spinner-professional"></div>
+                <p class="text-muted mt-3 small">Loading champions...</p>
             </div>
         </div>
     </div>
 </div>
 
 {{-- ── Full Leaderboard Table ───────────────────────────────────── --}}
-<div class="row">
+<div class="row mb-4">
     <div class="col-12">
-        <div class="card glass-card border-0 shadow-lg">
-            <div class="card-header border-0"
-                 style="background:rgba(255,255,255,.3); border-radius:16px 16px 0 0;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="las la-list me-2"></i>Full Rankings
-                        <span class="badge bg-primary ms-2" id="userCount">0</span>
-                    </h5>
-                    <small class="text-muted" id="periodLabel"></small>
-                </div>
+        <div class="card border-0 shadow-sm" style="border-radius:18px;">
+            <div class="card-header border-0 bg-white d-flex justify-content-between align-items-center py-3 px-4">
+                <h5 class="mb-0 fw-bold">
+                    <i class="las la-list me-2 text-primary"></i>Full Rankings
+                    <span class="badge bg-primary ms-2" id="userCount">0</span>
+                </h5>
+                <small class="text-muted" id="periodLabel"></small>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive">
+                <div class="table-outer">
                     <table class="table mb-0 leaderboard-table">
                         <thead>
                             <tr>
-                                <th width="60">Rank</th>
+                                <th>#</th>
                                 <th>User</th>
                                 <th>Role</th>
                                 <th class="text-center">Assigned</th>
                                 <th class="text-center">🔥 Hot</th>
-                                <th class="text-center">📞 Contacted</th>
-                                <th class="text-center">🔔 Follow Up</th>
+                                <th class="text-center">Contacted</th>
+                                <th class="text-center">Follow Up</th>
                                 <th class="text-center">✅ Admitted</th>
-                                <th class="text-center">Admission %</th>
+                                <th class="text-center">Adm%</th>
                                 <th class="text-center">Calls</th>
-                                <th class="text-center">Connected</th>
-                                <th class="text-center">Not Connected</th>
-                                <th class="text-center">Connect %</th>
-                                <th class="text-center">Overdue F/ups</th>
-                                <th class="text-center">Score</th>
+                                <th class="text-center">📞 Conn.</th>
+                                <th class="text-center">📵 Missed</th>
+                                <th class="text-center">Conn%</th>
+                                <th class="text-center">Overdue</th>
+                                <th class="text-center">⭐ Score</th>
                             </tr>
                         </thead>
                         <tbody id="leaderboardTableBody">
                             <tr>
                                 <td colspan="15" class="text-center py-5">
-                                    <div class="spinner-professional mx-auto"></div>
-                                    <p class="text-muted mt-2">Loading rankings...</p>
+                                    <div class="spinner-professional"></div>
+                                    <p class="text-muted mt-3 small">Loading rankings...</p>
                                 </td>
                             </tr>
                         </tbody>
@@ -400,52 +443,47 @@ $(document).ready(function () {
     // ── Confetti ───────────────────────────────────────────────────
     function launchConfetti() {
         const colors = ['#667eea','#764ba2','#10b981','#f59e0b','#ef4444','#06b6d4','#f97316'];
-        const container = $('#confettiContainer');
-        for (let i = 0; i < 80; i++) {
+        for (let i = 0; i < 70; i++) {
             const el = $('<div class="confetti-piece"></div>');
             const dur = 2 + Math.random() * 2;
             el.css({
-                left               : Math.random() * 100 + '%',
-                background         : colors[Math.floor(Math.random() * colors.length)],
-                animationDuration  : dur + 's',
-                animationDelay     : Math.random() * .5 + 's',
-                borderRadius       : Math.random() > .5 ? '50%' : '2px',
+                left             : Math.random() * 100 + '%',
+                background       : colors[Math.floor(Math.random() * colors.length)],
+                animationDuration: dur + 's',
+                animationDelay   : Math.random() * .6 + 's',
+                borderRadius     : Math.random() > .5 ? '50%' : '2px',
             });
-            container.append(el);
+            $('#confettiContainer').append(el);
             setTimeout(() => el.remove(), dur * 1200);
         }
     }
 
     // ── Period toggle ──────────────────────────────────────────────
     $('#periodSelect').on('change', function () {
-        if ($(this).val() === 'custom') {
-            $('#startDateDiv, #endDateDiv').slideDown(300);
-        } else {
-            $('#startDateDiv, #endDateDiv').slideUp(300);
-        }
+        $('#startDateDiv, #endDateDiv').toggle($(this).val() === 'custom');
     });
 
-    // ── Load performance data ──────────────────────────────────────
+    // ── Load ───────────────────────────────────────────────────────
     function loadPerformanceData() {
         const data = {
-            period     : $('#periodSelect').val(),
-            role       : $('#roleFilter').val(),          // NEW
-            branch_id  : $('#branchFilter').val(),        // NEW
-            start_date : $('#startDate').val(),
-            end_date   : $('#endDate').val(),
+            period    : $('#periodSelect').val(),
+            role      : $('#roleFilter').val(),
+            branch_id : $('#branchFilter').val(),
+            start_date: $('#startDate').val(),
+            end_date  : $('#endDate').val(),
         };
 
-        const spinnerRow = (cols) => `
-            <tr><td colspan="${cols}" class="text-center py-5">
-                <div class="spinner-professional mx-auto"></div>
-                <p class="text-muted mt-2">Loading...</p>
+        const spinner = `
+            <tr><td colspan="15" class="text-center py-5">
+                <div class="spinner-professional"></div>
+                <p class="text-muted mt-3 small">Loading...</p>
             </td></tr>`;
 
-        $('#leaderboardTableBody').html(spinnerRow(15));
+        $('#leaderboardTableBody').html(spinner);
         $('#topPerformersContainer').html(`
             <div class="col-12 text-center py-4">
-                <div class="spinner-professional mx-auto"></div>
-                <p class="text-muted mt-3">Loading champions...</p>
+                <div class="spinner-professional"></div>
+                <p class="text-muted mt-3 small">Loading champions...</p>
             </div>`);
 
         $.ajax({
@@ -453,131 +491,63 @@ $(document).ready(function () {
             type   : 'GET',
             data   : data,
             success: function (res) {
-                if (res.success) {
-                    renderSummaryCards(res.summary);
-                    renderTopPerformers(res.leaderboard.slice(0, 3));
-                    renderTable(res.leaderboard);
-                    updatePeriodLabel(res.start_date, res.end_date);
-                    if (res.leaderboard.length > 0) launchConfetti();
-                }
+                if (!res.success) return;
+                renderSummaryCards(res.summary);
+                renderTopPerformers(res.leaderboard.slice(0, 3));
+                renderTable(res.leaderboard);
+                updatePeriodLabel(res.start_date, res.end_date);
+                if (res.leaderboard.length > 0) launchConfetti();
             },
             error: function () {
-                Swal.fire({
-                    icon: 'error', title: 'Oops…',
-                    text: 'Failed to load performance data.',
-                    confirmButtonColor: '#667eea',
-                });
+                Swal.fire({ icon:'error', title:'Oops…',
+                    text:'Failed to load performance data.',
+                    confirmButtonColor:'#667eea' });
             }
         });
     }
 
-    // ── Summary cards — now 6 cards incl. connected/not-connected ──
+    // ── Summary cards — 6 cards, 2-per-row on mobile ───────────────
     function renderSummaryCards(s) {
-        const connRate = s.avg_connection_rate ?? 0;
-        const connRateColor = connRate >= 60 ? 'success' : (connRate >= 40 ? 'warning' : 'danger');
+        const cr = s.avg_connection_rate ?? 0;
+        const crColor = cr >= 60 ? 'success' : cr >= 40 ? 'warning' : 'danger';
 
-        $('#summaryCards').html(`
-            <div class="col-xl-2 col-md-4 col-6 fade-in-up">
-                <div class="card stat-card border-0">
+        const card = (delay, iconBg, icon, iconColor, label, value, sub) => `
+            <div class="col-xl-2 col-lg-4 col-md-4 col-6 fade-in-up" style="animation-delay:${delay}s;">
+                <div class="card stat-card border-0 h-100">
                     <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted mb-1 fw-semibold small">Total Assigned</p>
-                                <h3 class="mb-0 fw-bold">${s.total_assigned}</h3>
+                        <div class="d-flex align-items-center justify-content-between gap-2">
+                            <div style="min-width:0;">
+                                <p class="stat-label text-muted mb-1">${label}</p>
+                                <div class="stat-value">${value}</div>
+                                ${sub ? `<div class="stat-sub text-muted mt-1">${sub}</div>` : ''}
                             </div>
-                            <div class="bg-primary bg-opacity-10 p-2 rounded-circle stat-icon">
-                                <i class="las la-clipboard-list text-primary" style="font-size:1.6rem;"></i>
+                            <div class="bg-${iconBg} bg-opacity-10 p-2 rounded-circle stat-icon">
+                                <i class="las ${icon} text-${iconColor}" style="font-size:1.3rem;"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </div>`;
 
-            <div class="col-xl-2 col-md-4 col-6 fade-in-up" style="animation-delay:.05s;">
-                <div class="card stat-card border-0">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted mb-1 fw-semibold small">Total Admitted</p>
-                                <h3 class="mb-0 fw-bold text-success">${s.total_admitted}</h3>
-                                <small class="text-success fw-bold">${s.avg_admission_rate}% avg</small>
-                            </div>
-                            <div class="bg-success bg-opacity-10 p-2 rounded-circle stat-icon">
-                                <i class="las la-check-circle text-success" style="font-size:1.6rem;"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-2 col-md-4 col-6 fade-in-up" style="animation-delay:.1s;">
-                <div class="card stat-card border-0">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted mb-1 fw-semibold small">🔥 Hot Leads</p>
-                                <h3 class="mb-0 fw-bold text-danger">${s.total_hot}</h3>
-                            </div>
-                            <div class="bg-danger bg-opacity-10 p-2 rounded-circle stat-icon">
-                                <i class="las la-fire text-danger" style="font-size:1.6rem;"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-2 col-md-4 col-6 fade-in-up" style="animation-delay:.15s;">
-                <div class="card stat-card border-0">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted mb-1 fw-semibold small">Total Calls</p>
-                                <h3 class="mb-0 fw-bold text-info">${s.total_calls}</h3>
-                            </div>
-                            <div class="bg-info bg-opacity-10 p-2 rounded-circle stat-icon">
-                                <i class="las la-phone text-info" style="font-size:1.6rem;"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-2 col-md-4 col-6 fade-in-up" style="animation-delay:.2s;">
-                <div class="card stat-card border-0">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted mb-1 fw-semibold small">📞 Connected</p>
-                                <h3 class="mb-0 fw-bold text-success">${s.total_connected}</h3>
-                                <small class="text-muted">${s.total_not_connected} not connected</small>
-                            </div>
-                            <div class="bg-success bg-opacity-10 p-2 rounded-circle stat-icon">
-                                <i class="las la-phone-volume text-success" style="font-size:1.6rem;"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-2 col-md-4 col-6 fade-in-up" style="animation-delay:.25s;">
-                <div class="card stat-card border-0">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted mb-1 fw-semibold small">Connect Rate</p>
-                                <h3 class="mb-0 fw-bold text-${connRateColor}">${connRate}%</h3>
-                                <div class="progress progress-thin mt-1" style="width:80px;">
-                                    <div class="progress-bar-green" style="width:${Math.min(connRate,100)}%;height:100%;border-radius:10px;"></div>
-                                </div>
-                            </div>
-                            <div class="bg-${connRateColor} bg-opacity-10 p-2 rounded-circle stat-icon">
-                                <i class="las la-percentage text-${connRateColor}" style="font-size:1.6rem;"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `);
+        $('#summaryCards').html(
+            card(0,     'primary', 'la-clipboard-list','primary',
+                 'Total Assigned',  s.total_assigned,  '') +
+            card(0.05,  'success', 'la-check-circle',  'success',
+                 'Total Admitted',  `<span class="text-success">${s.total_admitted}</span>`,
+                 `<span class="text-success fw-semibold">${s.avg_admission_rate}% avg</span>`) +
+            card(0.10,  'danger',  'la-fire',           'danger',
+                 '🔥 Hot Leads',    `<span class="text-danger">${s.total_hot}</span>`,  '') +
+            card(0.15,  'info',    'la-phone',          'info',
+                 'Total Calls',     `<span class="text-info">${s.total_calls}</span>`,   '') +
+            card(0.20,  'success', 'la-phone-volume',   'success',
+                 '📞 Connected',
+                 `<span class="text-success">${s.total_connected}</span>`,
+                 `<span class="text-danger">${s.total_not_connected} missed</span>`) +
+            card(0.25,  crColor,   'la-percentage',     crColor,
+                 'Connect Rate',
+                 `<span class="text-${crColor}">${cr}%</span>`,
+                 `<div class="prog-wrap mt-1" style="width:72px;"><div class="prog-fill-green" style="width:${Math.min(cr,100)}%;"></div></div>`)
+        );
     }
 
     // ── Top 3 podium ───────────────────────────────────────────────
@@ -585,10 +555,8 @@ $(document).ready(function () {
         if (!top.length) {
             $('#topPerformersContainer').html(`
                 <div class="col-12 text-center py-5">
-                    <div class="glass-card p-5 mx-auto" style="max-width:400px;">
-                        <i class="las la-trophy" style="font-size:4rem;color:#ccc;"></i>
-                        <p class="text-muted mt-3 mb-0">No performance data yet for this period</p>
-                    </div>
+                    <i class="las la-trophy" style="font-size:3.5rem;color:#ccc;"></i>
+                    <p class="text-muted mt-3">No performance data yet for this period</p>
                 </div>`);
             return;
         }
@@ -596,87 +564,72 @@ $(document).ready(function () {
         const medals = ['🥇','🥈','🥉'];
         let html = '';
         top.forEach(u => {
-            const admRate  = u.admission_rate   ?? 0;
-            const connRate = u.connection_rate  ?? 0;
+            const adm  = u.admission_rate  ?? 0;
+            const conn = u.connection_rate ?? 0;
             html += `
-            <div class="col-lg-4 col-md-6 mb-3 winner-card">
+            <div class="col-xl-4 col-lg-5 col-md-8 col-12 winner-card">
                 <div class="card glass-card border-0 h-100">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            <span class="medal-emoji">${medals[u.rank - 1]}</span>
-                        </div>
-                        <div class="rank-badge rank-${u.rank} mx-auto mb-3">
-                            <span style="font-weight:900;">#${u.rank}</span>
-                        </div>
+                    <div class="card-body p-4 text-center">
+                        <div class="mb-2"><span class="medal-emoji">${medals[u.rank-1]}</span></div>
+                        <div class="rank-badge rank-badge-lg rank-${u.rank} mx-auto mb-3">#${u.rank}</div>
 
                         <h5 class="fw-bold mb-1">${u.name}</h5>
-                        <p class="text-muted small mb-1">
-                            <span class="role-chip role-${u.role}">${formatRole(u.role)}</span>
-                        </p>
+                        <div class="mb-1"><span class="role-chip role-${u.role}">${formatRole(u.role)}</span></div>
                         <p class="text-muted small mb-3">${u.branch}</p>
 
-                        {{-- Lead Stats --}}
                         <div class="row g-2 mb-3">
                             <div class="col-4">
-                                <div class="p-2 rounded" style="background:rgba(13,110,253,.08);">
-                                    <h6 class="mb-0 fw-bold text-primary">${u.assigned}</h6>
+                                <div class="p-2 rounded" style="background:rgba(37,99,235,.07);">
+                                    <div class="fw-bold text-primary">${u.assigned}</div>
                                     <small class="text-muted" style="font-size:.66rem;">Assigned</small>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="p-2 rounded" style="background:rgba(239,68,68,.08);">
-                                    <h6 class="mb-0 fw-bold text-danger">${u.hot_leads}</h6>
+                                <div class="p-2 rounded" style="background:rgba(220,38,38,.07);">
+                                    <div class="fw-bold text-danger">${u.hot_leads}</div>
                                     <small class="text-muted" style="font-size:.66rem;">🔥 Hot</small>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="p-2 rounded" style="background:rgba(16,185,129,.08);">
-                                    <h6 class="mb-0 fw-bold text-success">${u.admitted}</h6>
+                                <div class="p-2 rounded" style="background:rgba(22,163,74,.07);">
+                                    <div class="fw-bold text-success">${u.admitted}</div>
                                     <small class="text-muted" style="font-size:.66rem;">✅ Admitted</small>
                                 </div>
                             </div>
                         </div>
 
-                        {{-- Admission rate bar --}}
                         <div class="mb-3">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="d-flex justify-content-between mb-1">
                                 <small class="text-muted">Admission Rate</small>
-                                <span class="badge bg-success">${admRate}%</span>
+                                <span class="badge bg-success">${adm}%</span>
                             </div>
-                            <div class="progress progress-thin">
-                                <div class="progress-bar progress-bar-gradient"
-                                     style="width:${Math.min(admRate,100)}%"
-                                     role="progressbar"></div>
+                            <div class="prog-wrap">
+                                <div class="prog-fill-purple" style="width:${Math.min(adm,100)}%;"></div>
                             </div>
                         </div>
 
-                        {{-- Call stats: connected / not connected --}}
                         <div class="value-highlight">
-                            <div class="row g-2 mb-2">
+                            <div class="row g-2 mb-2 text-center">
                                 <div class="col-6 border-end">
-                                    <small class="text-muted d-block" style="font-size:.7rem;">📞 Connected</small>
-                                    <h5 class="mb-0 fw-bold text-success">${u.calls_connected}</h5>
+                                    <small class="text-muted d-block" style="font-size:.68rem;">📞 Connected</small>
+                                    <div class="fw-bold text-success fs-6">${u.calls_connected}</div>
                                 </div>
                                 <div class="col-6">
-                                    <small class="text-muted d-block" style="font-size:.7rem;">📵 Not Connected</small>
-                                    <h5 class="mb-0 fw-bold text-danger">${u.calls_not_connected}</h5>
+                                    <small class="text-muted d-block" style="font-size:.68rem;">📵 Missed</small>
+                                    <div class="fw-bold text-danger fs-6">${u.calls_not_connected}</div>
                                 </div>
                             </div>
-                            <div>
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <small class="text-muted" style="font-size:.7rem;">Connection Rate</small>
-                                    <small class="fw-bold text-info">${connRate}%</small>
-                                </div>
-                                <div class="progress progress-thin">
-                                    <div class="progress-bar-green"
-                                         style="width:${Math.min(connRate,100)}%;height:100%;border-radius:10px;"></div>
-                                </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <small class="text-muted" style="font-size:.68rem;">Connection Rate</small>
+                                <small class="fw-bold text-info">${conn}%</small>
+                            </div>
+                            <div class="prog-wrap">
+                                <div class="prog-fill-green" style="width:${Math.min(conn,100)}%;"></div>
                             </div>
                         </div>
 
-                        {{-- Score --}}
                         <div class="mt-3">
-                            <span class="badge bg-primary fs-6 px-3 py-2">
+                            <span class="badge bg-primary px-3 py-2" style="font-size:.85rem;">
                                 ⭐ Score: ${u.score}
                             </span>
                         </div>
@@ -687,74 +640,49 @@ $(document).ready(function () {
         $('#topPerformersContainer').html(html);
     }
 
-    // ── Full leaderboard table ─────────────────────────────────────
+    // ── Full table ─────────────────────────────────────────────────
     function renderTable(board) {
         $('#userCount').text(board.length);
 
         if (!board.length) {
             $('#leaderboardTableBody').html(`
                 <tr><td colspan="15" class="text-center py-5 text-muted">
-                    <i class="las la-inbox" style="font-size:3rem;"></i>
-                    <p class="mt-2">No data available for this period / filter</p>
+                    <i class="las la-inbox" style="font-size:2.8rem;opacity:.3;"></i>
+                    <p class="mt-2 mb-0">No data for this period / filter</p>
                 </td></tr>`);
             return;
         }
 
         let html = '';
         board.forEach(u => {
-            const admRate   = u.admission_rate   ?? 0;
-            const connRate  = u.connection_rate  ?? 0;
+            const adm  = u.admission_rate  ?? 0;
+            const conn = u.connection_rate ?? 0;
 
-            const admBadge  = admRate  >= 50 ? 'bg-success'
-                            : admRate  >= 25 ? 'bg-warning text-dark'
-                            : 'bg-danger';
-            const connBadge = connRate >= 60 ? 'bg-success'
-                            : connRate >= 40 ? 'bg-warning text-dark'
-                            : 'bg-danger';
-            const overdueColor = u.overdue_followups > 0 ? 'bg-danger' : 'bg-success';
-            const scoreBadge   = u.score >= 20 ? 'bg-success'
-                               : u.score >= 10 ? 'bg-warning text-dark'
-                               : 'bg-secondary';
+            const admC  = adm  >= 50 ? 'bg-success' : adm  >= 25 ? 'bg-warning text-dark' : 'bg-danger';
+            const connC = conn >= 60 ? 'bg-success' : conn >= 40 ? 'bg-warning text-dark' : 'bg-danger';
+            const ovC   = u.overdue_followups > 0 ? 'bg-danger'  : 'bg-success';
+            const scrC  = u.score >= 20 ? 'bg-success' : u.score >= 10 ? 'bg-warning text-dark' : 'bg-secondary';
+            const rankCls = u.rank <= 3 ? u.rank : 'other';
 
             html += `
             <tr>
                 <td>
-                    <div class="rank-badge rank-${u.rank <= 3 ? u.rank : 'other'}"
-                         style="width:40px;height:40px;font-size:.9rem;">
-                        ${u.rank}
-                    </div>
+                    <div class="rank-badge rank-badge-sm rank-${rankCls}">${u.rank}</div>
                 </td>
                 <td>
-                    <a href="{{ url('/users') }}/${u.id}" class="text-decoration-none fw-bold">
+                    <a href="{{ url('/users') }}/${u.id}" class="fw-bold text-decoration-none text-dark">
                         ${u.name}
                     </a>
-                    <br>
-                    <small class="text-muted">${u.branch}</small>
+                    <div class="text-muted" style="font-size:.7rem;">${u.branch}</div>
                 </td>
-                <td>
-                    <span class="role-chip role-${u.role}">${formatRole(u.role)}</span>
-                </td>
-                <td class="text-center">
-                    <span class="badge bg-primary">${u.assigned}</span>
-                </td>
-                <td class="text-center">
-                    <span class="badge bg-danger">${u.hot_leads}</span>
-                </td>
-                <td class="text-center">
-                    <span class="badge bg-info">${u.contacted}</span>
-                </td>
-                <td class="text-center">
-                    <span class="badge" style="background:#f97316;">${u.follow_up}</span>
-                </td>
-                <td class="text-center">
-                    <span class="badge bg-success">${u.admitted}</span>
-                </td>
-                <td class="text-center">
-                    <span class="badge ${admBadge}">${admRate}%</span>
-                </td>
-                <td class="text-center">
-                    <span class="badge bg-secondary">${u.calls_total}</span>
-                </td>
+                <td><span class="role-chip role-${u.role}">${formatRole(u.role)}</span></td>
+                <td class="text-center"><span class="badge bg-primary">${u.assigned}</span></td>
+                <td class="text-center"><span class="badge bg-danger">${u.hot_leads}</span></td>
+                <td class="text-center"><span class="badge bg-info">${u.contacted}</span></td>
+                <td class="text-center"><span class="badge" style="background:#f97316;">${u.follow_up}</span></td>
+                <td class="text-center"><span class="badge bg-success">${u.admitted}</span></td>
+                <td class="text-center"><span class="badge ${admC}">${adm}%</span></td>
+                <td class="text-center"><span class="badge bg-secondary">${u.calls_total}</span></td>
                 <td class="text-center">
                     <span class="call-chip call-connected">
                         <i class="las la-phone"></i>${u.calls_connected}
@@ -765,33 +693,24 @@ $(document).ready(function () {
                         <i class="las la-phone-slash"></i>${u.calls_not_connected}
                     </span>
                 </td>
-                <td class="text-center">
-                    <span class="badge ${connBadge}">${connRate}%</span>
-                </td>
-                <td class="text-center">
-                    <span class="badge ${overdueColor}">${u.overdue_followups}</span>
-                </td>
-                <td class="text-center">
-                    <span class="badge ${scoreBadge} fs-6">${u.score}</span>
-                </td>
+                <td class="text-center"><span class="badge ${connC}">${conn}%</span></td>
+                <td class="text-center"><span class="badge ${ovC}">${u.overdue_followups}</span></td>
+                <td class="text-center"><span class="badge ${scrC}">${u.score}</span></td>
             </tr>`;
         });
         $('#leaderboardTableBody').html(html);
     }
 
-    // ── Period label ───────────────────────────────────────────────
     function updatePeriodLabel(start, end) {
-        $('#periodLabel').text(`${start}  →  ${end}`);
+        $('#periodLabel').text(`${start} → ${end}`);
     }
 
-    // ── Role formatter ─────────────────────────────────────────────
     function formatRole(role) {
         return (role || '').replace(/_/g,' ').replace(/\b\w/g, l => l.toUpperCase());
     }
 
-    // ── Events ────────────────────────────────────────────────────
     $('#applyFilter').on('click', loadPerformanceData);
-    loadPerformanceData(); // initial load
+    loadPerformanceData();
 });
 </script>
 @endsection
