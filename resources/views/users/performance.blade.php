@@ -330,9 +330,8 @@
                     <div class="col-xl-2 col-lg-3 col-md-4 col-6">
                         <label class="form-label fw-semibold small mb-1">👤 Role</label>
                         <select class="form-select form-select-sm" id="roleFilter">
-                            <option value="">All Staff</option>
-                            <option value="lead_manager">Lead Managers</option>
                             <option value="telecaller">Telecallers</option>
+                            <option value="lead_manager">Lead Managers</option>
                         </select>
                     </div>
 
@@ -407,11 +406,6 @@
                                 <th class="text-center">Follow Up</th>
                                 <th class="text-center">✅ Admitted</th>
                                 <th class="text-center">Adm%</th>
-                                <th class="text-center">Calls</th>
-                                <th class="text-center">📞 Conn.</th>
-                                <th class="text-center">📵 Missed</th>
-                                <th class="text-center">Conn%</th>
-                                <th class="text-center">Overdue</th>
                                 <th class="text-center">⭐ Score</th>
                             </tr>
                         </thead>
@@ -512,7 +506,7 @@ $(document).ready(function () {
         const crColor = cr >= 60 ? 'success' : cr >= 40 ? 'warning' : 'danger';
 
         const card = (delay, iconBg, icon, iconColor, label, value, sub) => `
-            <div class="col-xl-2 col-lg-4 col-md-4 col-6 fade-in-up" style="animation-delay:${delay}s;">
+            <div class="col-xl-3 col-lg-4 col-md-4 col-6 fade-in-up" style="animation-delay:${delay}s;">
                 <div class="card stat-card border-0 h-100">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center justify-content-between gap-2">
@@ -532,21 +526,15 @@ $(document).ready(function () {
         $('#summaryCards').html(
             card(0,     'primary', 'la-clipboard-list','primary',
                  'Total Assigned',  s.total_assigned,  '') +
-            card(0.05,  'success', 'la-check-circle',  'success',
-                 'Total Admitted',  `<span class="text-success">${s.total_admitted}</span>`,
-                 `<span class="text-success fw-semibold">${s.avg_admission_rate}% avg</span>`) +
             card(0.10,  'danger',  'la-fire',           'danger',
                  '🔥 Hot Leads',    `<span class="text-danger">${s.total_hot}</span>`,  '') +
-            card(0.15,  'info',    'la-phone',          'info',
-                 'Total Calls',     `<span class="text-info">${s.total_calls}</span>`,   '') +
             card(0.20,  'success', 'la-phone-volume',   'success',
                  '📞 Connected',
                  `<span class="text-success">${s.total_connected}</span>`,
                  `<span class="text-danger">${s.total_not_connected} missed</span>`) +
-            card(0.25,  crColor,   'la-percentage',     crColor,
-                 'Connect Rate',
-                 `<span class="text-${crColor}">${cr}%</span>`,
-                 `<div class="prog-wrap mt-1" style="width:72px;"><div class="prog-fill-green" style="width:${Math.min(cr,100)}%;"></div></div>`)
+            card(0.05,  'success', 'la-check-circle',  'success',
+                 'Total Admitted',  `<span class="text-success">${s.total_admitted}</span>`,
+                 `<span class="text-success fw-semibold">${s.avg_admission_rate}% avg</span>`)
         );
     }
 
@@ -682,19 +670,6 @@ $(document).ready(function () {
                 <td class="text-center"><span class="badge" style="background:#f97316;">${u.follow_up}</span></td>
                 <td class="text-center"><span class="badge bg-success">${u.admitted}</span></td>
                 <td class="text-center"><span class="badge ${admC}">${adm}%</span></td>
-                <td class="text-center"><span class="badge bg-secondary">${u.calls_total}</span></td>
-                <td class="text-center">
-                    <span class="call-chip call-connected">
-                        <i class="las la-phone"></i>${u.calls_connected}
-                    </span>
-                </td>
-                <td class="text-center">
-                    <span class="call-chip call-not-connected">
-                        <i class="las la-phone-slash"></i>${u.calls_not_connected}
-                    </span>
-                </td>
-                <td class="text-center"><span class="badge ${connC}">${conn}%</span></td>
-                <td class="text-center"><span class="badge ${ovC}">${u.overdue_followups}</span></td>
                 <td class="text-center"><span class="badge ${scrC}">${u.score}</span></td>
             </tr>`;
         });

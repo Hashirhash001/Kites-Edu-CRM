@@ -237,19 +237,6 @@
                         </a>
                     </li>
 
-                    {{-- Overdue Follow-ups (visible to all roles that have any) --}}
-                    @if($overdueFollowupsCount > 0)
-                    <li class="nav-item">
-                        <a class="nav-link text-danger"
-                           href="{{ route('edu-leads.index') }}?filter=overdue">
-                            <i class="las la-exclamation-triangle menu-icon"></i>
-                            <span>Overdue Follow-ups
-                                <span class="badge bg-danger ms-2">{{ $overdueFollowupsCount }}</span>
-                            </span>
-                        </a>
-                    </li>
-                    @endif
-
                     {{-- Quick Actions — all roles that can create --}}
                     @if($authUser->canCreateLeads())
                     <li class="menu-label mt-3"><span>Quick Actions</span></li>
@@ -398,8 +385,8 @@
     </div>
 </div>
 
-<script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 <script src="{{ asset('assets/libs/simplebar/simplebar.min.js') }}"></script>
 <script src="{{ asset('assets/js/app.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

@@ -28,11 +28,11 @@ Route::middleware(['auth', 'active'])->group(function () {
 
     Route::get('/users',             [UserController::class, 'index'])->name('users.index');
     Route::post('/users',            [UserController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}/details/{type}', [UserController::class, 'details'])->name('users.details');
     Route::get('/users/{user}',      [UserController::class, 'show'])->name('users.show');
     Route::get('/users/{user}/edit', [UserController::class, 'edit']);
     Route::put('/users/{user}',      [UserController::class, 'update']);
     Route::delete('/users/{user}',   [UserController::class, 'destroy']);
-    Route::get('/users/{id}/details/{type}', [UserController::class, 'details']);
 
     // ============================================================
     // PROFILE
@@ -58,6 +58,8 @@ Route::middleware(['auth', 'active'])->group(function () {
 
     Route::patch('edu-leads/{eduLead}/status', [EduLeadController::class, 'updateStatus'])
      ->name('edu-leads.updateStatus');
+    Route::patch('edu-leads/{eduLead}/tracking', [EduLeadController::class, 'updateTracking'])
+     ->name('edu-leads.updateTracking');
 
     Route::prefix('edu-leads')->name('edu-leads.')->middleware(['auth'])->group(function () {
         Route::get('/bulk-import', [EduLeadBulkImportController::class, 'bulkImport'])->name('bulk-import');

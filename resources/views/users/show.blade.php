@@ -24,18 +24,13 @@
 
     .stat-card.clickable::after {
         content: 'Click to view';
-        position: absolute;
-        bottom: 7px; right: 10px;
-        font-size: 0.68rem;
-        color: #94a3b8;
-        opacity: 0;
-        transition: opacity 0.2s;
+        position: absolute; bottom: 7px; right: 10px;
+        font-size: 0.68rem; color: #94a3b8; opacity: 0; transition: opacity 0.2s;
     }
     .stat-card.clickable:hover::after { opacity: 1; }
-
     .stat-card .card-body { padding: 1rem; }
-    .metric-value  { font-size: 1.75rem; font-weight: 700; line-height: 1; margin-bottom: .4rem; }
-    .metric-label  { font-size: 0.78rem; color: #64748b; font-weight: 500; }
+    .metric-value { font-size: 1.75rem; font-weight: 700; line-height: 1; margin-bottom: .4rem; }
+    .metric-label { font-size: 0.78rem; color: #64748b; font-weight: 500; }
 
     .section-title {
         font-size: 1rem; font-weight: 700; color: #1e293b;
@@ -52,7 +47,6 @@
         margin: 0 auto 1rem;
     }
 
-    /* Off-canvas */
     .offcanvas { width: 90vw !important; max-width: 1100px !important; }
     .offcanvas-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -120,6 +114,12 @@
                         <i class="las la-phone text-success"></i>
                         <small class="ms-2">{{ $user->phone ?? 'N/A' }}</small>
                     </p>
+                    @if($user->branch)
+                    <p class="mb-2">
+                        <i class="las la-building text-info"></i>
+                        <small class="ms-2">{{ $user->branch->name }}</small>
+                    </p>
+                    @endif
                     <p class="mb-0">
                         <i class="las la-calendar text-warning"></i>
                         <small class="ms-2">Joined {{ $user->created_at->format('d M Y') }}</small>
@@ -128,9 +128,11 @@
 
                 <hr>
 
-                <a href="{{ route('users.index') }}" class="btn btn-outline-primary btn-sm w-100">
-                    <i class="las la-arrow-left me-1"></i> Back to Users
-                </a>
+                <div class="d-flex flex-column gap-2">
+                    <a href="{{ route('users.index') }}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="las la-arrow-left me-1"></i> Back to Users
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -139,11 +141,11 @@
     <div class="col-lg-9 col-md-8">
 
         {{-- ════════════════════════════════════════════════════════
-             TELECALLERS / LEAD MANAGERS — ASSIGNED EDU LEADS
+             TELECALLER + LEAD MANAGER — ASSIGNED LEADS
         ════════════════════════════════════════════════════════ --}}
-        @if(in_array($user->role, ['telecallers', 'lead_manager']))
+        @if(in_array($user->role, ['telecaller', 'lead_manager']))
 
-        <h5 class="section-title">
+        <h5 class="section-title" style="margin-top:0;">
             <i class="las la-clipboard-list me-2"></i>Assigned Leads Overview
             <small class="text-muted ms-2 fw-normal" style="font-size:.75rem;">(Click cards to view details)</small>
         </h5>
@@ -201,7 +203,7 @@
             </div>
             <div class="col-xl-3 col-md-6 mb-3">
                 <div class="card stat-card danger clickable"
-                     onclick="showDetails('{{ $user->id }}', 'leads_not_interested', 'Not Interested Leads', {{ $leadsNotInterested }})">
+                     onclick="showDetails('{{ $user->id }}', 'leads_not_interested', 'Not Interested', {{ $leadsNotInterested }})">
                     <div class="card-body">
                         <div class="metric-value text-danger">{{ $leadsNotInterested }}</div>
                         <div class="metric-label">Not Interested</div>
@@ -234,7 +236,7 @@
         <div class="row mb-3">
             <div class="col-md-4 mb-3">
                 <div class="card stat-card danger clickable"
-                     onclick="showDetails('{{ $user->id }}', 'leads_hot', 'Hot Leads 🔥', {{ $leadsHot }})">
+                     onclick="showDetails('{{ $user->id }}', 'leads_hot', '🔥 Hot Leads', {{ $leadsHot }})">
                     <div class="card-body">
                         <div class="metric-value text-danger">{{ $leadsHot }}</div>
                         <div class="metric-label">🔥 Hot</div>
@@ -243,7 +245,7 @@
             </div>
             <div class="col-md-4 mb-3">
                 <div class="card stat-card warning clickable"
-                     onclick="showDetails('{{ $user->id }}', 'leads_warm', 'Warm Leads ☀️', {{ $leadsWarm }})">
+                     onclick="showDetails('{{ $user->id }}', 'leads_warm', '☀️ Warm Leads', {{ $leadsWarm }})">
                     <div class="card-body">
                         <div class="metric-value text-warning">{{ $leadsWarm }}</div>
                         <div class="metric-label">☀️ Warm</div>
@@ -252,7 +254,7 @@
             </div>
             <div class="col-md-4 mb-3">
                 <div class="card stat-card info clickable"
-                     onclick="showDetails('{{ $user->id }}', 'leads_cold', 'Cold Leads ❄️', {{ $leadsCold }})">
+                     onclick="showDetails('{{ $user->id }}', 'leads_cold', '❄️ Cold Leads', {{ $leadsCold }})">
                     <div class="card-body">
                         <div class="metric-value text-info">{{ $leadsCold }}</div>
                         <div class="metric-label">❄️ Cold</div>
@@ -261,7 +263,7 @@
             </div>
         </div>
 
-        {{-- Row 4: Follow-up & Call activity --}}
+        {{-- Row 4: Activity --}}
         <h5 class="section-title">
             <i class="las la-phone me-2"></i>Activity Overview
         </h5>
@@ -285,7 +287,8 @@
                 </div>
             </div>
             <div class="col-md-3 mb-3">
-                <div class="card stat-card success">
+                <div class="card stat-card success clickable"
+                     onclick="showDetails('{{ $user->id }}', 'call_logs', 'All Call Logs', {{ $totalCallLogs }})">
                     <div class="card-body">
                         <div class="metric-value text-success">{{ $totalCallLogs }}</div>
                         <div class="metric-label">Total Calls Logged</div>
@@ -305,11 +308,11 @@
         @endif
 
         {{-- ════════════════════════════════════════════════════════
-             SUPER ADMIN — CREATED LEADS
+             SUPER ADMIN / OPERATION HEAD — CREATED LEADS
         ════════════════════════════════════════════════════════ --}}
-        @if($user->role === 'super_admin')
+        @if(in_array($user->role, ['super_admin', 'operation_head']))
 
-        <h5 class="section-title">
+        <h5 class="section-title" style="margin-top:0;">
             <i class="las la-user-plus me-2"></i>Created Leads Overview
             <small class="text-muted ms-2 fw-normal" style="font-size:.75rem;">(Click cards to view details)</small>
         </h5>
@@ -335,7 +338,7 @@
             </div>
             <div class="col-md-4 mb-3">
                 <div class="card stat-card danger clickable"
-                     onclick="showDetails('{{ $user->id }}', 'created_not_interested', 'Not Interested (Created by User)', {{ $createdLeadsNotInterested }})">
+                     onclick="showDetails('{{ $user->id }}', 'created_not_interested', 'Not Interested (Created)', {{ $createdLeadsNotInterested }})">
                     <div class="card-body">
                         <div class="metric-value text-danger">{{ $createdLeadsNotInterested }}</div>
                         <div class="metric-label">Not Interested</div>
@@ -347,10 +350,9 @@
         @endif
 
         {{-- ════════════════════════════════════════════════════════
-             REPORTING USER / OTHER ROLES — PLACEHOLDER
+             OTHER ROLES
         ════════════════════════════════════════════════════════ --}}
-        @if(in_array($user->role, ['reporting_user']) ||
-            (!in_array($user->role, ['telecallers', 'lead_manager', 'super_admin'])))
+        @if(!in_array($user->role, ['telecaller', 'lead_manager', 'super_admin', 'operation_head']))
         <div class="card">
             <div class="card-body text-center py-5">
                 <i class="las la-user-shield" style="font-size:5rem; color:#cbd5e0;"></i>
@@ -382,7 +384,6 @@
         </div>
     </div>
 </div>
-
 @endsection
 
 @section('extra-scripts')
@@ -392,7 +393,6 @@ let currentOffcanvas = null;
 function showDetails(userId, type, title, count) {
     $('#offcanvasTitleText').text(title);
     $('#offcanvasCount').text(count);
-
     $('#offcanvasContent').html(`
         <div class="offcanvas-loading">
             <div class="spinner-border spinner-border-custom" role="status">
@@ -400,35 +400,36 @@ function showDetails(userId, type, title, count) {
             </div>
         </div>
     `);
-
     if (!currentOffcanvas) {
         currentOffcanvas = new bootstrap.Offcanvas(document.getElementById('detailsOffcanvas'));
     }
     currentOffcanvas.show();
-
     loadDetails(userId, type);
 }
 
 function loadDetails(userId, type, page = 1) {
+    const baseUrl = "{{ route('users.details', ['user' => $user->id, 'type' => '__TYPE__']) }}";
+    const url = baseUrl.replace('__TYPE__', type);
+
     $.ajax({
-        url:  `/users/${userId}/details/${type}`,
+        url:  url,
         type: 'GET',
         data: { page: page },
         success: function (response) {
             $('#offcanvasContent').html(response.html);
-
-            // Re-bind pagination inside offcanvas
             $('#offcanvasContent').find('.pagination a').on('click', function (e) {
                 e.preventDefault();
-                const page = new URL($(this).attr('href')).searchParams.get('page');
+                const page = new URL($(this).attr('href'), window.location.origin)
+                                .searchParams.get('page');
                 loadDetails(userId, type, page);
             });
         },
-        error: function () {
+        error: function (xhr) {
             $('#offcanvasContent').html(`
                 <div class="alert alert-danger">
                     <i class="las la-exclamation-triangle me-2"></i>
                     Failed to load data. Please try again.
+                    ${xhr.responseJSON?.message ? '<br><small>' + xhr.responseJSON.message + '</small>' : ''}
                 </div>
             `);
         }

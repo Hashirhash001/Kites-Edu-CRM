@@ -1260,10 +1260,10 @@
                         <h5><i class="las la-exclamation-circle"></i> Overdue Followups</h5>
                         <div class="section-header-right">
                             <span class="count-badge">{{ $followupData['overdueFollowups']->count() }}</span>
-                            <span class="toggle-icon">›</span>
+                            <span class="toggle-icon collapsed">›</span>
                         </div>
                     </div>
-                    <div id="overdueSection" class="followup-collapse-container p-3">
+                    <div id="overdueSection" class="followup-collapse-container p-3" style="display:none;">
                         <div class="d-flex flex-column gap-3">
                             @foreach($followupData['overdueFollowups'] as $followup)
                                 @include('partials.followup-card', ['followup' => $followup])
@@ -1284,10 +1284,10 @@
                         <h5><i class="las la-calendar-day"></i> Today's Followups</h5>
                         <div class="section-header-right">
                             <span class="count-badge">{{ $followupData['todayFollowups']->count() }}</span>
-                            <span class="toggle-icon">›</span>
+                            <span class="toggle-icon collapsed">›</span>
                         </div>
                     </div>
-                    <div id="todaySection" class="followup-collapse-container p-3">
+                    <div id="todaySection" class="followup-collapse-container p-3" style="display:none;">
                         <div class="d-flex flex-column gap-3">
                             @foreach($followupData['todayFollowups'] as $followup)
                                 @include('partials.followup-card', ['followup' => $followup])
@@ -1350,10 +1350,10 @@
         {{-- ── All-clear empty state ────────────────────────────────── --}}
         @php
             $hasAnyFollowup =
-                (isset($followupData['overdueFollowups'])    && $followupData['overdueFollowups']->count() > 0)    ||
-                (isset($followupData['todayFollowups'])      && $followupData['todayFollowups']->count() > 0)      ||
-                (isset($followupData['thisWeekFollowups'])   && $followupData['thisWeekFollowups']->count() > 0)   ||
-                (isset($followupData['thisMonthFollowups'])  && $followupData['thisMonthFollowups']->count() > 0);
+                (isset($followupData['overdueFollowups'])   && $followupData['overdueFollowups']->count() > 0)   ||
+                (isset($followupData['todayFollowups'])     && $followupData['todayFollowups']->count() > 0)     ||
+                (isset($followupData['thisWeekFollowups'])  && $followupData['thisWeekFollowups']->count() > 0)  ||
+                (isset($followupData['thisMonthFollowups']) && $followupData['thisMonthFollowups']->count() > 0);
         @endphp
         @if(!$hasAnyFollowup)
         <div class="row mb-3">

@@ -3,12 +3,12 @@
     $authUser = auth()->user();
 
     $statusLabels = [
-        'pending'        => ['label' => '⏳ Pending',        'class' => 'fs-pending'],
-        'contacted'      => ['label' => '📞 Contacted',      'class' => 'fs-contacted'],
-        'follow_up'      => ['label' => '🔔 Follow Up',      'class' => 'fs-follow_up'],
-        'admitted'       => ['label' => '✅ Admitted',        'class' => 'fs-admitted'],
-        'not_interested' => ['label' => '❌ Not Interested',  'class' => 'fs-not_interested'],
-        'dropped'        => ['label' => '🚫 Dropped',         'class' => 'fs-dropped'],
+        'pending'        => ['label' => '⏳ Pending',       'class' => 'fs-pending'],
+        'contacted'      => ['label' => '📞 Contacted',     'class' => 'fs-contacted'],
+        'follow_up'      => ['label' => '🔔 Follow Up',     'class' => 'fs-follow_up'],
+        'admitted'       => ['label' => '✅ Admitted',       'class' => 'fs-admitted'],
+        'not_interested' => ['label' => '❌ Not Interested', 'class' => 'fs-not_interested'],
+        'dropped'        => ['label' => '🚫 Dropped',        'class' => 'fs-dropped'],
     ];
 
     $interestIcons = ['hot' => '🔥', 'warm' => '☀️', 'cold' => '❄️'];
@@ -16,7 +16,7 @@
 
 @forelse($leads as $lead)
 <tr>
-    {{-- Checkbox (canAssignLeads only) --}}
+    {{-- Checkbox --}}
     @if($authUser->canAssignLeads())
     <td class="checkbox-col">
         <div class="checkbox-wrapper">
@@ -55,12 +55,72 @@
         @endif
     </td>
 
+    {{-- Final Status --}}
+    <td>
+        @php
+            $s = $statusLabels[$lead->final_status] ?? [
+                'label' => ucfirst(str_replace('_', ' ', $lead->final_status ?? '')),
+                'class' => 'fs-pending'
+            ];
+        @endphp
+        <span class="fs-badge {{ $s['class'] }}">{{ $s['label'] }}</span>
+    </td>
+
+    {{-- ── Followups Column ────────────────────────── --}}
+    <td>
+        @php
+            $totalFu   = $lead->followups->count();
+            $pendingFu = $lead->followups->where('status', 'pending')->count();
+            $doneFu    = $lead->followups->where('status', 'completed')->count();
+
+            // Overdue = pending AND followup_date is STRICTLY before today (not today itself)
+            $overdueFu = $lead->followups->filter(function($f) {
+                return $f->status === 'pending'
+                    && \Carbon\Carbon::parse($f->followup_date)->startOfDay()->lt(\Carbon\Carbon::today());
+            })->count();
+
+            // Today = pending AND followup_date is today
+            $todayFu = $lead->followups->filter(function($f) {
+                return $f->status === 'pending'
+                    && \Carbon\Carbon::parse($f->followup_date)->isToday();
+            })->count();
+        @endphp
+
+        @if($totalFu > 0)
+            <div class="d-flex flex-column gap-1" style="min-width:80px;">
+                <span class="badge bg-secondary" title="Total followups">
+                    <i class="las la-list"></i> {{ $totalFu }}
+                </span>
+                @if($overdueFu > 0)
+                    <span class="badge bg-danger" style="font-size:10px;" title="Overdue (past dates)">
+                        <i class="las la-exclamation-circle"></i> {{ $overdueFu }} overdue
+                    </span>
+                @endif
+                @if($todayFu > 0)
+                    <span class="badge bg-warning text-dark" style="font-size:10px;" title="Due today">
+                        <i class="las la-bell"></i> {{ $todayFu }} today
+                    </span>
+                @endif
+                @if($pendingFu > 0 && ($pendingFu - $overdueFu - $todayFu) > 0)
+                    <span class="badge bg-info text-dark" style="font-size:10px;" title="Upcoming">
+                        <i class="las la-clock"></i> {{ $pendingFu - $overdueFu - $todayFu }} upcoming
+                    </span>
+                @endif
+                @if($doneFu > 0)
+                    <span class="badge bg-success" style="font-size:10px;" title="Completed">
+                        <i class="las la-check"></i> {{ $doneFu }} done
+                    </span>
+                @endif
+            </div>
+        @else
+            <span class="text-muted small">—</span>
+        @endif
+    </td>
+
     {{-- Agent --}}
     <td>
         @if($lead->agent_name)
-            <span class="small text-muted">
-                <i class="las la-user-tie"></i> {{ $lead->agent_name }}
-            </span>
+            <span class="small text-muted"><i class="las la-user-tie"></i> {{ $lead->agent_name }}</span>
         @else
             <span class="text-muted">—</span>
         @endif
@@ -100,14 +160,12 @@
         @endif
     </td>
 
+    {{-- Preferred State --}}
     <td>
-        @if ($lead->preferred_state)
-            <span class="small text-muted">
-                <i class="las la-user-tie"></i> {{ $lead->preferred_state }}
-            </span>
+        @if($lead->preferred_state)
+            <span class="small text-muted">{{ $lead->preferred_state }}</span>
         @else
             <span class="text-muted">—</span>
-
         @endif
     </td>
 
@@ -123,11 +181,8 @@
         @else
             <span class="text-muted">—</span>
         @endif
-        {{-- Addon course --}}
         @if($lead->addon_course)
-            <div class="text-info" style="font-size:11px;" title="Addon Course">
-                + {{ Str::limit($lead->addon_course, 20) }}
-            </div>
+            <div class="text-info" style="font-size:11px;" title="Addon">+ {{ Str::limit($lead->addon_course, 20) }}</div>
         @endif
     </td>
 
@@ -135,7 +190,7 @@
     <td>
         @if($lead->interest_level)
             <span class="badge
-                @if($lead->interest_level === 'hot')    bg-danger
+                @if($lead->interest_level === 'hot') bg-danger
                 @elseif($lead->interest_level === 'warm') bg-warning text-dark
                 @else bg-info text-dark @endif">
                 {{ $interestIcons[$lead->interest_level] ?? '' }} {{ ucfirst($lead->interest_level) }}
@@ -145,23 +200,12 @@
         @endif
     </td>
 
-    {{-- Final Status --}}
-    <td>
-        @php
-            $s = $statusLabels[$lead->final_status] ?? [
-                'label' => ucfirst(str_replace('_', ' ', $lead->final_status ?? '')),
-                'class' => 'fs-pending'
-            ];
-        @endphp
-        <span class="fs-badge {{ $s['class'] }}">{{ $s['label'] }}</span>
-    </td>
-
     {{-- Source --}}
     <td>
         <span class="small">{{ $lead->leadSource->name ?? '—' }}</span>
     </td>
 
-    {{-- Assigned To (telecaller) --}}
+    {{-- Assigned To --}}
     <td>
         @if($lead->assignedTo)
             <span class="badge bg-secondary assigned-to-name">{{ $lead->assignedTo->name }}</span>
@@ -176,33 +220,14 @@
     {{-- Created + Follow-up indicator --}}
     <td>
         <span class="text-muted small">{{ $lead->created_at->format('d M Y') }}</span>
-        @php $fDate = $lead->followup_date ? \Carbon\Carbon::parse($lead->followup_date) : null; @endphp
-        @if($fDate)
-            @if($fDate->isPast() && $lead->followup_status !== 'completed')
-                <div>
-                    <span class="badge bg-danger" style="font-size:10px;" title="Overdue follow-up">
-                        <i class="las la-clock"></i> Overdue
-                    </span>
-                </div>
-            @elseif($fDate->isToday())
-                <div>
-                    <span class="badge bg-warning text-dark" style="font-size:10px;">
-                        <i class="las la-bell"></i> Today
-                    </span>
-                </div>
-            @endif
-        @endif
     </td>
 
     {{-- Actions --}}
     <td>
         <div class="action-icons">
-            {{-- View: all roles --}}
             <a href="{{ route('edu-leads.show', $lead->id) }}" title="View" class="text-info">
                 <i class="las la-eye fs-18"></i>
             </a>
-
-            {{-- Edit: own assigned (telecaller) or branch (lead_manager) or above --}}
             @if(
                 $authUser->isSuperAdmin() ||
                 $authUser->isOperationHead() ||
@@ -213,27 +238,16 @@
                 <i class="las la-pen fs-18"></i>
             </a>
             @endif
-
-            {{-- Assign: canAssignLeads --}}
             @if($authUser->canAssignLeads())
-            <a href="javascript:void(0)"
-               class="assignLeadBtn text-primary"
-               title="Assign Lead"
-               data-id="{{ $lead->id }}"
-               data-code="{{ $lead->lead_code }}"
-               data-name="{{ $lead->name }}"
-               data-assignee="{{ $lead->assignedTo->name ?? '' }}">
+            <a href="javascript:void(0)" class="assignLeadBtn text-primary" title="Assign Lead"
+               data-id="{{ $lead->id }}" data-code="{{ $lead->lead_code }}"
+               data-name="{{ $lead->name }}" data-assignee="{{ $lead->assignedTo->name ?? '' }}">
                 <i class="las la-user-plus fs-18"></i>
             </a>
             @endif
-
-            {{-- Delete: super_admin only --}}
             @if($authUser->canDelete())
-            <a href="javascript:void(0)"
-               class="deleteLeadBtn text-danger"
-               title="Delete Lead"
-               data-id="{{ $lead->id }}"
-               data-name="{{ $lead->name }}">
+            <a href="javascript:void(0)" class="deleteLeadBtn text-danger" title="Delete Lead"
+               data-id="{{ $lead->id }}" data-name="{{ $lead->name }}">
                 <i class="las la-trash-alt fs-18"></i>
             </a>
             @endif
@@ -242,9 +256,8 @@
 </tr>
 @empty
 <tr>
-    <td colspan="16" class="text-center py-5 text-muted">
-        <i class="las la-graduation-cap"
-           style="font-size:3rem;opacity:.2;display:block;margin-bottom:8px;"></i>
+    <td colspan="17" class="text-center py-5 text-muted">
+        <i class="las la-graduation-cap" style="font-size:3rem;opacity:.2;display:block;margin-bottom:8px;"></i>
         No leads found matching your filters
     </td>
 </tr>

@@ -40,12 +40,6 @@
     .spinner-border-sm { width:1rem; height:1rem; border-width:.15em; }
     .conditional-section { transition:opacity .25s ease; }
     .conditional-section.hidden { display:none; }
-    .lead-info-badge {
-        background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-        color:white; padding:15px; border-radius:8px; margin-bottom:20px;
-    }
-    .lead-info-badge strong { font-size:14px; opacity:.9; }
-    .lead-info-badge span   { font-size:16px; font-weight:700; }
     .tracking-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:20px; margin-top:8px; }
 
     /* ── Select2 custom theme ─────────────────────────────────── */
@@ -62,19 +56,26 @@
         box-shadow:0 0 0 0.2rem rgba(102,126,234,0.25) !important;
     }
     .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
-        padding-top:3px; color:#495057;
+        padding-top:3px;
+        color:#495057;
     }
     .select2-container--bootstrap-5 .select2-dropdown {
-        border-color:#667eea; border-radius:6px;
+        border-color:#667eea;
+        border-radius:6px;
         box-shadow:0 4px 16px rgba(102,126,234,0.15);
     }
     .select2-container--bootstrap-5 .select2-results__option--highlighted {
         background-color:#667eea !important;
     }
     .select2-container--bootstrap-5 .select2-search__field {
-        border-color:#667eea !important; border-radius:4px !important;
+        border-color:#667eea !important;
+        border-radius:4px !important;
     }
     .select2-container { width:100% !important; }
+    .is-invalid + .select2-container--bootstrap-5 .select2-selection,
+    .select2-hidden-accessible.is-invalid ~ * .select2-selection {
+        border-color:#dc3545 !important;
+    }
 </style>
 @endsection
 
@@ -109,29 +110,29 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="mb-0"><i class="las la-edit me-2"></i> Edit Lead Information</h4>
+                    <h4 class="mb-0"><i class="las la-edit me-2"></i> Edit Lead — {{ $eduLead->lead_code }}</h4>
                     <p class="mb-0 mt-2 opacity-75">Update the details for this education lead</p>
                 </div>
 
                 <div class="card-body">
 
-                    {{-- Lead Info Badge --}}
-                    <div class="lead-info-badge">
+                    {{-- Lead Info Strip --}}
+                    <div class="mb-4 p-3 rounded" style="background:#f0f4ff; border-left:4px solid #667eea;">
                         <div class="row">
                             <div class="col-md-3">
-                                <strong>Lead Code</strong><br>
-                                <span>{{ $eduLead->lead_code }}</span>
+                                <strong class="text-muted d-block" style="font-size:11px;text-transform:uppercase;">Lead Code</strong>
+                                <span class="fw-bold">{{ $eduLead->lead_code }}</span>
                             </div>
                             <div class="col-md-3">
-                                <strong>Created</strong><br>
+                                <strong class="text-muted d-block" style="font-size:11px;text-transform:uppercase;">Created</strong>
                                 <span>{{ $eduLead->created_at->format('d M Y') }}</span>
                             </div>
                             <div class="col-md-3">
-                                <strong>Final Status</strong><br>
+                                <strong class="text-muted d-block" style="font-size:11px;text-transform:uppercase;">Final Status</strong>
                                 <span>{{ ucfirst(str_replace('_', ' ', $eduLead->final_status)) }}</span>
                             </div>
                             <div class="col-md-3">
-                                <strong>Interest</strong><br>
+                                <strong class="text-muted d-block" style="font-size:11px;text-transform:uppercase;">Interest</strong>
                                 <span>{{ $eduLead->interest_level ? ucfirst($eduLead->interest_level) : 'Not Set' }}</span>
                             </div>
                         </div>
@@ -147,6 +148,7 @@
                         <div class="section-title"><i class="las la-user me-2"></i> Basic Information</div>
 
                         <div class="row">
+                            {{-- Full Name --}}
                             <div class="col-md-6 mb-3">
                                 <label for="name" class="form-label required-field">Full Name</label>
                                 <input type="text" class="form-control" id="name" name="name"
@@ -154,16 +156,20 @@
                                        placeholder="Enter student's full name">
                                 <div class="invalid-feedback"></div>
                             </div>
+
+                            {{-- Email --}}
                             <div class="col-md-6 mb-3">
                                 <label for="email" class="form-label">Email Address</label>
                                 <input type="email" class="form-control" id="email" name="email"
                                        value="{{ old('email', $eduLead->email) }}"
                                        placeholder="student@example.com">
                                 <div class="invalid-feedback"></div>
+                                <small class="help-text">Optional — recommended for communication</small>
                             </div>
                         </div>
 
                         <div class="row">
+                            {{-- Phone --}}
                             <div class="col-md-4 mb-3">
                                 <label for="phone" class="form-label required-field">Phone Number</label>
                                 <input type="text" class="form-control" id="phone" name="phone"
@@ -171,6 +177,8 @@
                                        placeholder="+91 9876543210">
                                 <div class="invalid-feedback"></div>
                             </div>
+
+                            {{-- WhatsApp --}}
                             <div class="col-md-4 mb-3">
                                 <label for="whatsapp_number" class="form-label">WhatsApp Number</label>
                                 <input type="text" class="form-control" id="whatsapp_number"
@@ -178,6 +186,7 @@
                                        value="{{ old('whatsapp_number', $eduLead->whatsapp_number) }}"
                                        placeholder="+91 9876543210">
                                 <div class="invalid-feedback"></div>
+                                <small class="help-text">Leave blank to copy from phone</small>
                             </div>
 
                             {{-- Application Number --}}
@@ -195,6 +204,7 @@
                                            placeholder="e.g. 2026-0001" maxlength="20">
                                 </div>
                                 <div class="invalid-feedback" id="application_number_error"></div>
+                                <small class="help-text">Saved as AJK-<em>your input</em></small>
                             </div>
                         </div>
 
@@ -204,10 +214,10 @@
                                 <label for="state" class="form-label">State</label>
                                 <select class="form-select" id="state" name="state">
                                     <option value=""></option>
-                                    @foreach($states as $stateOption)
-                                        <option value="{{ $stateOption }}"
-                                            {{ old('state', $eduLead->state) === $stateOption ? 'selected' : '' }}>
-                                            {{ $stateOption }}
+                                    @foreach($states as $s)
+                                        <option value="{{ $s }}"
+                                            {{ old('state', $eduLead->state) === $s ? 'selected' : '' }}>
+                                            {{ $s }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -219,7 +229,6 @@
                                 <label for="district" class="form-label">District</label>
                                 <select class="form-select" id="district" name="district">
                                     <option value=""></option>
-                                    {{-- Options injected by JS on load --}}
                                 </select>
                                 <div class="invalid-feedback"></div>
                             </div>
@@ -269,7 +278,7 @@
                                 <label for="school_department" class="form-label">Stream / Department</label>
                                 <select class="form-select" id="school_department" name="school_department">
                                     <option value="">Select Stream</option>
-                                    @foreach(['Science','Commerce','Arts','Vocational','Other'] as $s)
+                                    @foreach(['Computer Science', 'Biology Science','Commerce','Arts & Journalism', 'Humanities','Vocational','Other'] as $s)
                                         <option value="{{ $s }}"
                                             {{ old('school_department', $eduLead->school_department) === $s ? 'selected' : '' }}>
                                             {{ $s }}
@@ -317,10 +326,10 @@
                                 <label for="preferred_state" class="form-label">Preferred State</label>
                                 <select class="form-select" id="preferred_state" name="preferred_state">
                                     <option value=""></option>
-                                    @foreach($states as $stateOption)
-                                        <option value="{{ $stateOption }}"
-                                            {{ old('preferred_state', $eduLead->preferred_state) === $stateOption ? 'selected' : '' }}>
-                                            {{ $stateOption }}
+                                    @foreach($states as $s)
+                                        <option value="{{ $s }}"
+                                            {{ old('preferred_state', $eduLead->preferred_state) === $s ? 'selected' : '' }}>
+                                            {{ $s }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -328,7 +337,7 @@
                                 <small class="help-text">State the student prefers to study in</small>
                             </div>
 
-                            {{-- Programme filter --}}
+                            {{-- Programme filter (UI only) --}}
                             <div class="col-md-4 mb-3">
                                 <label for="programme_filter" class="form-label">Programme</label>
                                 <select class="form-select" id="programme_filter">
@@ -347,7 +356,7 @@
                             <div class="col-md-4 mb-3">
                                 <label for="course_id" class="form-label">Specific Course</label>
                                 <select class="form-select" id="course_id" name="course_id">
-                                    <option value="">No specific course</option>
+                                    <option value="">No specific course yet</option>
                                     @foreach($courses as $course)
                                         <option value="{{ $course->id }}"
                                                 data-programme="{{ $course->programme_id }}"
@@ -361,6 +370,7 @@
                         </div>
 
                         <div class="row">
+                            {{-- Addon Course --}}
                             <div class="col-md-6 mb-3">
                                 <label for="addon_course" class="form-label">
                                     Addon Course <small class="text-muted fw-normal">(secondary interest)</small>
@@ -373,91 +383,14 @@
                         </div>
 
                         {{-- ═══════════════════════════════════════
-                             4. STATUS & TRACKING
-                        ═══════════════════════════════════════ --}}
-                        <div class="section-title mt-4">
-                            <i class="las la-tasks me-2"></i> Status & Tracking
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label for="status" class="form-label">Call Status</label>
-                                <select class="form-select" id="status" name="status">
-                                    <option value="">Select Status</option>
-                                    @foreach([
-                                        'pending'             => 'Pending',
-                                        'connected'           => 'Connected',
-                                        'not_connected'       => 'Not Connected',
-                                        'interested'          => 'Interested',
-                                        'not_interested'      => 'Not Interested',
-                                        'follow_up_scheduled' => 'Follow-up Scheduled',
-                                        'admitted'            => '✅ Admitted',
-                                        'closed'              => 'Closed',
-                                    ] as $val => $label)
-                                        <option value="{{ $val }}"
-                                            {{ old('status', $eduLead->status) === $val ? 'selected' : '' }}>
-                                            {{ $label }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <div class="invalid-feedback"></div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="final_status" class="form-label">Final Status</label>
-                                <select class="form-select" id="final_status" name="final_status">
-                                    <option value="">Select Final Status</option>
-                                    @foreach([
-                                        'pending'        => '⏳ Pending',
-                                        'contacted'      => '📞 Contacted',
-                                        'follow_up'      => '🔔 Follow Up',
-                                        'admitted'       => '✅ Admitted',
-                                        'not_interested' => '❌ Not Interested',
-                                        'dropped'        => '🚫 Dropped',
-                                    ] as $val => $label)
-                                        <option value="{{ $val }}"
-                                            {{ old('final_status', $eduLead->final_status) === $val ? 'selected' : '' }}>
-                                            {{ $label }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <div class="invalid-feedback"></div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="interest_level" class="form-label">Interest Level</label>
-                                <select class="form-select" id="interest_level" name="interest_level">
-                                    <option value="">Not assessed yet</option>
-                                    <option value="hot"  {{ old('interest_level', $eduLead->interest_level) === 'hot'  ? 'selected' : '' }}>🔥 Hot</option>
-                                    <option value="warm" {{ old('interest_level', $eduLead->interest_level) === 'warm' ? 'selected' : '' }}>☀️ Warm</option>
-                                    <option value="cold" {{ old('interest_level', $eduLead->interest_level) === 'cold' ? 'selected' : '' }}>❄️ Cold</option>
-                                </select>
-                                <div class="invalid-feedback"></div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="next_action" class="form-label">Next Action</label>
-                                <input type="text" class="form-control" id="next_action" name="next_action"
-                                       value="{{ old('next_action', $eduLead->next_action) }}"
-                                       placeholder="e.g. Send brochure, Schedule campus tour...">
-                                <div class="invalid-feedback"></div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="followup_date" class="form-label">Follow-up Date</label>
-                                <input type="date" class="form-control" id="followup_date" name="followup_date"
-                                       value="{{ old('followup_date', $eduLead->followup_date?->format('Y-m-d')) }}">
-                                <div class="invalid-feedback"></div>
-                            </div>
-                        </div>
-
-                        {{-- ═══════════════════════════════════════
-                             5. SOURCE & ASSIGNMENT
+                            4. SOURCE & ASSIGNMENT
                         ═══════════════════════════════════════ --}}
                         <div class="section-title mt-4">
                             <i class="las la-bullhorn me-2"></i> Source & Assignment
                         </div>
 
                         <div class="row">
+                            {{-- Lead Source --}}
                             <div class="col-md-4 mb-3">
                                 <label for="lead_source_id" class="form-label required-field">Lead Source</label>
                                 <select class="form-select" id="lead_source_id" name="lead_source_id">
@@ -473,39 +406,46 @@
                                 <div class="invalid-feedback"></div>
                             </div>
 
-                            {{-- Agent Name --}}
+                            {{-- Agent Name — shown only for Agent/Partner source --}}
                             @php
-                                $srcName = strtolower($eduLead->leadSource?->name ?? '');
-                                $isAgent = str_contains($srcName, 'agent') || str_contains($srcName, 'partner');
+                                $srcName   = strtolower($eduLead->leadSource?->name ?? '');
+                                $isAgent   = str_contains($srcName, 'agent') || str_contains($srcName, 'partner');
+                                $isReferral = str_contains($srcName, 'referral');
                             @endphp
+
                             <div class="col-md-4 mb-3 conditional-section {{ $isAgent ? '' : 'hidden' }}" id="agentNameField">
                                 <label for="agent_name" class="form-label">Agent / Partner Name</label>
                                 <input type="text" class="form-control" id="agent_name" name="agent_name"
-                                       value="{{ old('agent_name', $eduLead->agent_name) }}"
-                                       placeholder="Agent or partner name...">
+                                    value="{{ old('agent_name', $eduLead->agent_name) }}"
+                                    placeholder="Agent or partner name...">
                                 <div class="invalid-feedback"></div>
                             </div>
 
-                            {{-- Assign To --}}
-                            @if(in_array(auth()->user()->role, ['super_admin', 'operation_head']) || auth()->user()->isLeadManager())
-                            <div class="col-md-4 mb-3">
-                                <label for="assigned_to" class="form-label">Assign To (Telecaller)</label>
-                                <select class="form-select" id="assigned_to" name="assigned_to">
-                                    <option value="">— Unassigned —</option>
-                                    @foreach($assignableUsers as $u)
-                                        <option value="{{ $u->id }}"
-                                            {{ old('assigned_to', $eduLead->assigned_to) == $u->id ? 'selected' : '' }}>
-                                            {{ $u->name }}
-                                            @if($u->branch) — {{ $u->branch->name }} @endif
-                                        </option>
-                                    @endforeach
-                                </select>
+                            {{-- Referral Name — shown only for Referral source --}}
+                            <div class="col-md-4 mb-3 conditional-section {{ $isReferral ? '' : 'hidden' }}" id="referralNameField">
+                                <label for="referral_name" class="form-label">Referral Name</label>
+                                <input type="text" class="form-control" id="referral_name" name="referral_name"
+                                    value="{{ old('referral_name', $eduLead->referral_name) }}"
+                                    placeholder="Name of the person who referred...">
                                 <div class="invalid-feedback"></div>
                             </div>
-                            @endif
+
+                            {{-- Interest Level --}}
+                            <div class="col-md-4 mb-3">
+                                <label for="interest_level" class="form-label">Interest Level</label>
+                                <select class="form-select" id="interest_level" name="interest_level">
+                                    <option value="">Not assessed yet</option>
+                                    <option value="hot"  {{ old('interest_level', $eduLead->interest_level) === 'hot'  ? 'selected' : '' }}>🔥 Hot</option>
+                                    <option value="warm" {{ old('interest_level', $eduLead->interest_level) === 'warm' ? 'selected' : '' }}>☀️ Warm</option>
+                                    <option value="cold" {{ old('interest_level', $eduLead->interest_level) === 'cold' ? 'selected' : '' }}>❄️ Cold</option>
+                                </select>
+                                <div class="invalid-feedback"></div>
+                                <small class="help-text">Can be assessed after first contact</small>
+                            </div>
                         </div>
 
                         <div class="row">
+                            {{-- Branch --}}
                             @if(in_array(auth()->user()->role, ['super_admin', 'operation_head']))
                             <div class="col-md-4 mb-3">
                                 <label for="branch_id" class="form-label">Branch</label>
@@ -524,16 +464,16 @@
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Branch</label>
                                 <input type="text" class="form-control bg-light"
-                                       value="{{ auth()->user()->branch?->name ?? 'N/A' }}" readonly>
+                                    value="{{ auth()->user()->branch?->name ?? 'N/A' }}" readonly>
                                 <input type="hidden" name="branch_id" value="{{ auth()->user()->branch_id }}">
                             </div>
                             @endif
                         </div>
 
                         {{-- ═══════════════════════════════════════
-                             6. ADDITIONAL NOTES
+                             5. ADDITIONAL NOTES
                         ═══════════════════════════════════════ --}}
-                        <div class="section-title mt-4">
+                        {{-- <div class="section-title mt-4">
                             <i class="las la-info-circle me-2"></i> Additional Notes
                         </div>
 
@@ -550,70 +490,99 @@
                                           placeholder="Any additional notes...">{{ old('description', $eduLead->description) }}</textarea>
                                 <div class="invalid-feedback"></div>
                             </div>
-                        </div>
+                        </div> --}}
 
                         {{-- ═══════════════════════════════════════
-                             7. APPLICATION & PAYMENT TRACKING
+                            6. NEXT ACTION
                         ═══════════════════════════════════════ --}}
+                        @php
+                            $currentStatus = old('status', $eduLead->status ?? '');
+                            $isBooking     = $currentStatus === 'booking';
+                            $isCancelled   = $currentStatus === 'cancelled';
+                        @endphp
+
                         <div class="section-title mt-4">
-                            <i class="las la-file-invoice-dollar me-2"></i> Application & Payment Tracking
+                            <i class="las la-tasks me-2"></i> Next Action
                         </div>
 
                         <div class="tracking-card">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="whatsapp_link" class="form-label">
-                                        <i class="lab la-whatsapp text-success me-1"></i> WhatsApp Link
-                                    </label>
-                                    <input type="url" class="form-control" id="whatsapp_link"
-                                           name="whatsapp_link"
-                                           value="{{ old('whatsapp_link', $eduLead->whatsapp_link) }}"
-                                           placeholder="https://wa.me/group/...">
-                                    <div class="invalid-feedback"></div>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="application_form_url" class="form-label">
-                                        <i class="las la-file-alt text-primary me-1"></i> Application Form
-                                    </label>
-                                    <input type="url" class="form-control" id="application_form_url"
-                                           name="application_form_url"
-                                           value="{{ old('application_form_url', $eduLead->application_form_url) }}"
-                                           placeholder="https://university.com/apply/...">
-                                    <div class="invalid-feedback"></div>
-                                </div>
-                            </div>
 
                             <div class="row">
-                                <div class="col-md-4 mb-3">
+
+                                {{-- Status --}}
+                                <div class="col-md-6 mb-3">
+                                    <label for="status" class="form-label">
+                                        <i class="las la-toggle-on text-primary me-1"></i> Status
+                                    </label>
+                                    <select class="form-select" id="status" name="status">
+                                        <option value="" {{ $currentStatus === '' ? 'selected' : '' }}>— Select Status —</option>
+                                        <option value="whatsapp_link_submitted"    {{ $currentStatus === 'whatsapp_link_submitted'    ? 'selected' : '' }}>📲 WhatsApp Link Submitted</option>
+                                        <option value="application_form_submitted" {{ $currentStatus === 'application_form_submitted' ? 'selected' : '' }}>📋 Application Form Submitted</option>
+                                        <option value="booking"                    {{ $currentStatus === 'booking'                    ? 'selected' : '' }}>💳 Booking</option>
+                                        <option value="cancelled"                  {{ $currentStatus === 'cancelled'                  ? 'selected' : '' }}>🚫 Cancelled</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                                {{-- Final Lead Status --}}
+                                <div class="col-md-6 mb-3">
+                                    <label for="final_status" class="form-label">
+                                        <i class="las la-flag text-info me-1"></i> Final Lead Status
+                                    </label>
+                                    <select class="form-select" id="final_status" name="final_status">
+                                        <option value="pending"        {{ old('final_status', $eduLead->final_status ?? 'pending')  === 'pending'        ? 'selected' : '' }}>⏳ Pending</option>
+                                        <option value="contacted"      {{ old('final_status', $eduLead->final_status ?? '')          === 'contacted'      ? 'selected' : '' }}>📞 Contacted</option>
+                                        <option value="follow_up"      {{ old('final_status', $eduLead->final_status ?? '')          === 'follow_up'      ? 'selected' : '' }}>🔔 Follow Up</option>
+                                        <option value="admitted"       {{ old('final_status', $eduLead->final_status ?? '')          === 'admitted'       ? 'selected' : '' }}>✅ Admitted</option>
+                                        <option value="not_interested" {{ old('final_status', $eduLead->final_status ?? '')          === 'not_interested' ? 'selected' : '' }}>❌ Not Interested</option>
+                                        <option value="dropped"        {{ old('final_status', $eduLead->final_status ?? '')          === 'dropped'        ? 'selected' : '' }}>🚫 Dropped</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                            </div>
+
+                            {{-- Booking fields — shown only when status = "booking" --}}
+                            <div class="row conditional-section {{ $isBooking ? '' : 'hidden' }}" id="bookingFields">
+
+                                <div class="col-md-6 mb-3">
                                     <label for="booking_payment" class="form-label">
-                                        <i class="las la-rupee-sign text-warning me-1"></i> Booking Payment
+                                        <i class="las la-rupee-sign text-warning me-1"></i> Booking Payment (₹)
                                     </label>
                                     <input type="number" step="0.01" min="0" class="form-control"
-                                           id="booking_payment" name="booking_payment"
-                                           value="{{ old('booking_payment', $eduLead->booking_payment) }}"
-                                           placeholder="0.00">
+                                        id="booking_payment" name="booking_payment"
+                                        placeholder="0.00"
+                                        value="{{ old('booking_payment', $eduLead->booking_payment ?? '') }}">
                                     <div class="invalid-feedback"></div>
                                 </div>
-                                <div class="col-md-4 mb-3">
+
+                                <div class="col-md-6 mb-3">
                                     <label for="fees_collection" class="form-label">
-                                        <i class="las la-money-bill text-success me-1"></i> Fees Collection
+                                        <i class="las la-money-bill text-success me-1"></i> Fees Collected (₹)
                                     </label>
                                     <input type="number" step="0.01" min="0" class="form-control"
-                                           id="fees_collection" name="fees_collection"
-                                           value="{{ old('fees_collection', $eduLead->fees_collection) }}"
-                                           placeholder="0.00">
+                                        id="fees_collection" name="fees_collection"
+                                        placeholder="0.00"
+                                        value="{{ old('fees_collection', $eduLead->fees_collection ?? '') }}">
                                     <div class="invalid-feedback"></div>
                                 </div>
-                                <div class="col-md-4 mb-3">
+
+                            </div>
+
+                            {{-- Cancellation Reason — shown only when status = "cancelled" --}}
+                            <div class="row conditional-section {{ $isCancelled ? '' : 'hidden' }}" id="cancellationFields">
+
+                                <div class="col-md-12 mb-3">
                                     <label for="cancellation_reason" class="form-label">
                                         <i class="las la-ban text-danger me-1"></i> Cancellation Reason
                                     </label>
-                                    <textarea class="form-control" id="cancellation_reason"
-                                              name="cancellation_reason" rows="1"
-                                              placeholder="Reason if applicable...">{{ old('cancellation_reason', $eduLead->cancellation_reason) }}</textarea>
+                                    <textarea class="form-control" id="cancellation_reason" name="cancellation_reason"
+                                            rows="2" placeholder="Reason for cancellation...">{{ old('cancellation_reason', $eduLead->cancellation_reason ?? '') }}</textarea>
                                     <div class="invalid-feedback"></div>
                                 </div>
+
                             </div>
+
                         </div>
 
                         {{-- Action Buttons --}}
@@ -624,7 +593,6 @@
                                     <small class="text-muted">
                                         <i class="las la-info-circle me-1"></i>
                                         Last updated: {{ $eduLead->updated_at->format('d M Y, h:i A') }}
-                                        @if($eduLead->updatedBy ?? false) by {{ $eduLead->updatedBy->name }} @endif
                                     </small>
                                     <div class="d-flex gap-2">
                                         <a href="{{ route('edu-leads.show', $eduLead) }}" class="btn btn-secondary">
@@ -648,204 +616,194 @@
 
 @section('extra-scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-const districtMap = @json($districtMap);
+$(function () {
 
-// ── Select2 factory ───────────────────────────────────────────────────
-function s2(selector, placeholder) {
-    $(selector).select2({
-        theme:       'bootstrap-5',
-        placeholder: placeholder,
-        allowClear:  true,
-        width:       '100%',
-    });
-}
+    var districtMap   = @json($districtMap);
+    var savedDistrict = @json(old('district', $eduLead->district ?? ''));
+    var savedState    = @json(old('state',    $eduLead->state    ?? ''));
 
-// ── Populate district options then re-init Select2 ────────────────────
-function populateDistricts(state, selectedDistrict) {
-    const districts = districtMap[state] || [];
-    const $d = $('#district');
-    $d.select2('destroy');
-    $d.empty().append('<option value=""></option>');
-    districts.forEach(function (d) {
-        $d.append(new Option(d, d, d === selectedDistrict, d === selectedDistrict));
-    });
-    s2('#district', 'Search district...');
-}
+    function s2(sel, ph) {
+        $(sel).select2({ theme: 'bootstrap-5', placeholder: ph, allowClear: true, width: '100%' });
+    }
 
-$(document).ready(function () {
+    function populateDistricts(state, selected) {
+        var list = (state && Array.isArray(districtMap[state])) ? districtMap[state] : [];
+        var $d   = $('#district');
+        if ($d.hasClass('select2-hidden-accessible')) $d.select2('destroy');
+        $d.empty().append('<option value=""></option>');
+        $.each(list, function (i, d) {
+            $d.append(new Option(d, d, d === selected, d === selected));
+        });
+        $d.select2({
+            theme: 'bootstrap-5',
+            placeholder: list.length ? 'Search district...' : 'Select a state first...',
+            allowClear: true, width: '100%'
+        });
+    }
 
-    // ── Init all Select2 dropdowns ────────────────────────────────────
+    // ── INIT SELECT2 ─────────────────────────────────────────────────
     s2('#state',              'Search state...');
-    s2('#district',           'Search district...');
     s2('#preferred_state',    'Search preferred state...');
     s2('#programme_filter',   'Select programme...');
     s2('#course_id',          'Select course...');
     s2('#lead_source_id',     'Select source...');
     s2('#interest_level',     'Select interest level...');
     s2('#branch_id',          'Select branch...');
-    s2('#assigned_to',        'Select telecaller...');
-    s2('#status',             'Select call status...');
-    s2('#final_status',       'Select final status...');
     s2('#school_department',  'Select stream...');
     s2('#college_department', 'Select department...');
 
-    // ── State → District cascade (restore saved on load) ──────────────
-    populateDistricts(
-        '{{ old("state", $eduLead->state ?? "") }}',
-        '{{ old("district", $eduLead->district ?? "") }}'
-    );
+    // Populate districts on load using saved state + district
+    populateDistricts(savedState, savedDistrict);
 
-    $('#state').on('change', function () {
-        populateDistricts($(this).val(), '');
-    });
-
-    // ── Auto-fill WhatsApp ────────────────────────────────────────────
-    $('#phone').on('blur', function () {
-        const wa = $('#whatsapp_number');
-        if (!wa.val() || wa.val() === '{{ $eduLead->phone }}') {
-            wa.val($(this).val());
-        }
-    });
-
-    // ── Lead source → Agent Name ──────────────────────────────────────
-    function toggleAgent() {
-        const name = $('#lead_source_id option:selected').data('name') || '';
-        const show = name.includes('agent') || name.includes('partner');
-        $('#agentNameField').toggleClass('hidden', !show);
-        if (!show) $('#agent_name').val('');
-    }
-    $('#lead_source_id').on('change', toggleAgent);
-
-    // ── Institution type toggle ───────────────────────────────────────
-    $('input[name="institution_type"]').on('change', function () {
-        const val = $(this).val();
-        $('#schoolFields').toggleClass('hidden', val !== 'school');
-        $('#collegeFields').toggleClass('hidden', val !== 'college');
-        if (val !== 'school')  { $('#school').val('');  $('#school_department').val('').trigger('change'); }
-        if (val !== 'college') { $('#college').val(''); $('#college_department').val('').trigger('change'); }
-    });
-
-    // ── Programme → Course cascade ────────────────────────────────────
-    function applyCascade(resetCurrent) {
-        const programmeId = $('#programme_filter').val();
-        const current     = $('#course_id').val();
-
-        $('#course_id option').each(function () {
-            const $o = $(this);
-            if (!$o.val()) return;
-            const match = !programmeId || String($o.data('programme')) === String(programmeId);
-            $o.prop('disabled', !match);
+    // ── MASTER COURSE LIST ────────────────────────────────────────────
+    var allCourseOptions = [];
+    $('#course_id option').each(function () {
+        var v = $(this).val();
+        if (!v) return;
+        allCourseOptions.push({
+            val:       v,
+            text:      $(this).text().trim(),
+            programme: String($(this).attr('data-programme') || '')
         });
+    });
 
-        $('#course_id').trigger('change.select2');
-
-        if (resetCurrent && current) {
-            const ok = $('#course_id option[value="' + current + '"]:not([disabled])').length > 0;
-            if (!ok) $('#course_id').val('').trigger('change');
-        }
+    // ── PROGRAMME → COURSE CASCADE ────────────────────────────────────
+    function applyCascade(reset) {
+        var pid = String($('#programme_filter').val() || '');
+        var cur = $('#course_id').val();
+        var $cs = $('#course_id');
+        if ($cs.hasClass('select2-hidden-accessible')) $cs.select2('destroy');
+        $cs.empty().append('<option value="">No specific course yet</option>');
+        $.each(allCourseOptions, function (i, o) {
+            if (pid && o.programme !== pid) return;
+            $cs.append($('<option>', { value: o.val, text: o.text }).attr('data-programme', o.programme));
+        });
+        if (!reset) $cs.val(cur);
+        s2('#course_id', 'Select course...');
     }
 
     $('#programme_filter').on('change', function () { applyCascade(true); });
-    applyCascade(false); // restore pre-selected without wiping
+    $('#state').on('change', function () { populateDistricts($(this).val(), ''); });
 
-    // ── Form submission ───────────────────────────────────────────────
+    // ── LEAD SOURCE → agent / referral name fields ────────────────────
+    $('#lead_source_id').on('change', function () {
+        var name       = $(this).find('option:selected').data('name') || '';
+        var isAgent    = name.includes('agent') || name.includes('partner');
+        var isReferral = name.includes('referral');
+
+        $('#agentNameField').toggleClass('hidden', !isAgent);
+        $('#referralNameField').toggleClass('hidden', !isReferral);
+
+        if (!isAgent)    $('#agent_name').val('');
+        if (!isReferral) $('#referral_name').val('');
+    });
+
+    // ── INSTITUTION TYPE ─────────────────────────────────────────────
+    $('input[name="institution_type"]').on('change', function () {
+        var v = $(this).val();
+        $('#schoolFields').toggleClass('hidden',  v !== 'school');
+        $('#collegeFields').toggleClass('hidden', v !== 'college');
+        if (v !== 'school')  { $('#school').val('');  $('#school_department').val('').trigger('change'); }
+        if (v !== 'college') { $('#college').val(''); $('#college_department').val('').trigger('change'); }
+    });
+
+    // ── STATUS → booking / cancellation fields ────────────────────────
+    function handleStatusChange() {
+        var val         = $('#status').val();
+        var isBooking   = val === 'booking';
+        var isCancelled = val === 'cancelled';
+
+        $('#bookingFields').toggleClass('hidden', !isBooking);
+        $('#cancellationFields').toggleClass('hidden', !isCancelled);
+
+        if (!isBooking) {
+            $('#booking_payment').val('');
+            $('#fees_collection').val('');
+        }
+        if (!isCancelled) {
+            $('#cancellation_reason').val('');
+        }
+    }
+
+    $('#status').on('change', handleStatusChange);
+    // Run on load — PHP already pre-shows the right fields via Blade,
+    // but this keeps JS state in sync without double-hiding visible fields
+    // Only call if there is no server-side pre-shown value (avoids clearing existing data)
+    var initialStatus = $('#status').val();
+    if (initialStatus !== 'booking' && initialStatus !== 'cancelled') {
+        handleStatusChange();
+    }
+
+    // ── FORM SUBMIT ───────────────────────────────────────────────────
     $('#editLeadForm').on('submit', function (e) {
         e.preventDefault();
-
         $('.form-control, .form-select').removeClass('is-invalid');
         $('.invalid-feedback').text('');
         $('#institution_type_error, #application_number_error').text('');
 
-        // Build full application number
-        const suffix = $('#application_number_suffix').val().trim();
-        if (!$('#_appNumFull').length) {
-            $('<input type="hidden" id="_appNumFull" name="application_number">').appendTo(this);
+        var suffix = $('#application_number_suffix').val().trim();
+        if (!$('#appNumFull').length) {
+            $('<input type="hidden" id="appNumFull" name="application_number">').appendTo(this);
         }
-        $('#_appNumFull').val(suffix ? 'AJK-' + suffix : '');
+        $('#appNumFull').val(suffix ? 'AJK-' + suffix : '');
 
-        const $form      = $(this);
-        const $btn       = $('#submitBtn');
-        const origHtml   = $btn.html();
-
-        $btn.prop('disabled', true).html(
-            '<span class="spinner-border spinner-border-sm me-2"></span>Updating...'
-        );
-
-        // Temporarily re-enable disabled options so FormData sends them
-        $('#course_id option:disabled').prop('disabled', false);
-        const formData = new FormData($form[0]);
-        applyCascade(false);
+        var form = this, $btn = $('#submitBtn'), orig = $btn.html();
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Updating...');
 
         $.ajax({
-            url:         '{{ route("edu-leads.update", $eduLead) }}',
-            method:      'POST',
-            data:        formData,
+            url: '{{ route("edu-leads.update", $eduLead->id) }}',
+            method: 'POST',
+            data: new FormData(form),
             processData: false,
             contentType: false,
-            headers:     { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-
-            success: function (response) {
-                if (response.success) {
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (r) {
+                if (r.success) {
                     Swal.fire({
                         icon: 'success',
-                        title: 'Updated!',
-                        html: 'Lead <strong>' + response.lead_code + '</strong> updated successfully.',
-                        confirmButtonText:  'View Lead',
-                        showCancelButton:   true,
-                        cancelButtonText:   'Continue Editing',
-                        confirmButtonColor: '#667eea',
-                        cancelButtonColor:  '#6c757d',
-                    }).then(result => {
-                        if (result.isConfirmed) {
-                            window.location.href = response.redirect_url;
-                        } else {
-                            $btn.prop('disabled', false).html(origHtml);
-                        }
+                        title: 'Lead Updated!',
+                        html: 'Lead <strong>' + r.lead_code + '</strong> updated successfully.',
+                        confirmButtonText: 'View Lead',
+                        confirmButtonColor: '#667eea'
+                    }).then(function () {
+                        window.location.href = r.redirect_url;
                     });
                 }
             },
-
             error: function (xhr) {
-                $btn.prop('disabled', false).html(origHtml);
-
+                $btn.prop('disabled', false).html(orig);
                 if (xhr.status === 422) {
-                    const errors = xhr.responseJSON.errors;
-                    let html = '<ul class="mb-0 text-start">';
-
-                    $.each(errors, function (field, messages) {
+                    var errs = xhr.responseJSON.errors, html = '<ul class="mb-0 text-start">';
+                    $.each(errs, function (field, msgs) {
                         if (field === 'institution_type') {
-                            $('#institution_type_error').text(messages[0]);
+                            $('#institution_type_error').text(msgs[0]);
                         } else if (field === 'application_number') {
-                            $('#application_number_error').text(messages[0]);
+                            $('#application_number_error').text(msgs[0]);
                         } else {
-                            const $f = $('[name="' + field + '"]');
+                            var $f = $('[name="' + field + '"]');
                             $f.addClass('is-invalid');
-                            $f.closest('.mb-3').find('.invalid-feedback').first().text(messages[0]);
+                            $f.closest('.mb-3').find('.invalid-feedback').first().text(msgs[0]);
                         }
-                        html += '<li>' + messages[0] + '</li>';
+                        html += '<li>' + msgs[0] + '</li>';
                     });
-
-                    html += '</ul>';
-                    Swal.fire({ icon: 'error', title: 'Please fix the errors', html, confirmButtonColor: '#dc3545' });
-
-                    const $first = $('.is-invalid:first');
-                    if ($first.length) {
-                        $('html, body').animate({ scrollTop: $first.offset().top - 120 }, 400);
-                    }
+                    Swal.fire({
+                        icon: 'error', title: 'Please fix the errors',
+                        html: html + '</ul>', confirmButtonColor: '#dc3545'
+                    });
+                    var $first = $('.is-invalid').first();
+                    if ($first.length) $('html,body').animate({ scrollTop: $first.offset().top - 120 }, 400);
                 } else {
                     Swal.fire({
                         icon: 'error', title: 'Server Error',
-                        text: xhr.responseJSON?.message || 'Something went wrong.',
-                        confirmButtonColor: '#dc3545',
+                        text: (xhr.responseJSON && xhr.responseJSON.message) || 'Something went wrong.',
+                        confirmButtonColor: '#dc3545'
                     });
                 }
             }
         });
     });
 
-    // ── Clear validation state on input ──────────────────────────────
     $(document).on('input change', '.form-control, .form-select', function () {
         $(this).removeClass('is-invalid');
         $(this).closest('.mb-3').find('.invalid-feedback').first().text('');

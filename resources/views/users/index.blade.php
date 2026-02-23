@@ -235,7 +235,7 @@
                                 <th>Contact</th>
                                 <th>Role</th>
                                 <th>Branch</th>
-                                <th>Call Stats</th>
+                                {{-- <th>Call Stats</th> --}}
                                 <th>Leads</th>
                                 <th>Joined</th>
                                 <th>Status</th>

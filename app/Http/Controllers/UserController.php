@@ -6,6 +6,8 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Branch;
 use App\Models\EduLead;
+use App\Models\EduLeadFollowup;
+use App\Models\EduCallLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -34,15 +36,9 @@ class UserController extends Controller
         $query = User::with(['branch'])
             ->where('id', '!=', $currentUser->id);
 
-        if ($request->filled('role')) {
-            $query->where('role', $request->role);
-        }
-        if ($request->filled('status')) {
-            $query->where('is_active', $request->status);
-        }
-        if ($request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
-        }
+        if ($request->filled('role'))      $query->where('role', $request->role);
+        if ($request->filled('status'))    $query->where('is_active', $request->status);
+        if ($request->filled('branch_id')) $query->where('branch_id', $request->branch_id);
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -113,7 +109,7 @@ class UserController extends Controller
     }
 
     // ══════════════════════════════════════════════════════════════════
-    // EDIT (returns JSON for modal)
+    // EDIT
     // ══════════════════════════════════════════════════════════════════
     public function edit(User $user): JsonResponse
     {
@@ -125,18 +121,12 @@ class UserController extends Controller
         }
 
         if ($user->id === $authUser->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You cannot edit your own account here.',
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'You cannot edit your own account here.'], 403);
         }
 
         return response()->json([
             'success' => true,
-            'user'    => $user->only([
-                'id', 'name', 'email', 'phone',
-                'role', 'branch_id', 'is_active',
-            ]),
+            'user'    => $user->only(['id', 'name', 'email', 'phone', 'role', 'branch_id', 'is_active']),
         ]);
     }
 
@@ -153,10 +143,7 @@ class UserController extends Controller
         }
 
         if ($user->id === $authUser->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You cannot update your own account here.',
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'You cannot update your own account here.'], 403);
         }
 
         $validated = $request->validate([
@@ -211,13 +198,9 @@ class UserController extends Controller
         }
 
         if ($user->id === $authUser->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You cannot delete your own account!',
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'You cannot delete your own account!'], 403);
         }
 
-        // Unassign leads so no orphaned foreign keys remain
         EduLead::where('assigned_to', $user->id)->update(['assigned_to' => null]);
 
         $name = $user->name;
@@ -230,7 +213,7 @@ class UserController extends Controller
     }
 
     // ══════════════════════════════════════════════════════════════════
-    // SHOW (profile / stats page)
+    // SHOW
     // ══════════════════════════════════════════════════════════════════
     public function show(User $user)
     {
@@ -253,31 +236,33 @@ class UserController extends Controller
     {
         $perPage = 15;
 
-        // ── Lead query builders ───────────────────────────────────────
-        $assigned = fn() => $user->assignedEduLeads()
+        // ── Assigned leads base query ─────────────────────────────────
+        $assigned = fn() => EduLead::where('assigned_to', $user->id)
             ->with(['course', 'assignedTo', 'leadSource']);
 
-        $created = fn() => $user->createdEduLeads()
+        // ── Created leads base query ──────────────────────────────────
+        $created = fn() => EduLead::where('created_by', $user->id)
             ->with(['course', 'assignedTo', 'leadSource']);
 
+        // ── Lead query map ────────────────────────────────────────────
         $leadQueryMap = [
-            'assigned_leads'         => $assigned(),
-            'leads_pending'          => $assigned()->where('final_status', 'pending'),
-            'leads_contacted'        => $assigned()->where('final_status', 'contacted'),
-            'leads_followup'         => $assigned()->where('final_status', 'follow_up'),
-            'leads_admitted'         => $assigned()->where('final_status', 'admitted'),
-            'leads_not_interested'   => $assigned()->where('final_status', 'not_interested'),
-            'leads_dropped'          => $assigned()->where('final_status', 'dropped'),
-            'leads_hot'              => $assigned()->where('interest_level', 'hot'),
-            'leads_warm'             => $assigned()->where('interest_level', 'warm'),
-            'leads_cold'             => $assigned()->where('interest_level', 'cold'),
-            'created_leads'          => $created(),
-            'created_admitted'       => $created()->where('final_status', 'admitted'),
-            'created_not_interested' => $created()->where('final_status', 'not_interested'),
+            'assigned_leads'         => fn() => $assigned(),
+            'leads_pending'          => fn() => $assigned()->where('final_status', 'pending'),
+            'leads_contacted'        => fn() => $assigned()->where('final_status', 'contacted'),
+            'leads_followup'         => fn() => $assigned()->where('final_status', 'follow_up'),
+            'leads_admitted'         => fn() => $assigned()->where('final_status', 'admitted'),
+            'leads_not_interested'   => fn() => $assigned()->where('final_status', 'not_interested'),
+            'leads_dropped'          => fn() => $assigned()->where('final_status', 'dropped'),
+            'leads_hot'              => fn() => $assigned()->where('interest_level', 'hot'),
+            'leads_warm'             => fn() => $assigned()->where('interest_level', 'warm'),
+            'leads_cold'             => fn() => $assigned()->where('interest_level', 'cold'),
+            'created_leads'          => fn() => $created(),
+            'created_admitted'       => fn() => $created()->where('final_status', 'admitted'),
+            'created_not_interested' => fn() => $created()->where('final_status', 'not_interested'),
         ];
 
         if (isset($leadQueryMap[$type])) {
-            $leads = $leadQueryMap[$type]->latest()->paginate($perPage);
+            $leads = $leadQueryMap[$type]()->latest()->paginate($perPage);
             return response()->json([
                 'html' => view('users.partials.leads', compact('leads'))->render(),
             ]);
@@ -285,7 +270,7 @@ class UserController extends Controller
 
         // ── Follow-up queries ─────────────────────────────────────────
         if ($type === 'followups_pending') {
-            $followups = $user->assignedEduFollowups()
+            $followups = EduLeadFollowup::where('assigned_to', $user->id)
                 ->with('eduLead')
                 ->where('status', 'pending')
                 ->whereDate('followup_date', '>=', today())
@@ -298,7 +283,7 @@ class UserController extends Controller
         }
 
         if ($type === 'followups_overdue') {
-            $followups = $user->assignedEduFollowups()
+            $followups = EduLeadFollowup::where('assigned_to', $user->id)
                 ->with('eduLead')
                 ->where('status', 'pending')
                 ->whereDate('followup_date', '<', today())
@@ -310,9 +295,9 @@ class UserController extends Controller
             ]);
         }
 
-        // ── Call logs — now includes call_status breakdown ────────────
+        // ── Call log queries ──────────────────────────────────────────
         if ($type === 'call_logs') {
-            $callLogs = $user->eduCallLogs()
+            $callLogs = EduCallLog::where('user_id', $user->id)
                 ->with('eduLead')
                 ->latest('call_datetime')
                 ->paginate($perPage);
@@ -323,7 +308,7 @@ class UserController extends Controller
         }
 
         if ($type === 'calls_connected') {
-            $callLogs = $user->eduCallLogs()
+            $callLogs = EduCallLog::where('user_id', $user->id)
                 ->with('eduLead')
                 ->where('call_status', 'connected')
                 ->latest('call_datetime')
@@ -335,7 +320,7 @@ class UserController extends Controller
         }
 
         if ($type === 'calls_not_connected') {
-            $callLogs = $user->eduCallLogs()
+            $callLogs = EduCallLog::where('user_id', $user->id)
                 ->with('eduLead')
                 ->where('call_status', 'not_connected')
                 ->latest('call_datetime')
@@ -375,11 +360,9 @@ class UserController extends Controller
     {
         [$startDate, $endDate] = $this->resolveDateRange($request);
 
-        // Both lead_manager and telecaller appear in the leaderboard
         $usersQuery = User::where('is_active', true)
             ->whereIn('role', ['lead_manager', 'telecaller']);
 
-        // Optional role filter from the new dropdown
         if ($request->filled('role') && in_array($request->role, ['lead_manager', 'telecaller'])) {
             $usersQuery->where('role', $request->role);
         }
@@ -392,87 +375,113 @@ class UserController extends Controller
 
         $leaderboard = $users->map(function (User $user) use ($startDate, $endDate) {
 
-            $assigned = $user->assignedEduLeads()->count();
-
-            $admitted = $user->assignedEduLeads()
-                ->where('final_status', 'admitted')
-                ->whereBetween('updated_at', [$startDate, $endDate])
+            $assignedInPeriod = EduLead::where('assigned_to', $user->id)
+                ->whereBetween('created_at', [$startDate, $endDate])
                 ->count();
 
-            $hot = $user->assignedEduLeads()
+            $assignedTotal = EduLead::where('assigned_to', $user->id)->count();
+
+            $admitted = EduLead::where('assigned_to', $user->id)
+                ->where('final_status', 'admitted')
+                ->whereBetween('admitted_at', [$startDate, $endDate])
+                ->count();
+
+            $hot = EduLead::where('assigned_to', $user->id)
                 ->where('interest_level', 'hot')
                 ->whereBetween('updated_at', [$startDate, $endDate])
                 ->count();
 
-            $contacted = $user->assignedEduLeads()
+            $contacted = EduLead::where('assigned_to', $user->id)
                 ->where('final_status', 'contacted')
                 ->whereBetween('updated_at', [$startDate, $endDate])
                 ->count();
 
-            $followUp = $user->assignedEduLeads()
+            $followUp = EduLead::where('assigned_to', $user->id)
                 ->where('final_status', 'follow_up')
                 ->whereBetween('updated_at', [$startDate, $endDate])
                 ->count();
 
-            // ── Call stats split by status ────────────────────────────────
-            $callsTotal = $user->eduCallLogs()
+            $callsTotal = EduCallLog::where('user_id', $user->id)
                 ->whereBetween('call_datetime', [$startDate, $endDate])
                 ->count();
 
-            $callsConnected = $user->eduCallLogs()
+            $callsConnected = EduCallLog::where('user_id', $user->id)
                 ->where('call_status', 'connected')
                 ->whereBetween('call_datetime', [$startDate, $endDate])
                 ->count();
 
-            $callsNotConnected = $user->eduCallLogs()
+            $callsNotConnected = EduCallLog::where('user_id', $user->id)
                 ->where('call_status', 'not_connected')
                 ->whereBetween('call_datetime', [$startDate, $endDate])
                 ->count();
 
             $connectionRate = $callsTotal > 0
-                ? round(($callsConnected / $callsTotal) * 100, 1)
-                : 0;
+                ? round(($callsConnected / $callsTotal) * 100, 1) : 0;
 
-            $followupsPending = $user->assignedEduFollowups()
-                ->where('status', 'pending')
-                ->whereDate('followup_date', '>=', today())
+            $followupsCompleted = EduLeadFollowup::where('assigned_to', $user->id)
+                ->where('status', 'completed')
+                ->whereBetween('completed_at', [$startDate, $endDate])
                 ->count();
 
-            $overdueFollowups = $user->assignedEduFollowups()
+            $overdueFollowups = EduLeadFollowup::where('assigned_to', $user->id)
                 ->where('status', 'pending')
                 ->whereDate('followup_date', '<', today())
                 ->count();
 
-            $totalAdmitted = $user->assignedEduLeads()
-                ->where('final_status', 'admitted')
+            $followupsPending = EduLeadFollowup::where('assigned_to', $user->id)
+                ->where('status', 'pending')
+                ->whereDate('followup_date', '>=', today())
                 ->count();
 
-            $admissionRate = $assigned > 0
-                ? round(($totalAdmitted / $assigned) * 100, 1)
-                : 0;
+            $admissionRate = $assignedInPeriod > 0
+                ? round(($admitted / $assignedInPeriod) * 100, 1)
+                : ($assignedTotal > 0 ? round(($admitted / $assignedTotal) * 100, 1) : 0);
 
-            // Score: admitted ×3, connected calls ×1, hot ×2, overdue −1
-            $score = ($admitted * 3) + $callsConnected + ($hot * 2) - $overdueFollowups;
+            $totalFollowupsInPeriod = $followupsCompleted + $overdueFollowups + $followupsPending;
+            $followupCompletionRate = $totalFollowupsInPeriod > 0
+                ? round(($followupsCompleted / $totalFollowupsInPeriod) * 100, 1) : 0;
+
+            $score = 0;
+            $hasMeaningfulActivity = ($admitted > 0 || $hot > 0 || $contacted > 0
+                || $followUp > 0 || $callsConnected > 0 || $assignedInPeriod > 0);
+
+            if ($hasMeaningfulActivity) {
+                $score += $admitted           * 10;
+                $score += $hot                * 4;
+                $score += $followupsCompleted * 2;
+                $score += $callsConnected     * 1;
+                $score += $contacted          * 0.5;
+                $score += $followUp           * 0.5;
+
+                if ($admissionRate >= 50 && $admitted > 0) $score += $admitted * 5;
+                if ($connectionRate >= 60 && $callsTotal >= 5) $score += 10;
+
+                $score -= $overdueFollowups * 3;
+                $score = max(0, round($score, 1));
+            }
 
             return [
-                'id'                  => $user->id,
-                'name'                => $user->name,
-                'email'               => $user->email,
-                'role'                => $user->role,
-                'branch'              => $user->branch?->name ?? '—',
-                'assigned'            => $assigned,
-                'hot_leads'           => $hot,
-                'contacted'           => $contacted,
-                'follow_up'           => $followUp,
-                'admitted'            => $admitted,
-                'admission_rate'      => $admissionRate,
-                'calls_total'         => $callsTotal,
-                'calls_connected'     => $callsConnected,
-                'calls_not_connected' => $callsNotConnected,
-                'connection_rate'     => $connectionRate,
-                'followups_pending'   => $followupsPending,
-                'overdue_followups'   => $overdueFollowups,
-                'score'               => $score,
+                'id'                       => $user->id,
+                'name'                     => $user->name,
+                'email'                    => $user->email,
+                'role'                     => $user->role,
+                'branch'                   => $user->branch?->name ?? '—',
+                'assigned'                 => $assignedInPeriod,
+                'assigned_total'           => $assignedTotal,
+                'hot_leads'                => $hot,
+                'contacted'                => $contacted,
+                'follow_up'                => $followUp,
+                'admitted'                 => $admitted,
+                'admission_rate'           => $admissionRate,
+                'calls_total'              => $callsTotal,
+                'calls_connected'          => $callsConnected,
+                'calls_not_connected'      => $callsNotConnected,
+                'connection_rate'          => $connectionRate,
+                'followups_pending'        => $followupsPending,
+                'followups_completed'      => $followupsCompleted,
+                'followup_completion_rate' => $followupCompletionRate,
+                'overdue_followups'        => $overdueFollowups,
+                'score'                    => $score,
             ];
         })
         ->sortByDesc('score')
@@ -509,13 +518,9 @@ class UserController extends Controller
     // PRIVATE HELPERS
     // ══════════════════════════════════════════════════════════════════
 
-    /**
-     * Build stats array for the show() view.
-     * Always returns all keys so Blade never gets an undefined variable.
-     */
     private function buildUserStats(User $user): array
     {
-        $base = [
+        $stats = [
             'totalAssignedLeads'        => 0,
             'leadsPending'              => 0,
             'leadsContacted'            => 0,
@@ -523,100 +528,60 @@ class UserController extends Controller
             'leadsAdmitted'             => 0,
             'leadsNotInterested'        => 0,
             'leadsDropped'              => 0,
-            'conversionRate'            => 0,
             'leadsHot'                  => 0,
             'leadsWarm'                 => 0,
             'leadsCold'                 => 0,
+            'conversionRate'            => 0,
             'followupsPending'          => 0,
             'followupsOverdue'          => 0,
             'totalCallLogs'             => 0,
-            'callsConnected'            => 0,
-            'callsNotConnected'         => 0,
-            'connectionRate'            => 0,
             'callsToday'                => 0,
-            'callsConnectedToday'       => 0,
             'totalCreatedLeads'         => 0,
             'createdLeadsAdmitted'      => 0,
             'createdLeadsNotInterested' => 0,
         ];
 
-        // ── Lead Manager ──────────────────────────────────────────────
-        if ($user->isLeadManager()) {
-            $q       = $user->assignedEduLeads();
-            $total   = $q->count();
-            $admitted = (clone $q)->where('final_status', 'admitted')->count();
+        if (in_array($user->role, ['telecaller', 'lead_manager'])) {
+            $stats['totalAssignedLeads'] = EduLead::where('assigned_to', $user->id)->count();
+            $stats['leadsPending']       = EduLead::where('assigned_to', $user->id)->where('final_status', 'pending')->count();
+            $stats['leadsContacted']     = EduLead::where('assigned_to', $user->id)->where('final_status', 'contacted')->count();
+            $stats['leadsFollowUp']      = EduLead::where('assigned_to', $user->id)->where('final_status', 'follow_up')->count();
+            $stats['leadsAdmitted']      = EduLead::where('assigned_to', $user->id)->where('final_status', 'admitted')->count();
+            $stats['leadsNotInterested'] = EduLead::where('assigned_to', $user->id)->where('final_status', 'not_interested')->count();
+            $stats['leadsDropped']       = EduLead::where('assigned_to', $user->id)->where('final_status', 'dropped')->count();
+            $stats['leadsHot']           = EduLead::where('assigned_to', $user->id)->where('interest_level', 'hot')->count();
+            $stats['leadsWarm']          = EduLead::where('assigned_to', $user->id)->where('interest_level', 'warm')->count();
+            $stats['leadsCold']          = EduLead::where('assigned_to', $user->id)->where('interest_level', 'cold')->count();
 
-            $callsTotal     = $user->eduCallLogs()->count();
-            $callsConnected = $user->eduCallLogs()
-                ->where('call_status', 'connected')
-                ->count();
-            $callsNotConn   = $user->eduCallLogs()
-                ->where('call_status', 'not_connected')
+            $stats['conversionRate'] = $stats['totalAssignedLeads'] > 0
+                ? round(($stats['leadsAdmitted'] / $stats['totalAssignedLeads']) * 100, 1)
+                : 0;
+
+            $stats['followupsPending'] = EduLeadFollowup::where('assigned_to', $user->id)
+                ->where('status', 'pending')
+                ->whereDate('followup_date', '>=', today())
                 ->count();
 
-            $callsTodayTotal     = $user->eduCallLogs()
+            $stats['followupsOverdue'] = EduLeadFollowup::where('assigned_to', $user->id)
+                ->where('status', 'pending')
+                ->whereDate('followup_date', '<', today())
+                ->count();
+
+            $stats['totalCallLogs'] = EduCallLog::where('user_id', $user->id)->count();
+            $stats['callsToday']    = EduCallLog::where('user_id', $user->id)
                 ->whereDate('call_datetime', today())
                 ->count();
-            $callsTodayConnected = $user->eduCallLogs()
-                ->where('call_status', 'connected')
-                ->whereDate('call_datetime', today())
-                ->count();
-
-            return array_merge($base, [
-                'totalAssignedLeads'   => $total,
-                'leadsPending'         => (clone $q)->where('final_status', 'pending')->count(),
-                'leadsContacted'       => (clone $q)->where('final_status', 'contacted')->count(),
-                'leadsFollowUp'        => (clone $q)->where('final_status', 'follow_up')->count(),
-                'leadsAdmitted'        => $admitted,
-                'leadsNotInterested'   => (clone $q)->where('final_status', 'not_interested')->count(),
-                'leadsDropped'         => (clone $q)->where('final_status', 'dropped')->count(),
-                'conversionRate'       => $total > 0
-                    ? round(($admitted / $total) * 100, 1)
-                    : 0,
-                'leadsHot'             => (clone $q)->where('interest_level', 'hot')->count(),
-                'leadsWarm'            => (clone $q)->where('interest_level', 'warm')->count(),
-                'leadsCold'            => (clone $q)->where('interest_level', 'cold')->count(),
-                'followupsPending'     => $user->assignedEduFollowups()
-                                              ->where('status', 'pending')
-                                              ->whereDate('followup_date', '>=', today())
-                                              ->count(),
-                'followupsOverdue'     => $user->assignedEduFollowups()
-                                              ->where('status', 'pending')
-                                              ->whereDate('followup_date', '<', today())
-                                              ->count(),
-                'totalCallLogs'        => $callsTotal,
-                'callsConnected'       => $callsConnected,
-                'callsNotConnected'    => $callsNotConn,
-                'connectionRate'       => $callsTotal > 0
-                    ? round(($callsConnected / $callsTotal) * 100, 1)
-                    : 0,
-                'callsToday'           => $callsTodayTotal,
-                'callsConnectedToday'  => $callsTodayConnected,
-            ]);
         }
 
-        // ── Super Admin / Operation Head ──────────────────────────────
-        if ($user->isSuperAdmin() || $user->isOperationHead()) {
-            $cq    = $user->createdEduLeads();
-            $total = $cq->count();
-
-            return array_merge($base, [
-                'totalCreatedLeads'         => $total,
-                'createdLeadsAdmitted'      => (clone $cq)
-                    ->where('final_status', 'admitted')->count(),
-                'createdLeadsNotInterested' => (clone $cq)
-                    ->where('final_status', 'not_interested')->count(),
-            ]);
+        if (in_array($user->role, ['super_admin', 'operation_head'])) {
+            $stats['totalCreatedLeads']         = EduLead::where('created_by', $user->id)->count();
+            $stats['createdLeadsAdmitted']      = EduLead::where('created_by', $user->id)->where('final_status', 'admitted')->count();
+            $stats['createdLeadsNotInterested'] = EduLead::where('created_by', $user->id)->where('final_status', 'not_interested')->count();
         }
 
-        return $base;
+        return $stats;
     }
 
-    /**
-     * Resolve Carbon start/end dates from the request period param.
-     *
-     * @return array{0: Carbon, 1: Carbon}
-     */
     private function resolveDateRange(Request $request): array
     {
         $period = $request->get('period', 'month');
@@ -629,12 +594,8 @@ class UserController extends Controller
             'year'       => [Carbon::now()->startOfYear(),              Carbon::now()],
             'last_year'  => [Carbon::now()->subYear()->startOfYear(),   Carbon::now()->subYear()->endOfYear()],
             'custom'     => [
-                $request->filled('start_date')
-                    ? Carbon::parse($request->start_date)
-                    : Carbon::now()->startOfMonth(),
-                $request->filled('end_date')
-                    ? Carbon::parse($request->end_date)
-                    : Carbon::now(),
+                $request->filled('start_date') ? Carbon::parse($request->start_date) : Carbon::now()->startOfMonth(),
+                $request->filled('end_date')   ? Carbon::parse($request->end_date)   : Carbon::now(),
             ],
             default => [Carbon::now()->startOfMonth(), Carbon::now()],
         };

@@ -39,7 +39,7 @@ class EduLeadBulkImportController extends Controller
     }
 
     // =========================================================================
-    // DOWNLOAD TEMPLATE  — matches the uploaded Excel exactly
+    // DOWNLOAD TEMPLATE
     // =========================================================================
     public function downloadTemplate()
     {
@@ -48,29 +48,30 @@ class EduLeadBulkImportController extends Controller
         $sheet->setTitle('Student Follow-up CRM');
 
         $headers = [
-            'A1' => 'Lead ID',
-            'B1' => 'Student Name',
-            'C1' => 'Mobile Number',
-            'D1' => 'WhatsApp Number',
-            'E1' => 'Course Interested',
-            'F1' => 'Country / College',
-            'G1' => 'Source of Lead',
-            'H1' => 'Calling Staff Name',
-            'I1' => 'Call Date',
-            'J1' => 'Call Status (Connected/Not Connected)',
-            'K1' => 'Student Interest Level (Hot/Warm/Cold)',
-            'L1' => 'Follow-up Date',
-            'M1' => 'Follow-up Status',
-            'N1' => 'Remarks / Notes',
-            'O1' => 'Next Action',
-            'P1' => 'Final Status (Admitted / Not Interested / Pending)',
+            'A1' => '✅ Mobile Number',
+            'B1' => '✅ School / College Name',
+            'C1' => '✅ Department / Stream',
+            'D1' => 'Student Name',
+            'E1' => 'WhatsApp Number',
+            'F1' => 'Course Interested',
+            'G1' => 'Country',
+            'H1' => 'Source of Lead',
+            'I1' => 'Calling Staff Name',
+            'J1' => 'Call Date',
+            'K1' => 'Call Status (Connected/Not Connected)',
+            'L1' => 'Student Interest Level (Hot/Warm/Cold)',
+            'M1' => 'Follow-up Date',
+            'N1' => 'Follow-up Status',
+            'O1' => 'Remarks / Notes',
+            'P1' => 'Next Action',
+            'Q1' => 'Final Status (Admitted / Not Interested / Pending)',
         ];
 
         foreach ($headers as $cell => $label) {
             $sheet->setCellValue($cell, $label);
         }
 
-        $sheet->getStyle('A1:P1')->applyFromArray([
+        $sheet->getStyle('A1:Q1')->applyFromArray([
             'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D4ED8']],
             'alignment' => [
@@ -82,27 +83,39 @@ class EduLeadBulkImportController extends Controller
         $sheet->getRowDimension(1)->setRowHeight(42);
 
         $widths = [
-            'A' => 10, 'B' => 22, 'C' => 18, 'D' => 18, 'E' => 22,
-            'F' => 30, 'G' => 18, 'H' => 20, 'I' => 14, 'J' => 32,
-            'K' => 34, 'L' => 14, 'M' => 18, 'N' => 30, 'O' => 24, 'P' => 40,
+            'A' => 20, 'B' => 30, 'C' => 22, 'D' => 22, 'E' => 18,
+            'F' => 22, 'G' => 16, 'H' => 18, 'I' => 20, 'J' => 14,
+            'K' => 32, 'L' => 34, 'M' => 14, 'N' => 18, 'O' => 30,
+            'P' => 24, 'Q' => 40,
         ];
         foreach ($widths as $col => $w) {
             $sheet->getColumnDimension($col)->setWidth($w);
         }
 
+        // Example row
         $example = [
-            'A2' => '', 'B2' => 'Rahul Kumar', 'C2' => '+919876543210',
-            'D2' => '+919876543210', 'E2' => 'MBBS',
-            'F2' => 'Russia / Moscow State Medical University',
-            'G2' => 'Facebook', 'H2' => 'Aneesh', 'I2' => '11/01/2025',
-            'J2' => 'Connected', 'K2' => 'Hot', 'L2' => '15/01/2025',
-            'M2' => 'pending', 'N2' => 'Interested, needs fee structure',
-            'O2' => 'Send fee structure PDF', 'P2' => 'Pending',
+            'A2' => '+919876543210',
+            'B2' => 'St. Mary\'s High School',
+            'C2' => 'Science',
+            'D2' => 'Rahul Kumar',
+            'E2' => '+919876543210',
+            'F2' => 'MBBS',
+            'G2' => 'Russia',
+            'H2' => 'Facebook',
+            'I2' => 'Aneesh',
+            'J2' => '11/01/2025',
+            'K2' => 'Connected',
+            'L2' => 'Hot',
+            'M2' => '15/01/2025',
+            'N2' => 'pending',
+            'O2' => 'Interested, needs fee structure',
+            'P2' => 'Send fee structure PDF',
+            'Q2' => 'Pending',
         ];
         foreach ($example as $cell => $val) {
             $sheet->setCellValue($cell, $val);
         }
-        $sheet->getStyle('A2:P2')->applyFromArray([
+        $sheet->getStyle('A2:Q2')->applyFromArray([
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'DBEAFE']],
         ]);
         $sheet->freezePane('A2');
@@ -112,22 +125,28 @@ class EduLeadBulkImportController extends Controller
         $inst->setTitle('Instructions');
         $inst->fromArray([
             ['Column', 'Header Name', 'Required?', 'Accepted Values'],
-            ['A', 'Lead ID',       'No',  'Leave blank — auto-generated'],
-            ['B', 'Student Name',  'YES', 'Full name of student'],
-            ['C', 'Mobile Number', 'YES', '10-15 digits, e.g. +919876543210'],
-            ['D', 'WhatsApp Number', 'No', 'If blank, Mobile Number is used'],
-            ['E', 'Course Interested', 'No', 'e.g. MBBS, B.Tech, MBA, Nursing'],
-            ['F', 'Country / College', 'No', 'Format: Country / College Name'],
-            ['G', 'Source of Lead', 'No', 'Facebook, Google, Walk-in, Referral'],
-            ['H', 'Calling Staff Name', 'No', 'Must match a telecaller in the CRM'],
-            ['I', 'Call Date', 'No', 'DD/MM/YYYY'],
-            ['J', 'Call Status', 'No', 'Connected  or  Not Connected'],
-            ['K', 'Student Interest Level', 'No', 'Hot  /  Warm  /  Cold'],
-            ['L', 'Follow-up Date', 'No', 'DD/MM/YYYY'],
-            ['M', 'Follow-up Status', 'No', 'pending  /  completed'],
-            ['N', 'Remarks / Notes', 'No', 'Free text'],
-            ['O', 'Next Action', 'No', 'Free text'],
-            ['P', 'Final Status', 'No', 'pending / contacted / follow_up / admitted / not_interested / dropped'],
+            ['A', '✅ Mobile Number',      '✅ YES', '10-15 digits, e.g. +919876543210'],
+            ['B', '✅ School/College Name', '✅ YES', 'Name of school or college'],
+            ['C', '✅ Department/Stream',   '✅ YES', 'e.g. Science, Commerce, Arts, Engineering, Medical'],
+            ['D', 'Student Name',           'No',  'Full name of student'],
+            ['E', 'WhatsApp Number',        'No',  'If blank, Mobile Number is used'],
+            ['F', 'Course Interested',      'No',  'e.g. MBBS, B.Tech, MBA, Nursing'],
+            ['G', 'Country',                'No',  'e.g. Russia, USA, UK, India'],
+            ['H', 'Source of Lead',         'No',  'Facebook, Google, Walk-in, Referral'],
+            ['I', 'Calling Staff Name',     'No',  'Must match a telecaller in the CRM'],
+            ['J', 'Call Date',              'No',  'DD/MM/YYYY'],
+            ['K', 'Call Status',            'No',  'Connected  or  Not Connected'],
+            ['L', 'Student Interest Level', 'No',  'Hot  /  Warm  /  Cold'],
+            ['M', 'Follow-up Date',         'No',  'DD/MM/YYYY'],
+            ['N', 'Follow-up Status',       'No',  'pending  /  completed'],
+            ['O', 'Remarks / Notes',        'No',  'Free text'],
+            ['P', 'Next Action',            'No',  'Free text'],
+            ['Q', 'Final Status',           'No',  'pending / contacted / follow_up / admitted / not_interested / dropped'],
+            ['', '', '', ''],
+            ['CRITICAL REQUIRED FIELDS:', '', '', ''],
+            ['1. Mobile Number - Must be unique (10-15 digits)', '', '', ''],
+            ['2. School/College Name - Institution name', '', '', ''],
+            ['3. Department/Stream - e.g. Science, Commerce, Medical', '', '', ''],
             ['', '', '', ''],
             ['TIPS:', '', '', ''],
             ['Delete the example row (row 2) before uploading', '', '', ''],
@@ -139,9 +158,9 @@ class EduLeadBulkImportController extends Controller
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D4ED8']],
         ]);
         $inst->getColumnDimension('A')->setWidth(8);
-        $inst->getColumnDimension('B')->setWidth(28);
+        $inst->getColumnDimension('B')->setWidth(30);
         $inst->getColumnDimension('C')->setWidth(12);
-        $inst->getColumnDimension('D')->setWidth(55);
+        $inst->getColumnDimension('D')->setWidth(60);
 
         $writer   = new Xlsx($spreadsheet);
         $filename = 'edu_leads_import_template_' . date('Y-m-d') . '.xlsx';
@@ -160,11 +179,13 @@ class EduLeadBulkImportController extends Controller
     private function mapColumns(array $headerArray): array
     {
         $patterns = [
+            'mobile_number'   => ['mobile number', 'mobile', 'contact number', 'phone', 'contact', '✅ mobile number'],
+            'school_college'  => ['school / college name', 'school/college name', 'school college name', 'school', 'college', 'institution', '✅ school / college name', '✅ school/college name'],
+            'department'      => ['department / stream', 'department/stream', 'department', 'stream', 'dept', '✅ department / stream', '✅ department/stream'],
             'student_name'    => ['student name', 'name', 'client name', 'customer name'],
-            'mobile_number'   => ['mobile number', 'mobile', 'contact number', 'phone', 'contact'],
             'whatsapp'        => ['whatsapp number', 'whatsapp'],
             'course'          => ['course interested', 'course'],
-            'country_college' => ['country / college', 'country/college', 'country college', 'country', 'college'],
+            'country'         => ['country'],
             'lead_source'     => ['source of lead', 'source', 'lead source'],
             'calling_staff'   => ['calling staff name', 'telecaller name', 'telecaller', 'calling staff', 'staff name'],
             'call_date'       => ['call date', 'date'],
@@ -192,7 +213,7 @@ class EduLeadBulkImportController extends Controller
             }
         }
 
-        // Pass 2: contains match for unmapped fields
+        // Pass 2: contains match
         foreach ($headerArray as $index => $header) {
             $h = strtolower(trim((string)$header));
             if (empty($h)) continue;
@@ -220,7 +241,7 @@ class EduLeadBulkImportController extends Controller
         try {
             $file   = $request->file('csv_file');
             $ext    = strtolower($file->getClientOriginalExtension());
-            $phones    = [];
+            $phones = [];
             $whatsapps = [];
 
             if (in_array($ext, ['xlsx', 'xls'])) {
@@ -242,8 +263,8 @@ class EduLeadBulkImportController extends Controller
                     for ($r = 1; $r <= 5; $r++) {
                         $rd = $ws->rangeToArray('A' . $r . ':' . $highestCol . $r, null, true, false)[0];
                         foreach ($rd as $cell) {
-                            if (stripos((string)$cell, 'Student Name') !== false ||
-                                stripos((string)$cell, 'Mobile Number') !== false) {
+                            if (stripos((string)$cell, 'Mobile') !== false ||
+                                stripos((string)$cell, 'Phone') !== false) {
                                 $headerRow = $r; break 2;
                             }
                         }
@@ -256,11 +277,9 @@ class EduLeadBulkImportController extends Controller
 
                     for ($r = $headerRow + 1; $r <= $highestRow; $r++) {
                         $rowArr = $ws->rangeToArray('A' . $r . ':' . $highestCol . $r, null, true, false)[0];
-                        $name   = trim((string)($rowArr[$colMap['student_name'] ?? 0] ?? ''));
-                        if (empty($name)) continue;
-
                         $ph = $this->cleanPhone($rowArr[$colMap['mobile_number']] ?? '');
-                        if ($ph) $phones[] = $ph;
+                        if (!$ph) continue;
+                        $phones[] = $ph;
 
                         $wa = $this->cleanPhone($rowArr[$colMap['whatsapp'] ?? -1] ?? '');
                         if ($wa && $wa !== $ph) $whatsapps[] = $wa;
@@ -273,11 +292,10 @@ class EduLeadBulkImportController extends Controller
                 $header = fgetcsv($handle);
                 $colMap = $this->mapColumns($header);
                 while (($line = fgetcsv($handle)) !== false) {
-                    $name = trim((string)($line[$colMap['student_name'] ?? 0] ?? ''));
-                    if (empty($name)) continue;
-                    $ph = $this->cleanPhone($line[$colMap['mobile_number'] ?? 1] ?? '');
-                    if ($ph) $phones[] = $ph;
-                    $wa = $this->cleanPhone($line[$colMap['whatsapp'] ?? 2] ?? '');
+                    $ph = $this->cleanPhone($line[$colMap['mobile_number'] ?? 0] ?? '');
+                    if (!$ph) continue;
+                    $phones[] = $ph;
+                    $wa = $this->cleanPhone($line[$colMap['whatsapp'] ?? -1] ?? '');
                     if ($wa && $wa !== $ph) $whatsapps[] = $wa;
                 }
                 fclose($handle);
@@ -285,15 +303,13 @@ class EduLeadBulkImportController extends Controller
 
             $total = count($phones);
 
-            // Existing phone check
             $existingPhone    = EduLead::whereIn('phone', $phones)->count();
-            // Existing whatsapp check (only non-empty whatsapp numbers that differ from phone)
             $existingWhatsapp = !empty($whatsapps)
                 ? EduLead::whereIn('whatsapp_number', $whatsapps)->count()
                 : 0;
 
             $existingCount = $existingPhone + $existingWhatsapp;
-            $newCount      = max(0, $total - $existingPhone); // phones drive the unique count
+            $newCount      = max(0, $total - $existingPhone);
 
             $messages = [];
             if ($existingPhone    > 0) $messages[] = "{$existingPhone} mobile number(s) already exist";
@@ -307,12 +323,12 @@ class EduLeadBulkImportController extends Controller
                 'needs_warning'   => $existingCount > 0,
                 'warning_message' => $warningMsg,
                 'analysis'        => [
-                    'total_rows'       => $total,
-                    'existing_phone'   => $existingPhone,
-                    'existing_whatsapp'=> $existingWhatsapp,
-                    'existing_count'   => $existingCount,
-                    'new_count'        => $newCount,
-                    'will_create_leads'=> $newCount,
+                    'total_rows'        => $total,
+                    'existing_phone'    => $existingPhone,
+                    'existing_whatsapp' => $existingWhatsapp,
+                    'existing_count'    => $existingCount,
+                    'new_count'         => $newCount,
+                    'will_create_leads' => $newCount,
                 ],
             ]);
 
@@ -376,8 +392,8 @@ class EduLeadBulkImportController extends Controller
                     for ($r = 1; $r <= 5; $r++) {
                         $rd = $ws->rangeToArray('A' . $r . ':' . $highestCol . $r, null, true, false)[0];
                         foreach ($rd as $cell) {
-                            if (stripos((string)$cell, 'Student Name') !== false ||
-                                stripos((string)$cell, 'Mobile Number') !== false) {
+                            if (stripos((string)$cell, 'Mobile') !== false ||
+                                stripos((string)$cell, 'Phone') !== false) {
                                 $headerRow = $r; break 2;
                             }
                         }
@@ -391,30 +407,29 @@ class EduLeadBulkImportController extends Controller
                     $headerArr = $ws->rangeToArray('A' . $headerRow . ':' . $highestCol . $headerRow, null, true, false)[0];
                     $colMap    = $this->mapColumns($headerArr);
 
-                    if (!isset($colMap['student_name']) || !isset($colMap['mobile_number'])) {
-                        $skipped[] = ['name' => $sheetName, 'reason' => 'Missing required columns: Student Name or Mobile Number'];
+                    if (!isset($colMap['mobile_number'])) {
+                        $skipped[] = ['name' => $sheetName, 'reason' => 'Missing required column: Mobile Number'];
                         continue;
                     }
 
                     for ($r = $headerRow + 1; $r <= $highestRow; $r++) {
                         $rowArr = $ws->rangeToArray('A' . $r . ':' . $highestCol . $r, null, true, false)[0];
-                        $name   = trim((string)($rowArr[$colMap['student_name']] ?? ''));
-                        if (empty($name) || stripos($name, 'Student Name') !== false) continue;
+                        $ph = $this->cleanPhone($rowArr[$colMap['mobile_number']] ?? '');
+                        if (!$ph) continue; // Skip rows without valid phone
 
                         $records[] = $this->buildRecord($rowArr, $colMap, $sheetName, $r);
                     }
                 }
             } elseif ($ext === 'csv') {
                 $handle = fopen($file->getRealPath(), 'r');
-                // strip BOM if present
                 $bom = fread($handle, 3);
                 if ($bom !== "\xEF\xBB\xBF") rewind($handle);
                 $header = fgetcsv($handle);
                 $colMap = $this->mapColumns($header);
                 $row    = 2;
                 while (($line = fgetcsv($handle)) !== false) {
-                    $name = trim((string)($line[$colMap['student_name'] ?? 0] ?? ''));
-                    if (empty($name)) { $row++; continue; }
+                    $ph = $this->cleanPhone($line[$colMap['mobile_number'] ?? 0] ?? '');
+                    if (!$ph) { $row++; continue; }
                     $records[] = $this->buildRecord($line, $colMap, 'CSV', $row++);
                 }
                 fclose($handle);
@@ -447,11 +462,25 @@ class EduLeadBulkImportController extends Controller
                 foreach ($chunk as $row) {
                     $rowId = "{$row['sheet_name']} Row {$row['excel_row']}";
                     try {
-                        if (empty($row['student_name'])) throw new \Exception('Student Name is required');
-
+                        // ═══════════════════════════════════════════════════════════
+                        // ✅ REQUIRED FIELDS VALIDATION (ONLY 3)
+                        // ═══════════════════════════════════════════════════════════
                         $phone = $this->cleanPhone($row['mobile_number']);
-                        if (!$phone) throw new \Exception('Valid mobile number (10-15 digits) required');
+                        if (!$phone) {
+                            throw new \Exception('✅ Mobile Number is REQUIRED (10-15 digits)');
+                        }
 
+                        $schoolCollege = trim((string)$row['school_college']);
+                        if (empty($schoolCollege)) {
+                            throw new \Exception('✅ School/College Name is REQUIRED');
+                        }
+
+                        $department = trim((string)$row['department']);
+                        if (empty($department)) {
+                            throw new \Exception('✅ Department/Stream is REQUIRED');
+                        }
+
+                        // Duplicate check
                         if (EduLead::where('phone', $phone)->exists()) {
                             throw new \Exception("Mobile number {$phone} already exists");
                         }
@@ -460,6 +489,10 @@ class EduLeadBulkImportController extends Controller
                         if ($cleanWhatsapp !== $phone && EduLead::where('whatsapp_number', $cleanWhatsapp)->exists()) {
                             throw new \Exception("WhatsApp number {$cleanWhatsapp} already exists");
                         }
+
+                        // ═══════════════════════════════════════════════════════════
+                        // OPTIONAL FIELDS
+                        // ═══════════════════════════════════════════════════════════
 
                         // Lead Source
                         $leadSource = null;
@@ -481,10 +514,11 @@ class EduLeadBulkImportController extends Controller
                         $assignedTo = null;
                         if (!empty($row['calling_staff'])) {
                             $tc = User::where('is_active', true)
-                                ->whereIn('role', ['lead_manager', 'operation_head', 'super_admin'])
+                                ->whereIn('role', ['telecaller', 'lead_manager', 'operation_head', 'super_admin'])
                                 ->whereRaw('LOWER(name) = ?', [strtolower(trim($row['calling_staff']))])
                                 ->first()
                                 ?? User::where('is_active', true)
+                                    ->whereIn('role', ['telecaller', 'lead_manager'])
                                     ->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower(trim($row['calling_staff'])) . '%'])
                                     ->first();
                             if ($tc) $assignedTo = $tc->id;
@@ -516,37 +550,54 @@ class EduLeadBulkImportController extends Controller
                             $courseId = $course?->id;
                         }
 
-                        // Country / College split
-                        $country = $college = null;
-                        $cc = trim((string)$row['country_college']);
-                        if (str_contains($cc, '/')) {
-                            [$country, $college] = array_map('trim', explode('/', $cc, 2));
-                        } elseif (!empty($cc)) {
-                            $country = $cc;
+                        // Determine institution type from school_college name
+                        $institutionType = null;
+                        $schoolName = null;
+                        $collegeName = null;
+
+                        $scLower = strtolower($schoolCollege);
+                        if (str_contains($scLower, 'school') ||
+                            str_contains($scLower, 'high school') ||
+                            str_contains($scLower, 'secondary')) {
+                            $institutionType = 'school';
+                            $schoolName = $schoolCollege;
+                        } elseif (str_contains($scLower, 'college') ||
+                                  str_contains($scLower, 'university') ||
+                                  str_contains($scLower, 'institute')) {
+                            $institutionType = 'college';
+                            $collegeName = $schoolCollege;
+                        } else {
+                            // Default to school if ambiguous
+                            $institutionType = 'school';
+                            $schoolName = $schoolCollege;
                         }
 
-                        // ── Determine branch ───────────────────────────────────────────
+                        // Branch determination
                         $branchId = auth()->user()->role === 'lead_manager'
                             ? auth()->user()->branch_id
-                            : null;   // super_admin/operation_head imports have no forced branch
+                            : null;
 
                         EduLead::create([
-                            'name'              => $row['student_name'],
-                            'phone'             => $phone,
-                            'whatsapp_number'   => $cleanWhatsapp,
-                            'course_interested' => !empty($row['course']) ? $row['course'] : null,
-                            'course_id'         => $courseId,
-                            'country'           => $country,
-                            'college'           => $college,
-                            'lead_source_id'    => $leadSource?->id,
-                            'assigned_to'       => $assignedTo,
-                            'interest_level'    => $interestLevel,
-                            'final_status'      => $finalStatus,
-                            'status'            => 'pending',
-                            'remarks'           => !empty($row['remarks']) ? $row['remarks'] : null,
-                            'followup_date'     => $this->parseDate($row['followup_date']),
-                            'branch_id'   => $branchId,
-                            'created_by'        => auth()->id(),
+                            'phone'                => $phone,
+                            'school'               => $schoolName,
+                            'school_department'    => $institutionType === 'school' ? $department : null,
+                            'college'              => $collegeName,
+                            'college_department'   => $institutionType === 'college' ? $department : null,
+                            'institution_type'     => $institutionType,
+                            'name'                 => !empty($row['student_name']) ? trim($row['student_name']) : 'Lead-' . substr($phone, -4),
+                            'whatsapp_number'      => $cleanWhatsapp,
+                            'course_interested'    => !empty($row['course']) ? $row['course'] : null,
+                            'course_id'            => $courseId,
+                            'country'              => !empty($row['country']) ? trim($row['country']) : null,
+                            'lead_source_id'       => $leadSource?->id,
+                            'assigned_to'          => $assignedTo,
+                            'interest_level'       => $interestLevel,
+                            'final_status'         => $finalStatus,
+                            'status'               => 'pending',
+                            'remarks'              => !empty($row['remarks']) ? $row['remarks'] : null,
+                            'followup_date'        => $this->parseDate($row['followup_date']),
+                            'branch_id'            => $branchId,
+                            'created_by'           => auth()->id(),
                         ]);
 
                         $successful++;
@@ -554,7 +605,7 @@ class EduLeadBulkImportController extends Controller
                         $errors[]         = [
                             'row'    => $rowId,
                             'sheet'  => $row['sheet_name'],
-                            'data'   => ($row['student_name'] ?? '?') . ' (' . ($row['mobile_number'] ?? '') . ')',
+                            'data'   => ($row['mobile_number'] ?? '?') . ' / ' . ($row['school_college'] ?? '?'),
                             'errors' => [$e->getMessage()],
                         ];
                         $failedRowsData[] = ['data' => $row, 'errors' => $e->getMessage()];
@@ -600,7 +651,6 @@ class EduLeadBulkImportController extends Controller
                 'stats'           => [
                     'total' => $totalRows, 'processed' => $processed,
                     'successful' => $successful, 'failed' => $failed,
-                    'customers_created' => 0, 'jobs_created' => 0,
                 ],
                 'skipped_sheets'  => $skipped,
                 'errors'          => $errors,
@@ -616,7 +666,7 @@ class EduLeadBulkImportController extends Controller
     }
 
     // =========================================================================
-    // PROGRESS POLLING  ← FIX: this method must exist in THIS controller
+    // PROGRESS POLLING
     // =========================================================================
     public function getImportProgress($importId)
     {
@@ -646,7 +696,7 @@ class EduLeadBulkImportController extends Controller
     }
 
     // =========================================================================
-    // DOWNLOAD FAILED ROWS  ← FIX: no League\Csv dependency — pure PHP
+    // DOWNLOAD FAILED ROWS
     // =========================================================================
     public function downloadFailedRows($importId)
     {
@@ -656,20 +706,17 @@ class EduLeadBulkImportController extends Controller
         }
 
         $headers = [
-            'Lead ID', 'Student Name', 'Mobile Number', 'WhatsApp Number',
-            'Course Interested', 'Country / College', 'Source of Lead',
-            'Calling Staff Name', 'Call Date', 'Call Status (Connected/Not Connected)',
-            'Student Interest Level (Hot/Warm/Cold)', 'Follow-up Date',
-            'Follow-up Status', 'Remarks / Notes', 'Next Action',
+            '✅ Mobile Number', '✅ School/College Name', '✅ Department/Stream',
+            'Student Name', 'WhatsApp Number', 'Course Interested', 'Country',
+            'Source of Lead', 'Calling Staff Name', 'Call Date',
+            'Call Status (Connected/Not Connected)', 'Student Interest Level (Hot/Warm/Cold)',
+            'Follow-up Date', 'Follow-up Status', 'Remarks / Notes', 'Next Action',
             'Final Status (Admitted / Not Interested / Pending)',
             'ERROR — Fix before re-importing',
         ];
 
-        // Build CSV in-memory — no League\Csv, no deprecated methods
         $handle = fopen('php://temp', 'r+');
-
-        // UTF-8 BOM so Excel opens correctly
-        fwrite($handle, "\xEF\xBB\xBF");
+        fwrite($handle, "\xEF\xBB\xBF"); // UTF-8 BOM
         fputcsv($handle, $headers);
 
         foreach ($import->failed_rows_data as $fr) {
@@ -678,12 +725,13 @@ class EduLeadBulkImportController extends Controller
             if (is_array($err)) $err = implode(' | ', $err);
 
             fputcsv($handle, [
-                '',
-                $d['student_name']    ?? '',
                 $d['mobile_number']   ?? '',
+                $d['school_college']  ?? '',
+                $d['department']      ?? '',
+                $d['student_name']    ?? '',
                 $d['whatsapp']        ?? '',
                 $d['course']          ?? '',
-                $d['country_college'] ?? '',
+                $d['country']         ?? '',
                 $d['lead_source']     ?? '',
                 $d['calling_staff']   ?? '',
                 $d['call_date']       ?? '',
@@ -717,28 +765,29 @@ class EduLeadBulkImportController extends Controller
         return [
             'sheet_name'      => $sheetName,
             'excel_row'       => $excelRow,
-            'student_name'    => trim((string)($row[$colMap['student_name']]    ?? '')),
             'mobile_number'   => $row[$colMap['mobile_number']]                 ?? '',
-            'whatsapp'        => $row[$colMap['whatsapp']        ?? -1]         ?? '',
-            'course'          => $row[$colMap['course']          ?? -1]         ?? '',
-            'country_college' => $row[$colMap['country_college'] ?? -1]         ?? '',
-            'lead_source'     => $row[$colMap['lead_source']     ?? -1]         ?? '',
-            'calling_staff'   => $row[$colMap['calling_staff']   ?? -1]         ?? '',
-            'call_date'       => $row[$colMap['call_date']        ?? -1]        ?? '',
-            'call_status'     => $row[$colMap['call_status']      ?? -1]        ?? '',
-            'interest_level'  => $row[$colMap['interest_level']   ?? -1]        ?? '',
-            'followup_date'   => $row[$colMap['followup_date']    ?? -1]        ?? '',
-            'followup_status' => $row[$colMap['followup_status']  ?? -1]        ?? '',
-            'remarks'         => $row[$colMap['remarks']          ?? -1]        ?? '',
-            'next_action'     => $row[$colMap['next_action']      ?? -1]        ?? '',
-            'final_status'    => $row[$colMap['final_status']     ?? -1]        ?? '',
+            'school_college'  => $row[$colMap['school_college']  ?? -1]         ?? '',
+            'department'      => $row[$colMap['department']       ?? -1]         ?? '',
+            'student_name'    => trim((string)($row[$colMap['student_name'] ?? -1] ?? '')),
+            'whatsapp'        => $row[$colMap['whatsapp']         ?? -1]         ?? '',
+            'course'          => $row[$colMap['course']           ?? -1]         ?? '',
+            'country'         => $row[$colMap['country']          ?? -1]         ?? '',
+            'lead_source'     => $row[$colMap['lead_source']      ?? -1]         ?? '',
+            'calling_staff'   => $row[$colMap['calling_staff']    ?? -1]         ?? '',
+            'call_date'       => $row[$colMap['call_date']        ?? -1]         ?? '',
+            'call_status'     => $row[$colMap['call_status']      ?? -1]         ?? '',
+            'interest_level'  => $row[$colMap['interest_level']   ?? -1]         ?? '',
+            'followup_date'   => $row[$colMap['followup_date']    ?? -1]         ?? '',
+            'followup_status' => $row[$colMap['followup_status']  ?? -1]         ?? '',
+            'remarks'         => $row[$colMap['remarks']          ?? -1]         ?? '',
+            'next_action'     => $row[$colMap['next_action']      ?? -1]         ?? '',
+            'final_status'    => $row[$colMap['final_status']     ?? -1]         ?? '',
         ];
     }
 
     private function cleanPhone($raw): ?string
     {
         if (empty($raw)) return null;
-        // Handle Excel numeric representation (scientific notation float)
         $raw   = is_numeric($raw) ? number_format((float)$raw, 0, '', '') : (string)$raw;
         $clean = preg_replace('/[^0-9]/', '', $raw);
         return (strlen($clean) >= 10 && strlen($clean) <= 15) ? $clean : null;
@@ -752,7 +801,6 @@ class EduLeadBulkImportController extends Controller
                 return Carbon::createFromFormat('d/m/Y', $value)->format('Y-m-d');
             }
             if (is_numeric($value)) {
-                // Excel serial date
                 return Carbon::createFromTimestamp(($value - 25569) * 86400)->format('Y-m-d');
             }
             return Carbon::parse($value)->format('Y-m-d');

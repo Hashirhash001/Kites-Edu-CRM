@@ -27,7 +27,8 @@ class EduLead extends Model
         'preferred_state',
 
         // Agent
-        'agent_name',           // ← NEW: name of telecaller/agent who sourced
+        'agent_name',
+        'referral_name',
 
         // Institution
         'institution_type',
@@ -38,22 +39,23 @@ class EduLead extends Model
 
         // Programme & Course interest
         'course_interested',
-        'addon_course',         // ← NEW: secondary course interest
+        'addon_course',
         'program_interested',
-        'country',              // preferred country to study
+        'country',
 
         // Location
-        'state',                // ← NEW
-        'district',             // ← NEW
+        'state',
+        'district',
 
         // Application & payment tracking
-        'application_number',   // ← NEW (static)
-        'whatsapp_link',        // ← NEW
-        'application_form_url', // ← NEW
-        'booking_payment',      // ← NEW
-        'fees_collection',      // ← NEW
-        'cancellation_reason',  // ← NEW
-        'cancelled_at',         // ← NEW
+        'application_number',
+        'whatsapp_status',
+        'application_form_status',
+        'booking_status',
+        'booking_payment',
+        'fees_collection',
+        'cancellation_reason',
+        'cancelled_at',
 
         // Call & Follow-up
         'call_date',

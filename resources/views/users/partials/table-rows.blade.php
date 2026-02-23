@@ -51,7 +51,7 @@
     </td>
 
     {{-- Call Stats (connected / not-connected) --}}
-    <td data-label="Call Stats">
+    {{-- <td data-label="Call Stats">
         @if($user->isLeadManager())
             @php
                 $totalCalls    = $user->eduCallLogs()->count();
@@ -75,7 +75,7 @@
         @else
             <span class="text-muted small">—</span>
         @endif
-    </td>
+    </td> --}}
 
     {{-- Leads --}}
     <td data-label="Leads">

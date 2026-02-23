@@ -223,10 +223,16 @@ class DashboardController extends Controller
         $thisWeek   = (clone $query)->whereBetween('followup_date', [now()->startOfWeek(), now()->endOfWeek()])->count();
         $thisMonth  = (clone $query)->whereBetween('followup_date', [now()->startOfMonth(), now()->endOfMonth()])->count();
 
-        $immediate = (clone $query)
-            ->whereDate('followup_date', '<=', today())
+        $overdueFollowups = (clone $query)
+            ->whereDate('followup_date', '<', today())
             ->orderByRaw($priorityOrder)
             ->orderBy('followup_date')
+            ->orderBy('followup_time')
+            ->limit(20)->get();
+
+        $todayFollowups = (clone $query)
+            ->whereDate('followup_date', today())
+            ->orderByRaw($priorityOrder)
             ->orderBy('followup_time')
             ->limit(20)->get();
 
@@ -248,7 +254,7 @@ class DashboardController extends Controller
 
         return compact(
             'overdue', 'todayCount', 'thisWeek', 'thisMonth',
-            'immediate', 'thisWeekFollowups', 'thisMonthFollowups'
+            'overdueFollowups', 'todayFollowups', 'thisWeekFollowups', 'thisMonthFollowups'
         );
     }
 }

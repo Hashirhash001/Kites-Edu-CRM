@@ -27,7 +27,7 @@
         padding: 1.5rem 0;
     }
 
-    /* Header Card - Professional Gradient */
+    /* Header Card */
     .lead-header-card {
         background: linear-gradient(135deg, var(--primary-blue) 0%, #764ba2 100%);
         border-radius: 12px;
@@ -42,65 +42,6 @@
         margin: 0;
     }
 
-    .lead-status-badge {
-        padding: 0.5rem 1.2rem;
-        border-radius: 6px;
-        font-weight: 600;
-        color: #fff;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        background: rgba(255, 255, 255, 0.2);
-        border: 2px solid rgba(255, 255, 255, 0.3);
-    }
-
-    /* Education Details Card - Teal Gradient */
-    .education-card {
-        background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
-        border-radius: 12px;
-        padding: 1.8rem;
-        color: #fff;
-        box-shadow: 0 4px 12px rgba(8, 145, 178, 0.2);
-        margin-bottom: 1.5rem;
-    }
-
-    .education-card h5 {
-        color: #fff;
-        font-weight: 700;
-        margin-bottom: 1.5rem;
-        font-size: 1.2rem;
-        display: flex;
-        align-items: center;
-    }
-
-    .education-card h5 i {
-        margin-right: 0.5rem;
-        font-size: 1.4rem;
-    }
-
-    .edu-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.9rem 0;
-        border-bottom: 1px solid rgba(255,255,255,0.15);
-        align-items: center;
-    }
-
-    .edu-row:last-of-type {
-        border-bottom: none;
-    }
-
-    .edu-label {
-        font-weight: 500;
-        font-size: 0.95rem;
-        opacity: 0.95;
-    }
-
-    .edu-value {
-        font-weight: 700;
-        font-size: 1.05rem;
-        text-align: right;
-    }
-
     .interest-badge {
         padding: 0.4rem 1rem;
         border-radius: 6px;
@@ -108,22 +49,11 @@
         font-size: 0.9rem;
     }
 
-    .interest-hot {
-        background: #fee2e2;
-        color: #dc2626;
-    }
+    .interest-hot  { background: #fee2e2; color: #dc2626; }
+    .interest-warm { background: #fef3c7; color: #d97706; }
+    .interest-cold { background: #dbeafe; color: #2563eb; }
 
-    .interest-warm {
-        background: #fef3c7;
-        color: #d97706;
-    }
-
-    .interest-cold {
-        background: #dbeafe;
-        color: #2563eb;
-    }
-
-    /* Info Cards - Clean White */
+    /* Info Cards */
     .info-card {
         background: var(--card-bg);
         border-radius: 12px;
@@ -162,14 +92,14 @@
         align-items: center;
     }
 
-    .info-row:last-child {
-        border-bottom: none;
-    }
+    .info-row:last-child { border-bottom: none; }
 
     .info-label {
         color: var(--text-secondary);
         font-weight: 500;
         font-size: 0.9rem;
+        flex-shrink: 0;
+        min-width: 120px;
     }
 
     .info-value {
@@ -201,27 +131,14 @@
         background: var(--card-bg);
         border-radius: 8px;
         margin-bottom: 1rem;
-        border-left: 3px solid var(--primary-blue);
         box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         border: 1px solid var(--border-color);
         border-left: 3px solid var(--primary-blue);
     }
 
-    .followup-item.overdue {
-        border-left-color: var(--danger-red);
-        background: #fef2f2;
-    }
-
-    .followup-item.completed {
-        border-left-color: var(--success-green);
-        background: #f0fdf4;
-        opacity: 0.85;
-    }
-
-    .followup-item.today {
-        border-left-color: var(--warning-orange);
-        background: #fffbeb;
-    }
+    .followup-item.overdue  { border-left-color: var(--danger-red);    background: #fef2f2; }
+    .followup-item.completed{ border-left-color: var(--success-green); background: #f0fdf4; opacity: 0.85; }
+    .followup-item.today    { border-left-color: var(--warning-orange); background: #fffbeb; }
 
     /* Call Logs & Notes */
     .call-log-item, .note-item {
@@ -229,15 +146,12 @@
         border-radius: 8px;
         padding: 1rem;
         margin-bottom: 0.75rem;
-        border-left: 3px solid var(--primary-blue);
         box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         border: 1px solid var(--border-color);
+        border-left: 3px solid var(--primary-blue);
     }
 
-    .note-item {
-        background: #fffbeb;
-        border-left-color: var(--warning-orange);
-    }
+    .note-item { background: #fffbeb; border-left-color: var(--warning-orange); }
 
     /* Empty State */
     .empty-state {
@@ -253,17 +167,12 @@
     }
 
     /* Badge Colors */
-    .badge {
-        border-radius: 6px;
-        font-weight: 600;
-        /* padding: 0.4rem 0.9rem; */
-    }
-
+    .badge { border-radius: 6px; font-weight: 600; }
     .badge.bg-success { background: var(--success-green) !important; }
     .badge.bg-primary { background: var(--primary-blue) !important; }
     .badge.bg-warning { background: var(--warning-orange) !important; color: #fff !important; }
-    .badge.bg-danger { background: var(--danger-red) !important; }
-    .badge.bg-info { background: #0891b2 !important; }
+    .badge.bg-danger  { background: var(--danger-red) !important; }
+    .badge.bg-info    { background: #0891b2 !important; }
 
     /* Delete buttons */
     .deleteFollowup, .deleteCall, .deleteNote {
@@ -272,164 +181,269 @@
         opacity: 0.7;
         transition: opacity 0.2s;
     }
-
-    .deleteFollowup:hover, .deleteCall:hover, .deleteNote:hover {
-        opacity: 1;
-    }
+    .deleteFollowup:hover, .deleteCall:hover, .deleteNote:hover { opacity: 1; }
 
     /* Responsive */
     @media (max-width: 768px) {
         .lead-header-card { padding: 1.5rem; }
-        .education-card { padding: 1.3rem; }
         .info-card { padding: 1.2rem; }
     }
 
-    /* Status container */
-    .status-container {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
+    /* ══════════════════════════════════════════════════════════
+       APPLICATION & STATUS TRACKING CARD
+    ══════════════════════════════════════════════════════════ */
+    .tracking-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid var(--border-color);
+        margin-bottom: 1.5rem;
     }
 
-    /* Colored Status Badge - Professional */
-    .lead-status-badge {
-        padding: 0.4rem 0.9rem;
-        border-radius: 6px;
+    .tracking-card-header {
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 1rem;
+        margin-bottom: 1.2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .tracking-card-header h5 {
+        margin: 0;
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .tracking-card-header h5 i {
+        color: var(--primary-blue);
+        margin-right: 0.5rem;
+        font-size: 1.3rem;
+    }
+
+    /* Tracking field rows */
+    .tracking-field-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.85rem 0;
+        border-bottom: 1px solid #f1f5f9;
+        gap: 0.75rem;
+    }
+
+    .tracking-field-row:last-child { border-bottom: none; }
+
+    .tracking-label {
+        color: var(--text-secondary);
         font-weight: 500;
         font-size: 0.875rem;
-        text-transform: capitalize;
-        display: inline-flex;
+        flex-shrink: 0;
+        min-width: 140px;
+        display: flex;
         align-items: center;
         gap: 6px;
-        border: 1px solid;
-        color: white;
-        transition: all 0.3s ease;
     }
 
-    /* Status-specific colors */
-    .lead-status-badge.status-pending {
-        background: linear-gradient(135deg, #eab308 0%, #fbbf24 100%);
-        border-color: #d97706;
+    .tracking-label i { font-size: 1rem; color: var(--primary-blue); opacity: 0.7; }
+
+    .tracking-value-wrap {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+        justify-content: flex-end;
     }
 
-    .lead-status-badge.status-contacted {
-        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
-        border-color: #2563eb;
-    }
+    /* The static display badge/text */
+    .tracking-display { font-weight: 600; font-size: 0.9rem; }
 
-    .lead-status-badge.status-not_interested {
-        background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
-        border-color: #dc2626;
-    }
-
-    .lead-status-badge.status-follow_up {
-        background: linear-gradient(135deg, #f59e0b 0%, #fb923c 100%);
-        border-color: #ea580c;
-    }
-
-    .lead-status-badge.status-admitted {
-        background: linear-gradient(135deg, #10b981 0%, #4ade80 100%);
-        border-color: #059669;
-    }
-
-    .lead-status-badge.status-dropped {
-        background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
-        border-color: #4b5563;
-    }
-
-    /* Status indicator dot */
-    .status-indicator {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: white;
-        opacity: 0.9;
-    }
-
-    /* Dropdown - Hidden by default */
-    #statusDropdown {
-        background: rgba(255, 255, 255, 0.15) !important;
-        color: white !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        font-weight: 500 !important;
-        font-size: 0.875rem !important;
-        padding: 0.4rem 2rem 0.4rem 0.75rem !important;
-        border-radius: 6px !important;
+    /* Inline select — hidden by default */
+    .tracking-select {
+        display: none;
+        font-size: 0.875rem;
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        background: #fff;
+        color: var(--text-primary);
+        font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s ease;
-        text-transform: capitalize;
         min-width: 160px;
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='rgba(255,255,255,0.8)' d='M5 7L1 3h8z'/%3E%3C/svg%3E") !important;
-        background-repeat: no-repeat !important;
-        background-position: right 0.6rem center !important;
-        background-size: 10px !important;
+        transition: border-color 0.2s;
     }
 
-    #statusDropdown:hover {
-        background-color: rgba(255, 255, 255, 0.2) !important;
-    }
-
-    #statusDropdown:focus {
+    .tracking-select:focus {
         outline: none;
-        background-color: rgba(255, 255, 255, 0.25) !important;
-        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+        border-color: var(--primary-blue);
+        box-shadow: 0 0 0 2px rgba(102,126,234,0.15);
     }
 
-    #statusDropdown option {
-        background: #ffffff;
-        color: #1e293b;
-        padding: 8px 12px;
+    /* Inline number input — hidden by default */
+    .tracking-input {
+        display: none;
+        font-size: 0.875rem;
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        background: #fff;
+        color: var(--text-primary);
         font-weight: 500;
+        width: 130px;
+        transition: border-color 0.2s;
     }
 
-    #statusDropdown:hover {
-        background: rgba(255, 255, 255, 0.2) !important;
-    }
-
-    #statusDropdown:focus {
+    .tracking-input:focus {
         outline: none;
-        background: rgba(255, 255, 255, 0.25) !important;
-        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+        border-color: var(--primary-blue);
+        box-shadow: 0 0 0 2px rgba(102,126,234,0.15);
     }
 
-    #statusDropdown option {
-        background: #ffffff;
-        color: #1e293b;
-        padding: 8px 12px;
-        font-weight: 500;
-    }
-
-    /* Edit icon button */
-    .status-edit-btn {
-        background: rgba(255, 255, 255, 0.15);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        color: white;
-        padding: 0.4rem 0.6rem;
+    /* Edit pencil button */
+    .tracking-edit-btn {
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        padding: 0.25rem 0.45rem;
         border-radius: 6px;
         cursor: pointer;
         transition: all 0.2s ease;
+        font-size: 0.8rem;
+        line-height: 1;
         display: inline-flex;
         align-items: center;
         justify-content: center;
     }
 
-    .status-edit-btn:hover {
-        background: rgba(255, 255, 255, 0.25);
-        border-color: rgba(255, 255, 255, 0.4);
-        transform: translateY(-1px);
+    .tracking-edit-btn:hover {
+        background: var(--primary-blue);
+        color: #fff;
+        border-color: var(--primary-blue);
     }
 
-    .status-edit-btn i {
+    /* Global default — hidden until JS activates them */
+    .tracking-save-btn {
+        background: var(--success-green);
+        color: #fff;
+        border: none;
+        padding: 0.28rem 0.6rem;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        display: none;          /* hidden by default */
+        align-items: center;
+        gap: 4px;
+        font-weight: 600;
+        transition: opacity 0.2s;
+    }
+
+    .tracking-save-btn:hover { opacity: 0.88; }
+
+    .tracking-cancel-btn {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+        padding: 0.28rem 0.5rem;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        display: none;          /* hidden by default */
+        align-items: center;
+        transition: all 0.2s;
+    }
+
+    .tracking-cancel-btn:hover { border-color: var(--danger-red); color: var(--danger-red); }
+
+    /* ── Status edit row override — MUST come AFTER the rules above ── */
+    #status-edit-row .tracking-save-btn,
+    #status-edit-row .tracking-cancel-btn {
+        display: inline-flex !important;
+    }
+
+
+    /* Status pill badges for the tracking statuses */
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 0.3rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border: 1.5px solid transparent;
+    }
+
+    /* Final Status pills */
+    .pill-pending        { background: #fef9c3; color: #854d0e; border-color: #fde047; }
+    .pill-contacted      { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+    .pill-follow_up      { background: #ffedd5; color: #9a3412; border-color: #fdba74; }
+    .pill-admitted       { background: #dcfce7; color: #14532d; border-color: #86efac; }
+    .pill-not_interested { background: #fee2e2; color: #7f1d1d; border-color: #fca5a5; }
+    .pill-dropped        { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+
+    /* WhatsApp status pills */
+    .pill-not_sent   { background: #f1f5f9; color: #64748b; border-color: #cbd5e1; }
+    .pill-sent       { background: #eff6ff; color: #2563eb; border-color: #93c5fd; }
+    .pill-delivered  { background: #f0fdf4; color: #16a34a; border-color: #86efac; }
+    .pill-read       { background: #dcfce7; color: #14532d; border-color: #4ade80; }
+
+    /* App form status */
+    .pill-not_submitted { background: #f1f5f9; color: #64748b; border-color: #cbd5e1; }
+    .pill-submitted     { background: #eff6ff; color: #2563eb; border-color: #93c5fd; }
+    .pill-under_review  { background: #fef9c3; color: #854d0e; border-color: #fde047; }
+    .pill-approved      { background: #dcfce7; color: #14532d; border-color: #86efac; }
+    .pill-rejected      { background: #fee2e2; color: #7f1d1d; border-color: #fca5a5; }
+
+    /* Booking status */
+    .pill-not_paid  { background: #fee2e2; color: #7f1d1d; border-color: #fca5a5; }
+    .pill-partial   { background: #ffedd5; color: #9a3412; border-color: #fdba74; }
+    .pill-paid      { background: #dcfce7; color: #14532d; border-color: #86efac; }
+    .pill-refunded  { background: #f3e8ff; color: #6b21a8; border-color: #d8b4fe; }
+
+    /* Finance amount display */
+    .amount-display {
+        font-weight: 700;
         font-size: 0.95rem;
+        color: var(--text-primary);
     }
 
-    /* Hidden class */
-    .hidden {
-        display: none !important;
+    .amount-display.has-value { color: #059669; }
+
+    /* Section divider within tracking card */
+    .tracking-section-divider {
+        margin: 0.5rem 0;
+        padding: 0.4rem 0 0.2rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-secondary);
+        opacity: 0.6;
+        border-top: 1px dashed #e2e8f0;
     }
+
+    /* Saving spinner overlay for a row */
+    .tracking-saving {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    /* Hidden utility */
+    .hidden { display: none !important; }
+
+    /* Status edit row buttons are always visible when parent is shown —
+   override any global tracking-save-btn display:none rule */
+    #status-edit-row .tracking-save-btn,
+    #status-edit-row .tracking-cancel-btn {
+        display: inline-flex !important;
+    }
+
+    .tracking-save-btn { display: none; }   /* ← this is almost certainly the cause */
+    .tracking-cancel-btn { display: none; }
+
 
 </style>
 @endsection
@@ -443,12 +457,34 @@
             $user = auth()->user();
 
             $finalStatusLabels = [
-                'pending'        => ['label' => '⏳ Pending',        'class' => 'status-pending'],
-                'contacted'      => ['label' => '📞 Contacted',      'class' => 'status-contacted'],
-                'follow_up'      => ['label' => '🔔 Follow Up',      'class' => 'status-follow_up'],
-                'admitted'       => ['label' => '✅ Admitted',        'class' => 'status-admitted'],
-                'not_interested' => ['label' => '❌ Not Interested',  'class' => 'status-not_interested'],
-                'dropped'        => ['label' => '🚫 Dropped',         'class' => 'status-dropped'],
+                'pending'        => ['label' => '⏳ Pending',        'class' => 'pill-pending'],
+                'contacted'      => ['label' => '📞 Contacted',      'class' => 'pill-contacted'],
+                'follow_up'      => ['label' => '🔔 Follow Up',      'class' => 'pill-follow_up'],
+                'admitted'       => ['label' => '✅ Admitted',        'class' => 'pill-admitted'],
+                'not_interested' => ['label' => '❌ Not Interested',  'class' => 'pill-not_interested'],
+                'dropped'        => ['label' => '🚫 Dropped',         'class' => 'pill-dropped'],
+            ];
+
+            $whatsappStatusLabels = [
+                'not_sent'  => ['label' => '📭 Not Sent',   'class' => 'pill-not_sent'],
+                'sent'      => ['label' => '📤 Sent',        'class' => 'pill-sent'],
+                'delivered' => ['label' => '📬 Delivered',   'class' => 'pill-delivered'],
+                'read'      => ['label' => '👀 Read',         'class' => 'pill-read'],
+            ];
+
+            $appFormStatusLabels = [
+                'not_submitted' => ['label' => '📋 Not Submitted', 'class' => 'pill-not_submitted'],
+                'submitted'     => ['label' => '📨 Submitted',     'class' => 'pill-submitted'],
+                'under_review'  => ['label' => '🔍 Under Review',  'class' => 'pill-under_review'],
+                'approved'      => ['label' => '✅ Approved',       'class' => 'pill-approved'],
+                'rejected'      => ['label' => '❌ Rejected',       'class' => 'pill-rejected'],
+            ];
+
+            $bookingStatusLabels = [
+                'not_paid' => ['label' => '💸 Not Paid', 'class' => 'pill-not_paid'],
+                'partial'  => ['label' => '💰 Partial',  'class' => 'pill-partial'],
+                'paid'     => ['label' => '✅ Paid',      'class' => 'pill-paid'],
+                'refunded' => ['label' => '↩️ Refunded', 'class' => 'pill-refunded'],
             ];
 
             $canEdit = $user->isSuperAdmin()
@@ -458,46 +494,15 @@
             $canChangeStatus = $canEdit || $eduLead->assigned_to === $user->id;
         @endphp
 
-        {{-- ── Lead Header ──────────────────────────────────────── --}}
+        {{-- ── Lead Header (no final status here anymore) ──────────── --}}
         <div class="lead-header-card">
             <div class="row align-items-center">
-                <div class="col-md-7">
+                <div class="col-md-8">
                     <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
                         <h2 class="mb-0">{{ $eduLead->name }}</h2>
 
                         {{-- Institution type badge --}}
                         {!! $eduLead->institution_type_badge !!}
-
-                        {{-- Editable final status --}}
-                        <div class="status-container d-flex align-items-center gap-1">
-                            @if($canChangeStatus)
-                                <div class="lead-status-badge {{ $finalStatusLabels[$eduLead->final_status]['class'] ?? 'status-pending' }}"
-                                     id="statusBadge">
-                                    <span class="status-indicator"></span>
-                                    <span id="statusText">
-                                        {{ $finalStatusLabels[$eduLead->final_status]['label'] ?? ucfirst($eduLead->final_status) }}
-                                    </span>
-                                </div>
-
-                                <select class="form-select form-select-sm d-none" id="statusDropdown" style="width:auto;">
-                                    @foreach($finalStatusLabels as $val => $meta)
-                                        <option value="{{ $val }}"
-                                            {{ $eduLead->final_status === $val ? 'selected' : '' }}>
-                                            {{ $meta['label'] }}
-                                        </option>
-                                    @endforeach
-                                </select>
-
-                                <button type="button" class="status-edit-btn" id="statusEditBtn" title="Change Status">
-                                    <i class="las la-pen"></i>
-                                </button>
-                            @else
-                                <div class="lead-status-badge {{ $finalStatusLabels[$eduLead->final_status]['class'] ?? 'status-pending' }}">
-                                    <span class="status-indicator"></span>
-                                    {{ $finalStatusLabels[$eduLead->final_status]['label'] ?? ucfirst($eduLead->final_status) }}
-                                </div>
-                            @endif
-                        </div>
 
                         {{-- Interest badge --}}
                         @if($eduLead->interest_level)
@@ -515,10 +520,15 @@
                             <i class="las la-code-branch me-1"></i>{{ $eduLead->branch->name }}
                         </span>
                         @endif
+                        @if($eduLead->assignedTo)
+                        <span class="ms-3">
+                            <i class="las la-user-check me-1"></i>{{ $eduLead->assignedTo->name }}
+                        </span>
+                        @endif
                     </p>
                 </div>
 
-                <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
                     <a href="{{ route('edu-leads.index') }}" class="btn btn-light action-button me-2">
                         <i class="las la-arrow-left me-1"></i> Back
                     </a>
@@ -548,7 +558,208 @@
             {{-- ══════════════════════════════
                  LEFT COLUMN
             ══════════════════════════════ --}}
-            <div class="col-lg-4">
+            <div class="col-lg-5">
+
+                {{-- ── APPLICATION & STATUS TRACKING ─────────────────── --}}
+                <div class="tracking-card">
+                    <div class="tracking-card-header">
+                        <h5>
+                            <i class="las la-tasks"></i>
+                            Application Tracking
+                        </h5>
+                        @if($canChangeStatus)
+                        <span class="badge bg-light text-muted border" style="font-size:0.72rem; font-weight:500;">
+                            <i class="las la-pen me-1"></i>Click ✎ to edit
+                        </span>
+                        @endif
+                    </div>
+
+                    {{-- ── CRM STATUS ────────────────────────────────────── --}}
+                    <div class="tracking-section-divider">CRM Status</div>
+
+                    {{-- Final Status --}}
+                    <div class="tracking-field-row" id="row-final_status">
+                        <span class="tracking-label">
+                            <i class="las la-flag-checkered"></i>Final Status
+                        </span>
+                        <div class="tracking-value-wrap">
+                            <span class="tracking-display" id="display-final_status">
+                                <span class="status-pill {{ $finalStatusLabels[$eduLead->final_status]['class'] ?? 'pill-pending' }}">
+                                    {{ $finalStatusLabels[$eduLead->final_status]['label'] ?? ucfirst($eduLead->final_status) }}
+                                </span>
+                            </span>
+                            <select class="tracking-select" id="select-final_status"
+                                    data-field="final_status" data-lead="{{ $eduLead->id }}">
+                                @foreach($finalStatusLabels as $val => $meta)
+                                    <option value="{{ $val }}" {{ $eduLead->final_status === $val ? 'selected' : '' }}>
+                                        {{ $meta['label'] }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <button class="tracking-save-btn"   id="save-final_status">  <i class="las la-check"></i> Save   </button>
+                            <button class="tracking-cancel-btn" id="cancel-final_status"><i class="las la-times"></i></button>
+                            @if($canChangeStatus)
+                            <button class="tracking-edit-btn" data-target="final_status" title="Edit Final Status">
+                                <i class="las la-pen"></i>
+                            </button>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- ── NEXT ACTION STATUS ────────────────────────────── --}}
+                    <div class="tracking-section-divider">Next Action</div>
+
+                    @php
+                        $currentStatus = $eduLead->status ?? null;
+                        $statusLabels  = [
+                            'whatsapp_link_submitted'    => ['label' => '📲 WhatsApp Link Submitted',    'class' => 'pill-whatsapp'],
+                            'application_form_submitted' => ['label' => '📋 Application Form Submitted', 'class' => 'pill-app_form'],
+                            'booking'                    => ['label' => '💳 Booking',                    'class' => 'pill-booking'],
+                            'cancelled'                  => ['label' => '🚫 Cancelled',                  'class' => 'pill-cancelled'],
+                        ];
+                    @endphp
+
+                    <div class="tracking-field-row" id="row-status"
+                        style="flex-direction: column; align-items: flex-start; gap: 8px;">
+
+                        {{-- Top row: label + current pill + edit pencil --}}
+                        <div class="d-flex justify-content-between align-items-center w-100">
+                            <span class="tracking-label mb-0">
+                                <i class="las la-toggle-on"></i>Status
+                            </span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="tracking-display" id="display-status">
+                                    @if($currentStatus && isset($statusLabels[$currentStatus]))
+                                        <span class="status-pill {{ $statusLabels[$currentStatus]['class'] }}">
+                                            {{ $statusLabels[$currentStatus]['label'] }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted fw-normal" style="font-size:0.9rem;">—</span>
+                                    @endif
+                                </span>
+                                @if($canChangeStatus)
+                                <button class="tracking-edit-btn" data-target="status" title="Edit Status">
+                                    <i class="las la-pen"></i>
+                                </button>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Bottom row: full-width dropdown + save/cancel buttons --}}
+                        <div class="w-100" id="status-edit-row" style="display: none;">
+                            <select class="form-select form-select-sm w-100"
+                                    id="select-status" data-field="status" data-lead="{{ $eduLead->id }}">
+                                <option value="">— Select Status —</option>
+                                @foreach($statusLabels as $val => $meta)
+                                    <option value="{{ $val }}" {{ $currentStatus === $val ? 'selected' : '' }}>
+                                        {{ $meta['label'] }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="d-flex gap-2 mt-2">
+                                <button class="btn btn-sm btn-success tracking-save-btn" id="save-status" type="button">
+                                    <i class="las la-check"></i> Save
+                                </button>
+                                <button class="btn btn-sm btn-secondary tracking-cancel-btn" id="cancel-status" type="button">
+                                    <i class="las la-times"></i> Cancel
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {{-- ── BOOKING DETAILS — shown only when status = booking ── --}}
+                    @if($currentStatus === 'booking')
+                    <div class="tracking-section-divider">Payment</div>
+
+                    {{-- Booking Payment (display only) --}}
+                    <div class="tracking-field-row">
+                        <span class="tracking-label">
+                            <i class="las la-rupee-sign"></i>Booking Amt
+                        </span>
+                        <div class="tracking-value-wrap">
+                            <span class="amount-display {{ $eduLead->booking_payment ? 'has-value' : '' }}">
+                                @if($eduLead->booking_payment)
+                                    ₹{{ number_format($eduLead->booking_payment, 2) }}
+                                @else
+                                    <span class="text-muted fw-normal">—</span>
+                                @endif
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Fees Collected (display only) --}}
+                    <div class="tracking-field-row">
+                        <span class="tracking-label">
+                            <i class="las la-money-check-alt"></i>Fees Collected
+                        </span>
+                        <div class="tracking-value-wrap">
+                            <span class="amount-display {{ $eduLead->fees_collection ? 'has-value' : '' }}">
+                                @if($eduLead->fees_collection)
+                                    ₹{{ number_format($eduLead->fees_collection, 2) }}
+                                @else
+                                    <span class="text-muted fw-normal">—</span>
+                                @endif
+                            </span>
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- ── APPLICATION NUMBER ────────────────────────────── --}}
+                    <div class="tracking-section-divider">Application</div>
+
+                    <div class="tracking-field-row">
+                        <span class="tracking-label">
+                            <i class="las la-id-card"></i>App Number
+                        </span>
+                        <div class="tracking-value-wrap">
+                            @if($eduLead->application_number)
+                                <span class="badge bg-light text-dark border fw-semibold"
+                                    style="font-size:0.85rem; letter-spacing:0.3px;">
+                                    {{ $eduLead->application_number }}
+                                </span>
+                            @else
+                                <span class="text-muted fw-normal" style="font-size:0.9rem;">—</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- ── CANCELLATION REASON — shown only when status = cancelled ── --}}
+                    @if($currentStatus === 'cancelled' || $eduLead->cancellation_reason)
+                    <div class="tracking-section-divider">Cancellation</div>
+
+                    <div class="tracking-field-row" id="row-cancellation_reason"
+                        style="flex-direction:column; align-items:flex-start; gap:6px;">
+                        <div class="d-flex justify-content-between w-100 align-items-center">
+                            <span class="tracking-label mb-0">
+                                <i class="las la-ban"></i>Cancel Reason
+                            </span>
+                            @if($canEdit)
+                            <button class="tracking-edit-btn" data-target="cancellation_reason"
+                                    data-type="input" title="Edit Cancellation Reason">
+                                <i class="las la-pen"></i>
+                            </button>
+                            @endif
+                        </div>
+                        <span class="tracking-display text-muted small"
+                            id="display-cancellation_reason" style="width:100%;">
+                            {{ $eduLead->cancellation_reason ?? '—' }}
+                        </span>
+                        <input type="text" class="tracking-input w-100"
+                            id="input-cancellation_reason"
+                            data-field="cancellation_reason"
+                            data-lead="{{ $eduLead->id }}"
+                            value="{{ $eduLead->cancellation_reason ?? '' }}"
+                            placeholder="Reason for cancellation...">
+                        <div class="d-flex gap-2">
+                            <button class="tracking-save-btn"   id="save-cancellation_reason">  <i class="las la-check"></i> Save   </button>
+                            <button class="tracking-cancel-btn" id="cancel-cancellation_reason"><i class="las la-times"></i></button>
+                        </div>
+                    </div>
+                    @endif
+
+                </div>
+
 
                 {{-- ── CURRENT INSTITUTION ────────────────────────────── --}}
                 <div class="info-card">
@@ -562,72 +773,54 @@
                             <p class="mb-0 small text-muted mt-1">No institution details recorded</p>
                         </div>
                     @else
-
                         <div class="info-row">
                             <span class="info-label">Type</span>
                             <span class="info-value">{!! $eduLead->institution_type_badge !!}</span>
                         </div>
 
                         @if($eduLead->institution_type === 'school')
-
                             @if($eduLead->school)
                             <div class="info-row">
                                 <span class="info-label">School Name</span>
                                 <span class="info-value fw-semibold">{{ $eduLead->school }}</span>
                             </div>
                             @endif
-
                             @if($eduLead->school_department)
                             <div class="info-row">
                                 <span class="info-label">Stream</span>
                                 <span class="info-value">
-                                    <span class="badge bg-light text-dark border">
-                                        <i class="las la-stream me-1"></i>{{ $eduLead->school_department }}
-                                    </span>
+                                    <span class="badge bg-light text-dark border"><i class="las la-stream me-1"></i>{{ $eduLead->school_department }}</span>
                                 </span>
                             </div>
                             @endif
-
                             @if($eduLead->current_year)
                             <div class="info-row">
                                 <span class="info-label">Current Year</span>
-                                <span class="info-value">
-                                    <span class="badge bg-light text-dark border">{{ $eduLead->current_year }}</span>
-                                </span>
+                                <span class="info-value"><span class="badge bg-light text-dark border">{{ $eduLead->current_year }}</span></span>
                             </div>
                             @endif
-
                         @elseif($eduLead->institution_type === 'college')
-
                             @if($eduLead->college)
                             <div class="info-row">
                                 <span class="info-label">College Name</span>
                                 <span class="info-value fw-semibold">{{ $eduLead->college }}</span>
                             </div>
                             @endif
-
                             @if($eduLead->college_department)
                             <div class="info-row">
                                 <span class="info-label">Department</span>
                                 <span class="info-value">
-                                    <span class="badge bg-light text-dark border">
-                                        <i class="las la-building me-1"></i>{{ $eduLead->college_department }}
-                                    </span>
+                                    <span class="badge bg-light text-dark border"><i class="las la-building me-1"></i>{{ $eduLead->college_department }}</span>
                                 </span>
                             </div>
                             @endif
-
                             @if($eduLead->current_year)
                             <div class="info-row">
                                 <span class="info-label">Current Year</span>
-                                <span class="info-value">
-                                    <span class="badge bg-light text-dark border">{{ $eduLead->current_year }}</span>
-                                </span>
+                                <span class="info-value"><span class="badge bg-light text-dark border">{{ $eduLead->current_year }}</span></span>
                             </div>
                             @endif
-
                         @else
-                            {{-- Other institution type --}}
                             @if($eduLead->school)
                             <div class="info-row">
                                 <span class="info-label">Institution</span>
@@ -635,7 +828,6 @@
                             </div>
                             @endif
                         @endif
-
                     @endif
                 </div>
 
@@ -649,9 +841,7 @@
                     <div class="info-row">
                         <span class="info-label">Destination</span>
                         <span class="info-value">
-                            <span class="badge bg-primary">
-                                <i class="las la-globe me-1"></i>{{ $eduLead->country }}
-                            </span>
+                            <span class="badge bg-primary"><i class="las la-globe me-1"></i>{{ $eduLead->country }}</span>
                         </span>
                     </div>
                     @endif
@@ -660,10 +850,7 @@
                     <div class="info-row">
                         <span class="info-label">Programme</span>
                         <span class="info-value">
-                            <span class="badge bg-info p-2">
-                                <i class="las la-layer-group me-1"></i>
-                                {{ $eduLead->course->programme->name }}
-                            </span>
+                            <span class="badge bg-info p-2"><i class="las la-layer-group me-1"></i>{{ $eduLead->course->programme->name }}</span>
                         </span>
                     </div>
                     @endif
@@ -679,13 +866,8 @@
 
                     @if($eduLead->course_interested)
                     <div class="info-row">
-                        <span class="info-label">
-                            Course Interest
-                            <br><small class="text-muted fw-normal">(free text)</small>
-                        </span>
-                        <span class="info-value fst-italic text-muted">
-                            <i class="las la-pen me-1"></i>{{ $eduLead->course_interested }}
-                        </span>
+                        <span class="info-label">Course Interest<br><small class="text-muted fw-normal">(free text)</small></span>
+                        <span class="info-value fst-italic text-muted"><i class="las la-pen me-1"></i>{{ $eduLead->course_interested }}</span>
                     </div>
                     @endif
 
@@ -693,9 +875,7 @@
                     <div class="info-row">
                         <span class="info-label">Preferred Intake</span>
                         <span class="info-value">
-                            <span class="badge bg-light text-dark border">
-                                <i class="las la-calendar me-1"></i>{{ $eduLead->preferred_intake }}
-                            </span>
+                            <span class="badge bg-light text-dark border"><i class="las la-calendar me-1"></i>{{ $eduLead->preferred_intake }}</span>
                         </span>
                     </div>
                     @endif
@@ -703,9 +883,7 @@
                     @if($eduLead->budget)
                     <div class="info-row">
                         <span class="info-label">Budget</span>
-                        <span class="info-value fw-semibold">
-                            <i class="las la-money-bill me-1 text-success"></i>{{ $eduLead->budget }}
-                        </span>
+                        <span class="info-value fw-semibold"><i class="las la-money-bill me-1 text-success"></i>{{ $eduLead->budget }}</span>
                     </div>
                     @endif
 
@@ -726,16 +904,6 @@
                                 @else ❄️ @endif
                                 {{ ucfirst($eduLead->interest_level) }}
                             </span>
-                        </span>
-                    </div>
-                    @endif
-
-                    @if($eduLead->admitted_at)
-                    <div class="info-row">
-                        <span class="info-label">Admitted On</span>
-                        <span class="info-value text-success fw-semibold">
-                            <i class="las la-check-circle me-1"></i>
-                            {{ $eduLead->admitted_at->format('d M Y') }}
                         </span>
                     </div>
                     @endif
@@ -760,8 +928,7 @@
                     <div class="info-row">
                         <span class="info-label">WhatsApp</span>
                         <span class="info-value">
-                            <a href="https://wa.me/{{ preg_replace('/\D/', '', $eduLead->whatsapp_number) }}"
-                               target="_blank" class="text-success text-decoration-none">
+                            <a href="https://wa.me/{{ preg_replace('/\D/', '', $eduLead->whatsapp_number) }}" target="_blank" class="text-success text-decoration-none">
                                 <i class="lab la-whatsapp me-1"></i>{{ $eduLead->whatsapp_number }}
                             </a>
                         </span>
@@ -817,9 +984,7 @@
 
                     <div class="info-row">
                         <span class="info-label">Branch</span>
-                        <span class="info-value">
-                            <i class="las la-building me-1 text-muted"></i>{{ $eduLead->branch->name ?? '—' }}
-                        </span>
+                        <span class="info-value"><i class="las la-building me-1 text-muted"></i>{{ $eduLead->branch->name ?? '—' }}</span>
                     </div>
 
                     <div class="info-row">
@@ -852,13 +1017,8 @@
                     <div class="info-row">
                         <span class="info-label">Next Follow-up</span>
                         <span class="info-value">
-                            <span class="badge {{ $eduLead->followup_date->isPast()
-                                ? 'bg-danger'
-                                : ($eduLead->followup_date->isToday()
-                                    ? 'bg-warning text-dark'
-                                    : 'bg-info text-dark') }}">
-                                <i class="las la-calendar me-1"></i>
-                                {{ $eduLead->followup_date->format('d M Y') }}
+                            <span class="badge {{ $eduLead->followup_date->isPast() ? 'bg-danger' : ($eduLead->followup_date->isToday() ? 'bg-warning text-dark' : 'bg-info text-dark') }}">
+                                <i class="las la-calendar me-1"></i>{{ $eduLead->followup_date->format('d M Y') }}
                             </span>
                         </span>
                     </div>
@@ -923,7 +1083,7 @@
             {{-- ══════════════════════════════
                  RIGHT COLUMN
             ══════════════════════════════ --}}
-            <div class="col-lg-8">
+            <div class="col-lg-7">
 
                 {{-- ── SCHEDULED FOLLOWUPS ────────────────────────────── --}}
                 <div class="info-card">
@@ -947,11 +1107,6 @@
 
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <div class="d-flex gap-2 flex-wrap">
-                                        {{-- Priority --}}
-                                        <span class="badge bg-{{ $followup->priority === 'high' ? 'danger' : ($followup->priority === 'medium' ? 'warning text-dark' : 'info text-dark') }}">
-                                            <i class="las la-flag me-1"></i>{{ ucfirst($followup->priority) }}
-                                        </span>
-                                        {{-- Today / Overdue markers --}}
                                         @if($followup->followup_date->isToday() && $followup->status === 'pending')
                                             <span class="badge bg-warning text-dark">📅 Today</span>
                                         @elseif($followup->followup_date->isPast() && !$followup->followup_date->isToday() && $followup->status === 'pending')
@@ -1006,8 +1161,7 @@
 
                                 @if($followup->status === 'pending' && ($user->isSuperAdmin() || $followup->assigned_to === $user->id))
                                 <div class="mt-2">
-                                    <button class="btn btn-sm btn-success markFollowupComplete"
-                                            data-id="{{ $followup->id }}">
+                                    <button class="btn btn-sm btn-success markFollowupComplete" data-id="{{ $followup->id }}">
                                         <i class="las la-check me-1"></i>Mark Complete
                                     </button>
                                 </div>
@@ -1032,7 +1186,7 @@
                 </div>
 
                 {{-- ── CALL LOGS ───────────────────────────────────────── --}}
-                <div class="info-card">
+                {{-- <div class="info-card">
                     <div class="info-card-header">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5><i class="las la-phone me-2"></i>Call Logs</h5>
@@ -1048,29 +1202,19 @@
                             <div class="call-log-item" id="call-{{ $call->id }}">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div class="flex-grow-1">
-
-                                        {{-- Top row: agent name + call status + timestamp --}}
                                         <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
                                             <strong>{{ $call->user->name ?? '—' }}</strong>
 
-                                            {{-- Call Status badge (Connected / Not Connected) --}}
                                             @if(isset($call->call_status))
                                                 @if($call->call_status === 'connected')
-                                                    <span class="badge bg-success">
-                                                        <i class="las la-phone me-1"></i>Connected
-                                                    </span>
+                                                    <span class="badge bg-success"><i class="las la-phone me-1"></i>Connected</span>
                                                 @elseif($call->call_status === 'not_connected')
-                                                    <span class="badge bg-danger">
-                                                        <i class="las la-phone-slash me-1"></i>Not Connected
-                                                    </span>
+                                                    <span class="badge bg-danger"><i class="las la-phone-slash me-1"></i>Not Connected</span>
                                                 @else
-                                                    <span class="badge bg-secondary">
-                                                        {{ ucfirst(str_replace('_', ' ', $call->call_status)) }}
-                                                    </span>
+                                                    <span class="badge bg-secondary">{{ ucfirst(str_replace('_', ' ', $call->call_status)) }}</span>
                                                 @endif
                                             @endif
 
-                                            {{-- Interest level (if still stored) --}}
                                             @if($call->interest_level)
                                                 <span class="badge bg-{{ $call->interest_level === 'hot' ? 'danger' : ($call->interest_level === 'warm' ? 'warning text-dark' : 'info text-dark') }}">
                                                     @if($call->interest_level === 'hot') 🔥
@@ -1086,31 +1230,26 @@
                                             </small>
                                         </div>
 
-                                        {{-- Duration --}}
                                         @if($call->duration)
                                         <p class="mb-1 small text-muted">
                                             <i class="las la-stopwatch me-1"></i>Duration: {{ $call->duration }}
                                         </p>
                                         @endif
 
-                                        {{-- Remarks --}}
                                         @if($call->remarks)
                                         <div class="mb-1 p-2 bg-light rounded small">
                                             <i class="las la-comment-alt me-1 text-muted"></i>{{ $call->remarks }}
                                         </div>
                                         @endif
 
-                                        {{-- Next action --}}
                                         @if($call->next_action)
                                         <p class="mb-0 small text-muted">
                                             <i class="las la-arrow-right me-1"></i>
                                             <strong>Next:</strong> {{ $call->next_action }}
                                         </p>
                                         @endif
-
                                     </div>
 
-                                    {{-- Delete button --}}
                                     @if($user->isSuperAdmin() || $user->isOperationHead() || $user->isLeadManager() || $call->user_id === $user->id)
                                     <button class="btn btn-sm btn-outline-danger deleteCall ms-2 flex-shrink-0"
                                             data-id="{{ $call->id }}" title="Delete Call">
@@ -1126,7 +1265,7 @@
                             </div>
                         @endforelse
                     </div>
-                </div>
+                </div> --}}
 
                 {{-- ── NOTES ───────────────────────────────────────────── --}}
                 <div class="info-card">
@@ -1180,9 +1319,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">
-                    <i class="las la-calendar-plus me-2"></i>Schedule Followup
-                </h5>
+                <h5 class="modal-title"><i class="las la-calendar-plus me-2"></i>Schedule Followup</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form id="addFollowupForm">
@@ -1190,11 +1327,8 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold">
-                                Date <span class="text-danger">*</span>
-                            </label>
-                            <input type="date" class="form-control" name="followup_date"
-                                   required min="{{ date('Y-m-d') }}">
+                            <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" name="followup_date" required min="{{ date('Y-m-d') }}">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold">Time</label>
@@ -1202,26 +1336,13 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">
-                            Priority <span class="text-danger">*</span>
-                        </label>
-                        <select class="form-select" name="priority" required>
-                            <option value="medium" selected>Medium</option>
-                            <option value="high">High</option>
-                            <option value="low">Low</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label fw-semibold">Notes</label>
-                        <textarea class="form-control" name="notes" rows="3"
-                                  placeholder="Additional notes..."></textarea>
+                        <textarea class="form-control" name="notes" rows="3" placeholder="Additional notes..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="las la-save me-1"></i>Schedule
-                    </button>
+                    <button type="submit" class="btn btn-primary"><i class="las la-save me-1"></i>Schedule</button>
                 </div>
             </form>
         </div>
@@ -1235,43 +1356,28 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">
-                    <i class="las la-phone me-2"></i>Log Call
-                </h5>
+                <h5 class="modal-title"><i class="las la-phone me-2"></i>Log Call</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form id="addCallForm">
                 @csrf
                 <div class="modal-body">
                     <div class="row g-3">
-
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">
-                                Call Date & Time <span class="text-danger">*</span>
-                            </label>
-                            <input type="datetime-local" class="form-control" name="call_datetime"
-                                   required max="{{ date('Y-m-d\TH:i') }}">
+                            <label class="form-label fw-semibold">Call Date & Time <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" name="call_datetime" required max="{{ date('Y-m-d\TH:i') }}">
                         </div>
-
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">
-                                Call Status <span class="text-danger">*</span>
-                            </label>
+                            <label class="form-label fw-semibold">Call Status <span class="text-danger">*</span></label>
                             <select class="form-select" name="call_status" id="callStatusSelect" required>
                                 <option value="">— Select —</option>
-                                <option value="connected">
-                                    📞 Connected
-                                </option>
-                                <option value="not_connected">
-                                    📵 Not Connected
-                                </option>
+                                <option value="connected">📞 Connected</option>
+                                <option value="not_connected">📵 Not Connected</option>
                             </select>
                         </div>
 
-                        {{-- Fields visible only when Connected --}}
                         <div id="connectedFields" class="col-12" style="display:none;">
                             <div class="row g-3">
-
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Interest Level</label>
                                     <select class="form-select" name="interest_level">
@@ -1281,59 +1387,44 @@
                                         <option value="cold">❄️ Cold</option>
                                     </select>
                                 </div>
-
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Call Duration</label>
-                                    <input type="text" class="form-control" name="duration"
-                                           placeholder="e.g. 5 mins">
+                                    <input type="text" class="form-control" name="duration" placeholder="e.g. 5 mins">
                                 </div>
-
                                 <div class="col-12">
                                     <label class="form-label fw-semibold">Remarks</label>
-                                    <textarea class="form-control" name="remarks" rows="3"
-                                              placeholder="What was discussed..."></textarea>
+                                    <textarea class="form-control" name="remarks" rows="3" placeholder="What was discussed..."></textarea>
                                 </div>
-
                                 <div class="col-12">
                                     <label class="form-label fw-semibold">Next Action</label>
-                                    <input type="text" class="form-control" name="next_action"
-                                           placeholder="e.g. Send brochure, Schedule campus visit...">
+                                    <input type="text" class="form-control" name="next_action" placeholder="e.g. Send brochure, Schedule campus visit...">
                                 </div>
-
                                 <div class="col-12">
                                     <label class="form-label fw-semibold">Schedule Follow-up</label>
-                                    <input type="date" class="form-control" name="followup_date"
-                                           min="{{ date('Y-m-d', strtotime('+1 day')) }}">
+                                    <input type="date" class="form-control" name="followup_date" min="{{ date('Y-m-d', strtotime('+1 day')) }}">
                                     <small class="text-muted">Auto-creates a follow-up entry if filled</small>
                                 </div>
-
                             </div>
                         </div>
 
-                        {{-- Fields for Not Connected --}}
                         <div id="notConnectedFields" class="col-12" style="display:none;">
                             <div class="row g-3">
                                 <div class="col-12">
                                     <label class="form-label fw-semibold">Reason / Note</label>
-                                    <textarea class="form-control" name="remarks" rows="2"
-                                              placeholder="e.g. Switched off, No answer, Busy..."></textarea>
+                                    <textarea class="form-control" name="remarks" rows="2" placeholder="e.g. Switched off, No answer, Busy..."></textarea>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-semibold">Schedule Retry</label>
-                                    <input type="date" class="form-control" name="followup_date"
-                                           min="{{ date('Y-m-d', strtotime('+1 day')) }}">
+                                    <input type="date" class="form-control" name="followup_date" min="{{ date('Y-m-d', strtotime('+1 day')) }}">
                                     <small class="text-muted">Schedule when to call back</small>
                                 </div>
                             </div>
                         </div>
-
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="las la-save me-1"></i>Save Call
-                    </button>
+                    <button type="submit" class="btn btn-success"><i class="las la-save me-1"></i>Save Call</button>
                 </div>
             </form>
         </div>
@@ -1347,27 +1438,20 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-warning">
-                <h5 class="modal-title">
-                    <i class="las la-sticky-note me-2"></i>Add Note
-                </h5>
+                <h5 class="modal-title"><i class="las la-sticky-note me-2"></i>Add Note</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="addNoteForm">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">
-                            Note <span class="text-danger">*</span>
-                        </label>
-                        <textarea class="form-control" name="note" rows="4" required
-                                  placeholder="Enter your note..."></textarea>
+                        <label class="form-label fw-semibold">Note <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="note" rows="4" required placeholder="Enter your note..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning">
-                        <i class="las la-save me-1"></i>Save Note
-                    </button>
+                    <button type="submit" class="btn btn-warning"><i class="las la-save me-1"></i>Save Note</button>
                 </div>
             </form>
         </div>
@@ -1385,58 +1469,184 @@ $(document).ready(function () {
     const CSRF = '{{ csrf_token() }}';
     const LEAD = {{ $eduLead->id }};
 
-    // ── Final status labels ────────────────────────────────────────────
-    const statusLabels = {
-        pending        : '⏳ Pending',
-        contacted      : '📞 Contacted',
-        follow_up      : '🔔 Follow Up',
-        admitted       : '✅ Admitted',
-        not_interested : '❌ Not Interested',
-        dropped        : '🚫 Dropped',
+    // ══════════════════════════════════════════════════════════════════
+    // TRACKING FIELD LABEL MAPS
+    // ══════════════════════════════════════════════════════════════════
+    const trackingLabels = {
+
+        final_status: {
+            pending        : { label: '⏳ Pending',        cls: 'pill-pending' },
+            contacted      : { label: '📞 Contacted',      cls: 'pill-contacted' },
+            follow_up      : { label: '🔔 Follow Up',      cls: 'pill-follow_up' },
+            admitted       : { label: '✅ Admitted',        cls: 'pill-admitted' },
+            not_interested : { label: '❌ Not Interested',  cls: 'pill-not_interested' },
+            dropped        : { label: '🚫 Dropped',         cls: 'pill-dropped' },
+        },
+
+        status: {
+            whatsapp_link_submitted    : { label: '📲 WhatsApp Link Submitted',    cls: 'pill-whatsapp' },
+            application_form_submitted : { label: '📋 Application Form Submitted', cls: 'pill-app_form' },
+            booking                    : { label: '💳 Booking',                    cls: 'pill-booking' },
+            cancelled                  : { label: '🚫 Cancelled',                  cls: 'pill-cancelled' },
+        },
+
     };
 
-    // ── Shared AJAX helper ─────────────────────────────────────────────
-    function ajaxPost(url, formData) {
-        return $.ajax({
-            url,
-            method      : 'POST',
-            data        : formData,
-            processData : false,
-            contentType : false,
-        }).fail(function (xhr) {
-            let msg = 'An unexpected error occurred.';
-            if (xhr.responseJSON?.errors) {
-                msg = Object.values(xhr.responseJSON.errors).flat().join('<br>');
-            } else if (xhr.responseJSON?.message) {
-                msg = xhr.responseJSON.message;
-            }
-            Swal.fire({ icon: 'error', title: 'Error!', html: msg, confirmButtonColor: '#dc3545' });
-        });
+    const originalValues = {};
+
+    // ══════════════════════════════════════════════════════════════════
+    // HELPERS — enter / exit edit mode
+    // ══════════════════════════════════════════════════════════════════
+
+    function enterEdit(target, type) {
+        originalValues[target] = $(`#display-${target}`).html();
+        $(`#display-${target}`).hide();
+        $(`[data-target="${target}"].tracking-edit-btn`).hide();
+
+        if (target === 'status') {
+            $('#status-edit-row').show();
+            return;
+        }
+
+        if (type === 'input') {
+            $(`#input-${target}`).css('display', 'inline-block').focus();
+        } else {
+            $(`#select-${target}`).css('display', 'inline-block').focus();
+        }
+        $(`#save-${target}`).css('display', 'inline-flex');
+        $(`#cancel-${target}`).css('display', 'inline-flex');
     }
 
-    // ── Shared form submit wrapper ─────────────────────────────────────
-    function handleFormSubmit(formId, url, modalId, loadingText, successCb) {
-        $(formId).on('submit', function (e) {
-            e.preventDefault();
+    function exitEdit(field) {
+        $(`#display-${field}`).show();
+        $(`[data-target="${field}"].tracking-edit-btn`).show();
 
-            const $btn = $(this).find('button[type="submit"]');
-            const orig = $btn.html();
-            $btn.prop('disabled', true).html(
-                `<span class="spinner-border spinner-border-sm me-2"></span>${loadingText}`
-            );
+        if (field === 'status') {
+            $('#status-edit-row').hide();
+            return;
+        }
 
-            ajaxPost(url, new FormData(this))
-                .done(function (response) {
-                    if (response.success) successCb(response);
-                })
-                .always(function () {
-                    $btn.prop('disabled', false).html(orig);
-                });
+        $(`#select-${field}`).hide().css('display', '');
+        $(`#input-${field}`).hide().css('display', '');
+        $(`#save-${field}`).hide().css('display', '');
+        $(`#cancel-${field}`).hide().css('display', '');
+    }
+
+    function cancelEdit(field) {
+        $(`#display-${field}`).html(originalValues[field] || '');
+        exitEdit(field);
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // EDIT / CANCEL BUTTON HANDLERS
+    // ══════════════════════════════════════════════════════════════════
+
+    $(document).on('click', '.tracking-edit-btn', function () {
+        const target = $(this).data('target');
+        const type   = $(this).data('type') || 'select';
+        enterEdit(target, type);
+    });
+
+    $(document).on('click', '.tracking-cancel-btn', function () {
+        cancelEdit(this.id.replace('cancel-', ''));
+    });
+
+    // ══════════════════════════════════════════════════════════════════
+    // SAVE BUTTON HANDLER
+    // ══════════════════════════════════════════════════════════════════
+
+    $(document).on('click', '.tracking-save-btn', function () {
+        const field   = this.id.replace('save-', '');
+        const $select = $(`#select-${field}`);
+        const $input  = $(`#input-${field}`);
+        const value   = (field === 'status' || ($select.length && $select.css('display') !== 'none'))
+            ? $select.val()
+            : $input.val();
+
+        saveTrackingField(field, value);
+    });
+
+    // ══════════════════════════════════════════════════════════════════
+    // SAVE AJAX
+    // ══════════════════════════════════════════════════════════════════
+
+    function saveTrackingField(field, value) {
+        const $row = $(`#row-${field}`);
+        $row.addClass('tracking-saving');
+
+        $.ajax({
+            url    : '{{ route("edu-leads.updateTracking", $eduLead) }}',
+            method : 'POST',
+            data   : { _token: CSRF, _method: 'PATCH', field, value },
+        }).done(function (response) {
+
+            if (!response.success) {
+                Swal.fire({ icon: 'error', title: 'Failed', text: response.message || 'Update failed.', confirmButtonColor: '#dc3545' });
+                cancelEdit(field);
+                return;
+            }
+
+            // ── Update display pill / text ────────────────────────────
+            let newHtml = '';
+
+            if (trackingLabels[field]) {
+                const meta = trackingLabels[field][value];
+                newHtml = meta
+                    ? `<span class="status-pill ${meta.cls}">${meta.label}</span>`
+                    : `<span class="text-muted fw-normal">—</span>`;
+
+            } else if (field === 'booking_payment' || field === 'fees_collection') {
+                const num = parseFloat(value);
+                newHtml = (!value || isNaN(num))
+                    ? '<span class="text-muted fw-normal">—</span>'
+                    : `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                $(`#display-${field}`).toggleClass('has-value', !!value && !isNaN(num));
+
+            } else if (field === 'application_number') {
+                newHtml = value
+                    ? `<span class="badge bg-light text-dark border fw-semibold" style="font-size:0.85rem;">AJK-${value}</span>`
+                    : '<span class="text-muted fw-normal" style="font-size:0.9rem;">—</span>';
+
+            } else if (field === 'cancellation_reason') {
+                $(`#display-${field}`).text(value || '—');
+                newHtml = null; // already set via .text()
+            }
+
+            if (newHtml !== null) {
+                $(`#display-${field}`).html(newHtml);
+            }
+
+            // Store updated original for future cancel
+            originalValues[field] = $(`#display-${field}`).html();
+
+            // ── Exit edit mode (does NOT individually hide save/cancel
+            //    for status — only hides the wrapper div) ───────────────
+            exitEdit(field);
+
+            // Success flash
+            $(`#display-${field}`)
+                .css({ transition: 'background 0.3s', background: '#d1fae5', borderRadius: '4px', padding: '2px 6px' });
+            setTimeout(() => $(`#display-${field}`).css({ background: '', padding: '' }), 1200);
+
+            // Reload after status change so Blade re-renders booking/cancellation sections
+            if (field === 'status') {
+                setTimeout(() => window.location.reload(), 900);
+            }
+
+        }).fail(function (xhr) {
+            Swal.fire({
+                icon: 'error', title: 'Error!',
+                text: xhr.responseJSON?.message || 'Could not update field.',
+                confirmButtonColor: '#dc3545',
+            });
+            cancelEdit(field);
+        }).always(function () {
+            $row.removeClass('tracking-saving');
         });
     }
 
     // ══════════════════════════════════════════════════════════════════
-    // CALL STATUS FIELD TOGGLE (Connected ↔ Not Connected)
+    // CALL STATUS FIELD TOGGLE
     // ══════════════════════════════════════════════════════════════════
     $('#callStatusSelect').on('change', function () {
         const val = this.value;
@@ -1444,7 +1654,6 @@ $(document).ready(function () {
         $('#notConnectedFields').toggle(val === 'not_connected');
     });
 
-    // Reset call status fields when modal closes
     $('#addCallModal').on('hidden.bs.modal', function () {
         $('#connectedFields').hide();
         $('#notConnectedFields').hide();
@@ -1452,408 +1661,198 @@ $(document).ready(function () {
     });
 
     // ══════════════════════════════════════════════════════════════════
+    // SHARED AJAX HELPER
+    // ══════════════════════════════════════════════════════════════════
+    function ajaxPost(url, formData) {
+        return $.ajax({
+            url, method: 'POST', data: formData, processData: false, contentType: false,
+        }).fail(function (xhr) {
+            let msg = 'An unexpected error occurred.';
+            if (xhr.responseJSON?.errors)       msg = Object.values(xhr.responseJSON.errors).flat().join('<br>');
+            else if (xhr.responseJSON?.message) msg = xhr.responseJSON.message;
+            Swal.fire({ icon: 'error', title: 'Error!', html: msg, confirmButtonColor: '#dc3545' });
+        });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // SHARED FORM SUBMIT WRAPPER
+    // ══════════════════════════════════════════════════════════════════
+    function handleFormSubmit(formId, url, modalId, loadingText, successCb) {
+        $(formId).on('submit', function (e) {
+            e.preventDefault();
+            const $btn = $(this).find('button[type="submit"]');
+            const orig = $btn.html();
+            $btn.prop('disabled', true).html(`<span class="spinner-border spinner-border-sm me-2"></span>${loadingText}`);
+            ajaxPost(url, new FormData(this))
+                .done(function (response) { if (response.success) successCb(response); })
+                .always(function () { $btn.prop('disabled', false).html(orig); });
+        });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
     // ADD FOLLOWUP
     // ══════════════════════════════════════════════════════════════════
-    handleFormSubmit(
-        '#addFollowupForm',
-        '{{ route("edu-leads.addFollowup", $eduLead) }}',
-        '#addFollowupModal',
-        'Saving...',
-        function (response) {
-            $('#addFollowupModal').modal('hide');
-            $('#addFollowupForm')[0].reset();
-
-            Swal.fire({
-                icon              : 'success',
-                title             : 'Followup Scheduled!',
-                text              : response.message,
-                confirmButtonColor: '#667eea',
-                timer             : 2000,
-                showConfirmButton : false,
-            }).then(() => {
-                if (response.html) {
-                    const $container = $('#followupsContainer');
-                    $container.find('.empty-state').remove();
-                    $container.prepend(response.html);
-                } else {
-                    location.reload();
-                }
+    handleFormSubmit('#addFollowupForm', '{{ route("edu-leads.addFollowup", $eduLead) }}', '#addFollowupModal', 'Saving...', function (response) {
+        $('#addFollowupModal').modal('hide');
+        $('#addFollowupForm')[0].reset();
+        Swal.fire({ icon: 'success', title: 'Followup Scheduled!', text: response.message, confirmButtonColor: '#667eea', timer: 2000, showConfirmButton: false })
+            .then(() => {
+                if (response.html) { $('#followupsContainer').find('.empty-state').remove().end().prepend(response.html); }
+                else { location.reload(); }
             });
-        }
-    );
+    });
 
     // ══════════════════════════════════════════════════════════════════
-    // ADD CALL  — now carries call_status (connected / not_connected)
+    // ADD CALL
     // ══════════════════════════════════════════════════════════════════
-    handleFormSubmit(
-        '#addCallForm',
-        '{{ route("edu-leads.addCall", $eduLead) }}',
-        '#addCallModal',
-        'Saving...',
-        function (response) {
-            $('#addCallModal').modal('hide');
-            $('#addCallForm')[0].reset();
-            $('#connectedFields').hide();
-            $('#notConnectedFields').hide();
-            $('#callStatusSelect').val('');
-            setCallDatetimeNow();
-
-            Swal.fire({
-                icon              : 'success',
-                title             : 'Call Logged!',
-                text              : response.message,
-                confirmButtonColor: '#667eea',
-                timer             : 2000,
-                showConfirmButton : false,
-            }).then(() => {
-                if (response.html) {
-                    const $container = $('#callLogsContainer');
-                    $container.find('.empty-state').remove();
-                    $container.prepend(response.html);
-                } else {
-                    location.reload();
-                }
+    handleFormSubmit('#addCallForm', '{{ route("edu-leads.addCall", $eduLead) }}', '#addCallModal', 'Saving...', function (response) {
+        $('#addCallModal').modal('hide');
+        $('#addCallForm')[0].reset();
+        $('#connectedFields').hide();
+        $('#notConnectedFields').hide();
+        $('#callStatusSelect').val('');
+        setCallDatetimeNow();
+        Swal.fire({ icon: 'success', title: 'Call Logged!', text: response.message, confirmButtonColor: '#667eea', timer: 2000, showConfirmButton: false })
+            .then(() => {
+                if (response.html) { $('#callLogsContainer').find('.empty-state').remove().end().prepend(response.html); }
+                else { location.reload(); }
             });
-        }
-    );
+    });
 
     // ══════════════════════════════════════════════════════════════════
     // ADD NOTE
     // ══════════════════════════════════════════════════════════════════
-    handleFormSubmit(
-        '#addNoteForm',
-        '{{ route("edu-leads.addNote", $eduLead) }}',
-        '#addNoteModal',
-        'Saving...',
-        function (response) {
-            $('#addNoteModal').modal('hide');
-            $('#addNoteForm')[0].reset();
-
-            Swal.fire({
-                icon              : 'success',
-                title             : 'Note Added!',
-                text              : response.message,
-                confirmButtonColor: '#667eea',
-                timer             : 2000,
-                showConfirmButton : false,
-            }).then(() => {
-                if (response.html) {
-                    const $container = $('#notesContainer');
-                    $container.find('.empty-state').remove();
-                    $container.prepend(response.html);
-                } else {
-                    location.reload();
-                }
+    handleFormSubmit('#addNoteForm', '{{ route("edu-leads.addNote", $eduLead) }}', '#addNoteModal', 'Saving...', function (response) {
+        $('#addNoteModal').modal('hide');
+        $('#addNoteForm')[0].reset();
+        Swal.fire({ icon: 'success', title: 'Note Added!', text: response.message, confirmButtonColor: '#667eea', timer: 2000, showConfirmButton: false })
+            .then(() => {
+                if (response.html) { $('#notesContainer').find('.empty-state').remove().end().prepend(response.html); }
+                else { location.reload(); }
             });
-        }
-    );
+    });
 
     // ══════════════════════════════════════════════════════════════════
     // MARK FOLLOWUP COMPLETE
     // ══════════════════════════════════════════════════════════════════
     $(document).on('click', '.markFollowupComplete', function () {
-        const id   = $(this).data('id');
+        const id = $(this).data('id');
         const $btn = $(this);
-
         Swal.fire({
-            title             : 'Mark as Complete?',
-            text              : 'This will mark the followup as completed.',
-            icon              : 'question',
-            showCancelButton  : true,
-            confirmButtonColor: '#10b981',
-            cancelButtonColor : '#6c757d',
-            confirmButtonText : 'Yes, Complete It',
+            title: 'Mark as Complete?', text: 'This will mark the followup as completed.', icon: 'question',
+            showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#6c757d', confirmButtonText: 'Yes, Complete It',
         }).then(result => {
             if (!result.isConfirmed) return;
-
-            $btn.prop('disabled', true).html(
-                '<span class="spinner-border spinner-border-sm"></span>'
-            );
-
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
             $.post(`/edu-lead-followups/${id}/complete`, { _token: CSRF })
                 .done(function (response) {
                     if (response.success) {
                         const $item = $(`#followup-${id}`);
-
                         $item.removeClass('overdue today').addClass('completed');
                         $item.find('.markFollowupComplete').remove();
-
-                        // Flip the status badge from primary → success
-                        $item.find('.badge.bg-primary')
-                             .removeClass('bg-primary')
-                             .addClass('bg-success')
-                             .text('Completed');
-
-                        // Append completion timestamp
-                        $item.append(`
-                            <div class="mt-2">
-                                <small class="text-success">
-                                    <i class="las la-check-circle me-1"></i>
-                                    Completed ${response.completed_at ?? 'just now'}
-                                </small>
-                            </div>
-                        `);
-
-                        Swal.fire({
-                            icon             : 'success',
-                            title            : 'Completed!',
-                            timer            : 1500,
-                            showConfirmButton : false,
-                        });
+                        $item.find('.badge.bg-primary').removeClass('bg-primary').addClass('bg-success').text('Completed');
+                        $item.append(`<div class="mt-2"><small class="text-success"><i class="las la-check-circle me-1"></i>Completed ${response.completed_at ?? 'just now'}</small></div>`);
+                        Swal.fire({ icon: 'success', title: 'Completed!', timer: 1500, showConfirmButton: false });
                     }
                 })
                 .fail(function (xhr) {
-                    $btn.prop('disabled', false)
-                        .html('<i class="las la-check me-1"></i>Mark Complete');
-                    Swal.fire({
-                        icon: 'error', title: 'Error!',
-                        text: xhr.responseJSON?.message || 'Failed to complete followup.',
-                        confirmButtonColor: '#dc3545',
-                    });
+                    $btn.prop('disabled', false).html('<i class="las la-check me-1"></i>Mark Complete');
+                    Swal.fire({ icon: 'error', title: 'Error!', text: xhr.responseJSON?.message || 'Failed.', confirmButtonColor: '#dc3545' });
                 });
         });
     });
 
     // ══════════════════════════════════════════════════════════════════
-    // DELETE FOLLOWUP
+    // DELETE HANDLERS
     // ══════════════════════════════════════════════════════════════════
     $(document).on('click', '.deleteFollowup', function () {
         const id = $(this).data('id');
         confirmDelete('Delete Followup?').then(ok => {
             if (!ok) return;
-            $.ajax({
-                url   : `/edu-leads/followup/${id}`,
-                method: 'DELETE',
-                data  : { _token: CSRF },
-            }).done(function (response) {
-                if (response.success) fadeRemove(`#followup-${id}`, '#followupsContainer', 'followups');
-            }).fail(deleteError);
+            $.ajax({ url: `/edu-leads/followup/${id}`, method: 'DELETE', data: { _token: CSRF } })
+                .done(r => { if (r.success) fadeRemove(`#followup-${id}`, '#followupsContainer', 'followups'); })
+                .fail(deleteError);
         });
     });
 
-    // ══════════════════════════════════════════════════════════════════
-    // DELETE CALL LOG
-    // ══════════════════════════════════════════════════════════════════
     $(document).on('click', '.deleteCall', function () {
         const id = $(this).data('id');
         confirmDelete('Delete Call Log?').then(ok => {
             if (!ok) return;
-            $.ajax({
-                url   : `/edu-leads/call/${id}`,
-                method: 'DELETE',
-                data  : { _token: CSRF },
-            }).done(function (response) {
-                if (response.success) fadeRemove(`#call-${id}`, '#callLogsContainer', 'call logs');
-            }).fail(deleteError);
+            $.ajax({ url: `/edu-leads/call/${id}`, method: 'DELETE', data: { _token: CSRF } })
+                .done(r => { if (r.success) fadeRemove(`#call-${id}`, '#callLogsContainer', 'call logs'); })
+                .fail(deleteError);
         });
     });
 
-    // ══════════════════════════════════════════════════════════════════
-    // DELETE NOTE
-    // ══════════════════════════════════════════════════════════════════
     $(document).on('click', '.deleteNote', function () {
         const id = $(this).data('id');
         confirmDelete('Delete Note?').then(ok => {
             if (!ok) return;
-            $.ajax({
-                url   : `/edu-leads/note/${id}`,
-                method: 'DELETE',
-                data  : { _token: CSRF },
-            }).done(function (response) {
-                if (response.success) fadeRemove(`#note-${id}`, '#notesContainer', 'notes');
-            }).fail(deleteError);
+            $.ajax({ url: `/edu-leads/note/${id}`, method: 'DELETE', data: { _token: CSRF } })
+                .done(r => { if (r.success) fadeRemove(`#note-${id}`, '#notesContainer', 'notes'); })
+                .fail(deleteError);
         });
     });
 
     // ══════════════════════════════════════════════════════════════════
-    // DELETE LEAD (header button)
+    // DELETE LEAD
     // ══════════════════════════════════════════════════════════════════
     $(document).on('click', '#deleteLeadBtn', function () {
         const name = $(this).data('name');
-
         Swal.fire({
-            title             : 'Delete Lead?',
-            html              : `Are you sure you want to delete <strong>${name}</strong>?<br><small class="text-muted">This cannot be undone.</small>`,
-            icon              : 'warning',
-            showCancelButton  : true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonColor : '#6c757d',
-            confirmButtonText : 'Yes, Delete',
+            title: 'Delete Lead?',
+            html: `Are you sure you want to delete <strong>${name}</strong>?<br><small class="text-muted">This cannot be undone.</small>`,
+            icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d', confirmButtonText: 'Yes, Delete',
         }).then(result => {
             if (!result.isConfirmed) return;
-
-            Swal.fire({
-                title: 'Deleting...',
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading(),
-            });
-
-            $.ajax({
-                url   : `{{ route('edu-leads.destroy', '') }}/${LEAD}`,
-                method: 'DELETE',
-                data  : { _token: CSRF },
-            }).done(function () {
-                Swal.fire({
-                    icon             : 'success',
-                    title            : 'Deleted!',
-                    timer            : 1500,
-                    showConfirmButton : false,
-                }).then(() => {
-                    window.location.href = '{{ route("edu-leads.index") }}';
+            Swal.fire({ title: 'Deleting...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            $.ajax({ url: `{{ route('edu-leads.destroy', '') }}/${LEAD}`, method: 'DELETE', data: { _token: CSRF } })
+                .done(() => {
+                    Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false })
+                        .then(() => { window.location.href = '{{ route("edu-leads.index") }}'; });
+                })
+                .fail(xhr => {
+                    Swal.fire({ icon: 'error', title: 'Error!', text: xhr.responseJSON?.message || 'Failed to delete.', confirmButtonColor: '#dc3545' });
                 });
-            }).fail(function (xhr) {
-                Swal.fire({
-                    icon: 'error', title: 'Error!',
-                    text: xhr.responseJSON?.message || 'Failed to delete lead.',
-                    confirmButtonColor: '#dc3545',
-                });
-            });
-        });
-    });
-
-    // ══════════════════════════════════════════════════════════════════
-    // STATUS BADGE TOGGLE (badge ↔ dropdown)
-    // ══════════════════════════════════════════════════════════════════
-    $('#statusEditBtn').on('click', function () {
-        const isDropdownVisible = !$('#statusDropdown').hasClass('d-none');
-
-        if (isDropdownVisible) {
-            // Cancel edit — restore badge
-            $('#statusDropdown').addClass('d-none');
-            $('#statusBadge').removeClass('d-none');
-            $(this).find('i').removeClass('la-times').addClass('la-pen');
-            $('#statusDropdown').val('{{ $eduLead->final_status }}');
-        } else {
-            // Enter edit mode
-            $('#statusBadge').addClass('d-none');
-            $('#statusDropdown').removeClass('d-none').focus();
-            $(this).find('i').removeClass('la-pen').addClass('la-times');
-        }
-    });
-
-    // ── Status change confirm & AJAX ──────────────────────────────────
-    let currentStatus = '{{ $eduLead->final_status }}';
-
-    $('#statusDropdown').on('change', function () {
-        const newStatus = $(this).val();
-        if (newStatus === currentStatus) return;
-
-        Swal.fire({
-            title             : 'Change Status?',
-            html              : `Update to <strong>${statusLabels[newStatus]}</strong>?`,
-            icon              : 'question',
-            showCancelButton  : true,
-            confirmButtonColor: '#667eea',
-            cancelButtonColor : '#6c757d',
-            confirmButtonText : 'Yes, Update',
-        }).then(result => {
-            if (!result.isConfirmed) {
-                $('#statusDropdown').val(currentStatus);
-                return;
-            }
-
-            Swal.fire({
-                title: 'Updating...',
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading(),
-            });
-
-            $.ajax({
-                url   : '{{ route("edu-leads.updateStatus", $eduLead) }}',
-                method: 'POST',
-                data  : {
-                    _token       : CSRF,
-                    _method      : 'PATCH',
-                    final_status : newStatus,
-                },
-            }).done(function (response) {
-                currentStatus = newStatus;
-
-                // Update badge class + text in-place
-                const $badge = $('#statusBadge');
-                $badge.attr('class',
-                    'lead-status-badge ' + (response.status_class ?? 'status-' + newStatus)
-                );
-                $('#statusText').text(statusLabels[newStatus]);
-
-                // Restore badge, hide dropdown
-                $('#statusDropdown').addClass('d-none');
-                $badge.removeClass('d-none');
-                $('#statusEditBtn i').removeClass('la-times').addClass('la-pen');
-
-                Swal.fire({
-                    icon             : 'success',
-                    title            : 'Status Updated!',
-                    timer            : 1800,
-                    showConfirmButton : false,
-                });
-            }).fail(function (xhr) {
-                $('#statusDropdown').val(currentStatus);
-                Swal.fire({
-                    icon: 'error', title: 'Failed',
-                    text: xhr.responseJSON?.message || 'Could not update status.',
-                    confirmButtonColor: '#dc3545',
-                });
-            });
         });
     });
 
     // ══════════════════════════════════════════════════════════════════
     // UTILITIES
     // ══════════════════════════════════════════════════════════════════
-
-    /** Shared delete confirm dialog — returns Promise<bool> */
     function confirmDelete(title) {
         return Swal.fire({
-            title,
-            text              : 'This action cannot be undone.',
-            icon              : 'warning',
-            showCancelButton  : true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonColor : '#6c757d',
-            confirmButtonText : 'Yes, Delete',
+            title, text: 'This action cannot be undone.', icon: 'warning',
+            showCancelButton: true, confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d', confirmButtonText: 'Yes, Delete',
         }).then(r => r.isConfirmed);
     }
 
-    /** Remove element with fade; show empty state if container becomes empty */
     function fadeRemove(selector, containerId, entityName) {
         $(selector).fadeOut(300, function () {
             $(this).remove();
             const $c = $(containerId);
             if ($c.children(':not(.empty-state)').length === 0) {
-                $c.html(`
-                    <div class="empty-state">
-                        <i class="las la-inbox"></i>
-                        <p class="mb-0">No ${entityName} yet</p>
-                    </div>
-                `);
+                $c.html(`<div class="empty-state"><i class="las la-inbox"></i><p class="mb-0">No ${entityName} yet</p></div>`);
             }
         });
     }
 
-    /** Generic delete AJAX error handler */
     function deleteError(xhr) {
-        Swal.fire({
-            icon: 'error', title: 'Error!',
-            text: xhr.responseJSON?.message || 'Delete failed.',
-            confirmButtonColor: '#dc3545',
-        });
+        Swal.fire({ icon: 'error', title: 'Error!', text: xhr.responseJSON?.message || 'Delete failed.', confirmButtonColor: '#dc3545' });
     }
 
-    /** Set call datetime input to current local time */
     function setCallDatetimeNow() {
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         $('input[name="call_datetime"]').val(now.toISOString().slice(0, 16));
     }
 
-    // Set call datetime on page load and every time the modal opens
     setCallDatetimeNow();
-    $('#addCallModal').on('show.bs.modal', function () {
-        setCallDatetimeNow();
-    });
+    $('#addCallModal').on('show.bs.modal', () => setCallDatetimeNow());
 
 });
 </script>
 @endsection
-

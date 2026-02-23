@@ -232,7 +232,7 @@
                                 <label for="school_department" class="form-label">Stream / Department</label>
                                 <select class="form-select" id="school_department" name="school_department">
                                     <option value="">Select Stream</option>
-                                    @foreach(['Science','Commerce','Arts','Vocational','Other'] as $s)
+                                    @foreach(['Computer Science', 'Biology Science','Commerce','Arts & Journalism', 'Humanities','Vocational','Other'] as $s)
                                         <option value="{{ $s }}">{{ $s }}</option>
                                     @endforeach
                                 </select>
@@ -353,6 +353,14 @@
                                 <div class="invalid-feedback"></div>
                             </div>
 
+                            {{-- Referral Name — shown only for Referral source --}}
+                            <div class="col-md-4 mb-3 conditional-section hidden" id="referralNameField">
+                                <label for="referral_name" class="form-label">Referral Name</label>
+                                <input type="text" class="form-control" id="referral_name"
+                                    name="referral_name" placeholder="Name of the person who referred...">
+                                <div class="invalid-feedback"></div>
+                            </div>
+
                             {{-- Interest Level --}}
                             <div class="col-md-4 mb-3">
                                 <label for="interest_level" class="form-label">Interest Level</label>
@@ -393,7 +401,7 @@
                         {{-- ═══════════════════════════════════════
                              5. ADDITIONAL NOTES
                         ═══════════════════════════════════════ --}}
-                        <div class="section-title mt-4">
+                        {{-- <div class="section-title mt-4">
                             <i class="las la-info-circle me-2"></i> Additional Notes
                         </div>
 
@@ -410,72 +418,92 @@
                                           placeholder="Any additional notes..."></textarea>
                                 <div class="invalid-feedback"></div>
                             </div>
-                        </div>
+                        </div> --}}
 
                         {{-- ═══════════════════════════════════════
-                             6. APPLICATION & PAYMENT TRACKING
+                            6. NEXT ACTION
                         ═══════════════════════════════════════ --}}
                         <div class="section-title mt-4">
-                            <i class="las la-file-invoice-dollar me-2"></i> Application & Payment Tracking
+                            <i class="las la-tasks me-2"></i> Next Action
                         </div>
-
                         <div class="tracking-card">
+
                             <div class="row">
-                                {{-- WhatsApp Link --}}
+
+                                {{-- Status --}}
                                 <div class="col-md-6 mb-3">
-                                    <label for="whatsapp_link" class="form-label">
-                                        <i class="lab la-whatsapp text-success me-1"></i> WhatsApp Link
+                                    <label for="status" class="form-label">
+                                        <i class="las la-toggle-on text-primary me-1"></i> Status
                                     </label>
-                                    <input type="url" class="form-control" id="whatsapp_link"
-                                           name="whatsapp_link" placeholder="https://wa.me/group/...">
+                                    <select class="form-select" id="status" name="status">
+                                        <option value="" @selected(old('status', $eduLead->status ?? '') === '')>— Select Status —</option>
+                                        <option value="whatsapp_link_submitted"    @selected(old('status', $eduLead->status ?? '') === 'whatsapp_link_submitted')>📲 WhatsApp Link Submitted</option>
+                                        <option value="application_form_submitted" @selected(old('status', $eduLead->status ?? '') === 'application_form_submitted')>📋 Application Form Submitted</option>
+                                        <option value="booking"                    @selected(old('status', $eduLead->status ?? '') === 'booking')>💳 Booking</option>
+                                        <option value="cancelled"                  @selected(old('status', $eduLead->status ?? '') === 'cancelled')>🚫 Cancelled</option>
+                                    </select>
                                     <div class="invalid-feedback"></div>
-                                    <small class="help-text">WhatsApp group or chat link</small>
                                 </div>
 
-                                {{-- Application Form --}}
+                                {{-- Final Lead Status --}}
                                 <div class="col-md-6 mb-3">
-                                    <label for="application_form_url" class="form-label">
-                                        <i class="las la-file-alt text-primary me-1"></i> Application Form
+                                    <label for="final_status" class="form-label">
+                                        <i class="las la-flag text-info me-1"></i> Final Lead Status
                                     </label>
-                                    <input type="url" class="form-control" id="application_form_url"
-                                           name="application_form_url"
-                                           placeholder="https://university.com/apply/...">
+                                    <select class="form-select" id="final_status" name="final_status">
+                                        <option value="pending"        @selected(old('final_status', $eduLead->final_status ?? 'pending')        === 'pending')       >⏳ Pending</option>
+                                        <option value="contacted"      @selected(old('final_status', $eduLead->final_status ?? '')               === 'contacted')      >📞 Contacted</option>
+                                        <option value="follow_up"      @selected(old('final_status', $eduLead->final_status ?? '')               === 'follow_up')      >🔔 Follow Up</option>
+                                        <option value="admitted"       @selected(old('final_status', $eduLead->final_status ?? '')               === 'admitted')       >✅ Admitted</option>
+                                        <option value="not_interested" @selected(old('final_status', $eduLead->final_status ?? '')               === 'not_interested') >❌ Not Interested</option>
+                                        <option value="dropped"        @selected(old('final_status', $eduLead->final_status ?? '')               === 'dropped')        >🚫 Dropped</option>
+                                    </select>
                                     <div class="invalid-feedback"></div>
                                 </div>
+
                             </div>
 
-                            <div class="row">
-                                {{-- Booking Payment --}}
-                                <div class="col-md-4 mb-3">
+                            {{-- Booking fields — shown only when status = "booking" --}}
+                            <div class="row conditional-section hidden" id="bookingFields">
+
+                                <div class="col-md-6 mb-3">
                                     <label for="booking_payment" class="form-label">
-                                        <i class="las la-rupee-sign text-warning me-1"></i> Booking Payment
+                                        <i class="las la-rupee-sign text-warning me-1"></i> Booking Payment (₹)
                                     </label>
                                     <input type="number" step="0.01" min="0" class="form-control"
-                                           id="booking_payment" name="booking_payment" placeholder="0.00">
+                                        id="booking_payment" name="booking_payment"
+                                        placeholder="0.00"
+                                        value="{{ old('booking_payment', $eduLead->booking_payment ?? '') }}">
                                     <div class="invalid-feedback"></div>
                                 </div>
 
-                                {{-- Fees Collection --}}
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-6 mb-3">
                                     <label for="fees_collection" class="form-label">
-                                        <i class="las la-money-bill text-success me-1"></i> Fees Collection
+                                        <i class="las la-money-bill text-success me-1"></i> Fees Collected (₹)
                                     </label>
                                     <input type="number" step="0.01" min="0" class="form-control"
-                                           id="fees_collection" name="fees_collection" placeholder="0.00">
+                                        id="fees_collection" name="fees_collection"
+                                        placeholder="0.00"
+                                        value="{{ old('fees_collection', $eduLead->fees_collection ?? '') }}">
                                     <div class="invalid-feedback"></div>
                                 </div>
 
-                                {{-- Cancellation --}}
-                                <div class="col-md-4 mb-3">
+                            </div>
+
+                            {{-- Cancellation Reason — shown only when status = "cancelled" --}}
+                            <div class="row conditional-section hidden" id="cancellationFields">
+
+                                <div class="col-md-12 mb-3">
                                     <label for="cancellation_reason" class="form-label">
                                         <i class="las la-ban text-danger me-1"></i> Cancellation Reason
                                     </label>
-                                    <textarea class="form-control" id="cancellation_reason"
-                                              name="cancellation_reason" rows="1"
-                                              placeholder="Reason if applicable..."></textarea>
+                                    <textarea class="form-control" id="cancellation_reason" name="cancellation_reason"
+                                            rows="2" placeholder="Reason for cancellation...">{{ old('cancellation_reason', $eduLead->cancellation_reason ?? '') }}</textarea>
                                     <div class="invalid-feedback"></div>
                                 </div>
+
                             </div>
+
                         </div>
 
                         {{-- Action Buttons --}}
@@ -503,202 +531,195 @@
 
 @section('extra-scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-const districtMap = @json($districtMap);
+$(function () {
 
-// ── Select2 factory ───────────────────────────────────────────────────
-function s2(selector, placeholder) {
-    $(selector).select2({
-        theme:       'bootstrap-5',
-        placeholder: placeholder,
-        allowClear:  true,
-        width:       '100%',
-    });
-}
+    var districtMap = @json($districtMap);
 
-// ── Populate district options ─────────────────────────────────────────
-function populateDistricts(state, selectedDistrict) {
-    const districts = districtMap[state] || [];
-    const $d = $('#district');
-    $d.select2('destroy');
-    $d.empty().append('<option value=""></option>');
-    districts.forEach(function (d) {
-        $d.append(new Option(d, d, d === selectedDistrict, d === selectedDistrict));
-    });
-    s2('#district', 'Search district...');
-}
+    function s2(sel, ph) {
+        $(sel).select2({ theme: 'bootstrap-5', placeholder: ph, allowClear: true, width: '100%' });
+    }
 
-$(document).ready(function () {
+    function populateDistricts(state, sel) {
+        var list = (state && Array.isArray(districtMap[state])) ? districtMap[state] : [];
+        var $d = $('#district');
+        if ($d.hasClass('select2-hidden-accessible')) $d.select2('destroy');
+        $d.empty().append('<option value=""></option>');
+        $.each(list, function (i, d) { $d.append(new Option(d, d, d === sel, d === sel)); });
+        $('#district').select2({
+            theme: 'bootstrap-5',
+            placeholder: list.length ? 'Search district...' : 'Select a state first...',
+            allowClear: true, width: '100%'
+        });
+    }
 
-    // ── Init all Select2 dropdowns ────────────────────────────────────
-    s2('#state',           'Search state...');
-    s2('#district',        'Search district...');
-    s2('#preferred_state', 'Search preferred state...');
-    s2('#programme_filter','Select programme...');
-    s2('#course_id',       'Select course...');
-    s2('#lead_source_id',  'Select source...');
-    s2('#interest_level',  'Select interest level...');
-    s2('#branch_id',       'Select branch...');
+    // ── INIT SELECT2 ─────────────────────────────────────────────────
+    s2('#state',              'Search state...');
+    s2('#district',           'Search district...');
+    s2('#preferred_state',    'Search preferred state...');
+    s2('#programme_filter',   'Select programme...');
+    s2('#course_id',          'Select course...');
+    s2('#lead_source_id',     'Select source...');
+    s2('#interest_level',     'Select interest level...');
+    s2('#branch_id',          'Select branch...');
     s2('#school_department',  'Select stream...');
     s2('#college_department', 'Select department...');
 
-    // ── State → District cascade ──────────────────────────────────────
-    $('#state').on('change', function () {
-        populateDistricts($(this).val(), '');
-    });
-
-    // ── Auto-fill WhatsApp from phone ─────────────────────────────────
-    $('#phone').on('blur', function () {
-        if (!$('#whatsapp_number').val()) {
-            $('#whatsapp_number').val($(this).val());
-        }
-    });
-
-    // ── Lead source → show Agent Name field ──────────────────────────
-    $('#lead_source_id').on('change', function () {
-        const name = $(this).find('option:selected').data('name') || '';
-        const show = name.includes('agent') || name.includes('partner');
-        $('#agentNameField').toggleClass('hidden', !show);
-        if (!show) $('#agent_name').val('');
-    });
-
-    // ── Institution type toggle ───────────────────────────────────────
-    $('input[name="institution_type"]').on('change', function () {
-        const val = $(this).val();
-        $('#schoolFields').toggleClass('hidden', val !== 'school');
-        $('#collegeFields').toggleClass('hidden', val !== 'college');
-        if (val !== 'school')  { $('#school').val('');  $('#school_department').val('').trigger('change'); }
-        if (val !== 'college') { $('#college').val(''); $('#college_department').val('').trigger('change'); }
-    });
-
-    // ── Programme → Course cascade ────────────────────────────────────
-    function applyCascade(resetCurrent) {
-        const programmeId = $('#programme_filter').val();
-        const current     = $('#course_id').val();
-
-        $('#course_id option').each(function () {
-            const $o = $(this);
-            if (!$o.val()) return;
-            const match = !programmeId || String($o.data('programme')) === String(programmeId);
-            $o.prop('disabled', !match);
+    // ── MASTER COURSE LIST ────────────────────────────────────────────
+    var allCourseOptions = [];
+    $('#course_id option').each(function () {
+        var v = $(this).val();
+        if (!v) return;
+        allCourseOptions.push({
+            val:       v,
+            text:      $(this).text().trim(),
+            programme: String($(this).attr('data-programme') || '')
         });
+    });
 
-        // Refresh Select2 after option changes
-        $('#course_id').trigger('change.select2');
-
-        if (resetCurrent && current) {
-            const stillAvailable = $('#course_id option[value="' + current + '"]:not([disabled])').length > 0;
-            if (!stillAvailable) $('#course_id').val('').trigger('change');
-        }
+    // ── PROGRAMME → COURSE CASCADE ────────────────────────────────────
+    function applyCascade(reset) {
+        var pid = String($('#programme_filter').val() || '');
+        var cur = $('#course_id').val();
+        var $cs = $('#course_id');
+        if ($cs.hasClass('select2-hidden-accessible')) $cs.select2('destroy');
+        $cs.empty().append('<option value="">No specific course yet</option>');
+        $.each(allCourseOptions, function (i, o) {
+            if (pid && o.programme !== pid) return;
+            $cs.append($('<option>', { value: o.val, text: o.text }).attr('data-programme', o.programme));
+        });
+        if (reset && !$cs.find('option[value="' + cur + '"]').length) $cs.val('');
+        s2('#course_id', 'Select course...');
     }
 
     $('#programme_filter').on('change', function () { applyCascade(true); });
+    $('#state').on('change', function () { populateDistricts($(this).val(), ''); });
 
-    // ── Form submission ───────────────────────────────────────────────
+    $('#phone').on('blur', function () {
+        if (!$('#whatsapp_number').val()) $('#whatsapp_number').val($(this).val());
+    });
+
+    // ── LEAD SOURCE → conditional agent / referral name fields ────────
+    $('#lead_source_id').on('change', function () {
+        var name = $(this).find('option:selected').data('name') || '';
+        var isAgent    = name.includes('agent') || name.includes('partner');
+        var isReferral = name.includes('referral');
+
+        $('#agentNameField').toggleClass('hidden', !isAgent);
+        $('#referralNameField').toggleClass('hidden', !isReferral);
+
+        if (!isAgent)    $('#agent_name').val('');
+        if (!isReferral) $('#referral_name').val('');
+    });
+
+    // ── INSTITUTION TYPE ─────────────────────────────────────────────
+    $('input[name="institution_type"]').on('change', function () {
+        var v = $(this).val();
+        $('#schoolFields').toggleClass('hidden',  v !== 'school');
+        $('#collegeFields').toggleClass('hidden', v !== 'college');
+        if (v !== 'school')  { $('#school').val('');  $('#school_department').val('').trigger('change'); }
+        if (v !== 'college') { $('#college').val(''); $('#college_department').val('').trigger('change'); }
+    });
+
+    // ── STATUS → conditional booking / cancellation fields ────────────
+    function handleStatusChange() {
+        var val = $('#status').val();
+        var isBooking    = val === 'booking';
+        var isCancelled  = val === 'cancelled';
+
+        $('#bookingFields').toggleClass('hidden', !isBooking);
+        $('#cancellationFields').toggleClass('hidden', !isCancelled);
+
+        // clear hidden fields so stale data isn't submitted
+        if (!isBooking) {
+            $('#booking_payment').val('');
+            $('#fees_collection').val('');
+        }
+        if (!isCancelled) {
+            $('#cancellation_reason').val('');
+        }
+    }
+
+    $('#status').on('change', handleStatusChange);
+    // Run on page load to handle old() repopulation
+    handleStatusChange();
+
+    // ── FORM SUBMIT ───────────────────────────────────────────────────
     $('#createLeadForm').on('submit', function (e) {
         e.preventDefault();
-
         $('.form-control, .form-select').removeClass('is-invalid');
         $('.invalid-feedback').text('');
         $('#institution_type_error, #application_number_error').text('');
 
-        // Build full application number
-        const suffix = $('#application_number_suffix').val().trim();
-        if (!$('#_appNumFull').length) {
-            $('<input type="hidden" id="_appNumFull" name="application_number">').appendTo(this);
+        var suffix = $('#application_number_suffix').val().trim();
+        if (!$('#appNumFull').length) {
+            $('<input type="hidden" id="appNumFull" name="application_number">').appendTo(this);
         }
-        $('#_appNumFull').val(suffix ? 'AJK-' + suffix : '');
+        $('#appNumFull').val(suffix ? 'AJK-' + suffix : '');
 
-        const $form       = $(this);
-        const $submitBtn  = $('#submitBtn');
-        const originalHtml = $submitBtn.html();
-
-        $submitBtn.prop('disabled', true).html(
-            '<span class="spinner-border spinner-border-sm me-2"></span>Creating...'
-        );
-
-        // Re-enable disabled options so FormData picks them up
-        $('#course_id option:disabled').prop('disabled', false);
-        const formData = new FormData($form[0]);
-        applyCascade(false);
+        var form = this, $btn = $('#submitBtn'), orig = $btn.html();
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Creating...');
 
         $.ajax({
-            url:         '{{ route("edu-leads.store") }}',
-            method:      'POST',
-            data:        formData,
+            url: '{{ route("edu-leads.store") }}',
+            method: 'POST',
+            data: new FormData(form),
             processData: false,
             contentType: false,
-            headers:     { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-
-            success: function (response) {
-                if (response.success) {
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (r) {
+                if (r.success) {
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Lead Created!',
-                        html: 'Lead <strong>' + response.lead_code + '</strong> created successfully.',
-                        confirmButtonText: 'View Lead',
-                        showCancelButton:  true,
-                        cancelButtonText:  'Create Another',
-                        confirmButtonColor: '#667eea',
-                        cancelButtonColor:  '#6c757d',
-                    }).then(result => {
-                        if (result.isConfirmed) {
-                            window.location.href = response.redirect_url;
+                        icon: 'success', title: 'Lead Created!',
+                        html: 'Lead <strong>' + r.lead_code + '</strong> created successfully.',
+                        confirmButtonText: 'View Lead', showCancelButton: true,
+                        cancelButtonText: 'Create Another',
+                        confirmButtonColor: '#667eea', cancelButtonColor: '#6c757d'
+                    }).then(function (res) {
+                        if (res.isConfirmed) {
+                            window.location.href = r.redirect_url;
                         } else {
-                            $form[0].reset();
-                            $('#_appNumFull').remove();
-                            // Reset conditionals
-                            $('#schoolFields, #collegeFields, #agentNameField').addClass('hidden');
-                            // Reset Select2
-                            $('#state, #district, #preferred_state, #programme_filter, #course_id, #lead_source_id, #interest_level, #branch_id')
+                            form.reset();
+                            $('#appNumFull').remove();
+                            $('#schoolFields, #collegeFields, #agentNameField, #referralNameField, #bookingFields, #cancellationFields').addClass('hidden');
+                            $('#state, #district, #preferred_state, #programme_filter, #course_id, #lead_source_id, #interest_level, #branch_id, #school_department, #college_department')
                                 .val('').trigger('change');
-                            $submitBtn.prop('disabled', false).html(originalHtml);
+                            applyCascade(true);
+                            $btn.prop('disabled', false).html(orig);
                         }
                     });
                 }
             },
-
             error: function (xhr) {
-                $submitBtn.prop('disabled', false).html(originalHtml);
-
+                $btn.prop('disabled', false).html(orig);
                 if (xhr.status === 422) {
-                    const errors = xhr.responseJSON.errors;
-                    let html = '<ul class="mb-0 text-start">';
-
-                    $.each(errors, function (field, messages) {
+                    var errs = xhr.responseJSON.errors, html = '<ul class="mb-0 text-start">';
+                    $.each(errs, function (field, msgs) {
                         if (field === 'institution_type') {
-                            $('#institution_type_error').text(messages[0]);
+                            $('#institution_type_error').text(msgs[0]);
                         } else if (field === 'application_number') {
-                            $('#application_number_error').text(messages[0]);
+                            $('#application_number_error').text(msgs[0]);
                         } else {
-                            const $f = $('[name="' + field + '"]');
+                            var $f = $('[name="' + field + '"]');
                             $f.addClass('is-invalid');
-                            $f.closest('.mb-3').find('.invalid-feedback').first().text(messages[0]);
+                            $f.closest('.mb-3').find('.invalid-feedback').first().text(msgs[0]);
                         }
-                        html += '<li>' + messages[0] + '</li>';
+                        html += '<li>' + msgs[0] + '</li>';
                     });
-
-                    html += '</ul>';
-                    Swal.fire({ icon: 'error', title: 'Please fix the errors', html, confirmButtonColor: '#dc3545' });
-
-                    const $first = $('.is-invalid:first');
-                    if ($first.length) {
-                        $('html, body').animate({ scrollTop: $first.offset().top - 120 }, 400);
-                    }
-
+                    Swal.fire({ icon: 'error', title: 'Please fix the errors', html: html + '</ul>', confirmButtonColor: '#dc3545' });
+                    var $first = $('.is-invalid').first();
+                    if ($first.length) $('html,body').animate({ scrollTop: $first.offset().top - 120 }, 400);
                 } else {
                     Swal.fire({
                         icon: 'error', title: 'Server Error',
-                        text: xhr.responseJSON?.message || 'Something went wrong.',
-                        confirmButtonColor: '#dc3545',
+                        text: (xhr.responseJSON && xhr.responseJSON.message) || 'Something went wrong.',
+                        confirmButtonColor: '#dc3545'
                     });
                 }
             }
         });
     });
 
-    // ── Clear validation on change ────────────────────────────────────
     $(document).on('input change', '.form-control, .form-select', function () {
         $(this).removeClass('is-invalid');
         $(this).closest('.mb-3').find('.invalid-feedback').first().text('');

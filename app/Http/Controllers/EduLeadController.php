@@ -16,6 +16,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class EduLeadController extends Controller
 {
@@ -38,27 +39,32 @@ class EduLeadController extends Controller
         $baseQuery = EduLead::with(['course.programme', 'leadSource', 'createdBy', 'assignedTo', 'branch']);
         $baseQuery->visibleTo($user);
 
-        if ($request->filled('interest_level'))    $baseQuery->where('interest_level',  $request->interest_level);
+        if ($request->filled('interest_level'))   $baseQuery->where('interest_level',  $request->interest_level);
         if ($request->filled('lead_source_id') && $request->lead_source_id != 0)
-                                                   $baseQuery->where('lead_source_id',  $request->lead_source_id);
-        if ($request->filled('course_id'))         $baseQuery->where('course_id',       $request->course_id);
-        if ($request->filled('programme_id'))      $baseQuery->whereHas('course', fn($q) => $q->where('programme_id', $request->programme_id));
-        if ($request->filled('institution_type'))  $baseQuery->where('institution_type', $request->institution_type);
-        if ($request->filled('state'))             $baseQuery->where('state',    'like', '%' . $request->state    . '%');
-        if ($request->filled('district'))          $baseQuery->where('district', 'like', '%' . $request->district . '%');
-        if ($request->filled('preferred_state'))   $baseQuery->where('preferred_state', $request->preferred_state);
+                                                $baseQuery->where('lead_source_id',  $request->lead_source_id);
+        if ($request->filled('course_id'))        $baseQuery->where('course_id',       $request->course_id);
+        if ($request->filled('programme_id'))     $baseQuery->whereHas('course', fn($q) => $q->where('programme_id', $request->programme_id));
+        if ($request->filled('institution_type')) $baseQuery->where('institution_type', $request->institution_type);
+        if ($request->filled('state'))            $baseQuery->where('state',    'like', '%' . $request->state    . '%');
+        if ($request->filled('district'))         $baseQuery->where('district', 'like', '%' . $request->district . '%');
+        if ($request->filled('preferred_state'))  $baseQuery->where('preferred_state', $request->preferred_state);
+        if ($request->filled('status'))           $baseQuery->where('status', $request->status);
         if ($request->filled('branch_id') && ($user->isSuperAdmin() || $user->isOperationHead()))
-                                                   $baseQuery->where('branch_id', $request->branch_id);
-        if ($request->filled('date_from'))         $baseQuery->whereDate('created_at', '>=', $request->date_from);
-        if ($request->filled('date_to'))           $baseQuery->whereDate('created_at', '<=', $request->date_to);
-        if ($request->filled('school_department')) $baseQuery->whereRaw('LOWER(TRIM(school_department)) = ?', [strtolower(trim($request->school_department))]);
-        if ($request->filled('college_department'))$baseQuery->whereRaw('LOWER(TRIM(college_department)) = ?', [strtolower(trim($request->college_department))]);
+                                                $baseQuery->where('branch_id', $request->branch_id);
+        if ($request->filled('date_from'))        $baseQuery->whereDate('created_at', '>=', $request->date_from);
+        if ($request->filled('date_to'))          $baseQuery->whereDate('created_at', '<=', $request->date_to);
+        if ($request->filled('school_department'))
+            $baseQuery->whereRaw('LOWER(TRIM(school_department)) = ?', [strtolower(trim($request->school_department))]);
+        if ($request->filled('college_department'))
+            $baseQuery->whereRaw('LOWER(TRIM(college_department)) = ?', [strtolower(trim($request->college_department))]);
         if ($request->filled('assigned_to')) {
             $request->assigned_to === 'unassigned'
                 ? $baseQuery->whereNull('assigned_to')
                 : $baseQuery->where('assigned_to', $request->assigned_to);
         }
-        if ($request->filled('agent_name'))        $baseQuery->where('agent_name', 'like', '%' . $request->agent_name . '%');
+        if ($request->filled('agent_name'))
+            $baseQuery->where('agent_name', 'like', '%' . $request->agent_name . '%');
+
         if ($request->filled('search')) {
             $s = '%' . $request->search . '%';
             $baseQuery->where(fn($q) => $q
@@ -70,7 +76,8 @@ class EduLeadController extends Controller
                 ->orWhere('school',           'like', $s)
                 ->orWhere('college',          'like', $s)
                 ->orWhere('agent_name',       'like', $s)
-                ->orWhere('application_number','like', $s)
+                ->orWhere('referral_name',    'like', $s)
+                ->orWhere('application_number', 'like', $s)
             );
         }
 
@@ -118,6 +125,7 @@ class EduLeadController extends Controller
         $branches        = Branch::active()->get();
         $assignableUsers = $this->getAssignableUsers($user);
         $states          = IndiaGeoHelper::states();
+        $districtMap     = IndiaGeoHelper::districtMap();
 
         if ($request->ajax()) {
             return response()->json([
@@ -137,7 +145,7 @@ class EduLeadController extends Controller
         return view('edu-leads.index', compact(
             'leads', 'hotLeadsCount', 'pendingFollowupsCount',
             'courses', 'programmes', 'leadSources', 'branches',
-            'assignableUsers', 'statusCounts', 'institutionCounts', 'states'
+            'assignableUsers', 'statusCounts', 'institutionCounts', 'states', 'districtMap'
         ));
     }
 
@@ -189,8 +197,31 @@ class EduLeadController extends Controller
             unset($validated['application_number_suffix']);
 
             $validated['final_status']   = $validated['final_status']   ?? 'pending';
-            $validated['status']         = $validated['status']         ?? 'pending';
+            $validated['status']         = $validated['status']         ?? null;
             $validated['interest_level'] = $validated['interest_level'] ?? null;
+
+            // Clear booking fields if status is not 'booking'
+            if (($validated['status'] ?? null) !== 'booking') {
+                $validated['booking_payment'] = null;
+                $validated['fees_collection'] = null;
+            }
+
+            // Clear cancellation reason if status is not 'cancelled'
+            if (($validated['status'] ?? null) !== 'cancelled') {
+                $validated['cancellation_reason'] = null;
+            }
+
+            // Clear referral_name if source is not referral, clear agent_name if not agent
+            // (optional guard — the form already controls this, but belt-and-suspenders)
+            $sourceName = strtolower(
+                \App\Models\EduLeadSource::find($validated['lead_source_id'])?->name ?? ''
+            );
+            if (!str_contains($sourceName, 'agent') && !str_contains($sourceName, 'partner')) {
+                $validated['agent_name'] = null;
+            }
+            if (!str_contains($sourceName, 'referral')) {
+                $validated['referral_name'] = null;
+            }
 
             // Force branch for lead_manager and telecaller
             $branchId = ($user->isLeadManager() || $user->isTelecaller())
@@ -324,18 +355,42 @@ class EduLeadController extends Controller
             $validated['final_status'] = $validated['final_status'] ?? $eduLead->final_status;
             $validated['status']       = $validated['status']       ?? $eduLead->status;
 
+            // Clear booking fields if status is not 'booking'
+            if ($validated['status'] !== 'booking') {
+                $validated['booking_payment'] = null;
+                $validated['fees_collection'] = null;
+            }
+
+            // Clear cancellation reason if status is not 'cancelled'
+            if ($validated['status'] !== 'cancelled') {
+                $validated['cancellation_reason'] = null;
+            }
+
+            // Clear agent/referral name based on source
+            $sourceName = strtolower(
+                \App\Models\EduLeadSource::find($validated['lead_source_id'] ?? $eduLead->lead_source_id)?->name ?? ''
+            );
+            if (!str_contains($sourceName, 'agent') && !str_contains($sourceName, 'partner')) {
+                $validated['agent_name'] = null;
+            }
+            if (!str_contains($sourceName, 'referral')) {
+                $validated['referral_name'] = null;
+            }
+
             // Preserve branch for lead_manager and telecaller
             if ($user->isLeadManager() || $user->isTelecaller()) {
                 $validated['branch_id'] = $user->branch_id;
             }
 
             // Track admitted_at timestamp
-            if (($validated['final_status'] ?? null) === 'admitted' && $eduLead->final_status !== 'admitted') {
+            if ($validated['final_status'] === 'admitted' && $eduLead->final_status !== 'admitted') {
                 $validated['admitted_at'] = now();
             }
 
-            // Track cancellation timestamp
-            if (($validated['final_status'] ?? null) === 'dropped' && $eduLead->final_status !== 'dropped') {
+            // Track cancelled_at — triggered by status = cancelled OR final_status = dropped
+            if ($validated['status'] === 'cancelled' && $eduLead->status !== 'cancelled') {
+                $validated['cancelled_at'] = now();
+            } elseif ($validated['final_status'] === 'dropped' && $eduLead->final_status !== 'dropped') {
                 $validated['cancelled_at'] = now();
             }
 
@@ -656,7 +711,6 @@ class EduLeadController extends Controller
             $validated = $request->validate([
                 'followup_date' => 'required|date|after_or_equal:today',
                 'followup_time' => 'nullable|date_format:H:i',
-                'priority'      => 'required|in:low,medium,high',
                 'notes'         => 'nullable|string|max:1000',
             ]);
 
@@ -664,9 +718,9 @@ class EduLeadController extends Controller
                 'edu_lead_id'   => $eduLead->id,
                 'followup_date' => $validated['followup_date'],
                 'followup_time' => $validated['followup_time'] ?? null,
-                'priority'      => $validated['priority'],
-                'notes'         => $validated['notes']         ?? null,
-                'assigned_to'   => $eduLead->assigned_to       ?? auth()->id(),
+                'priority'      => 'medium',
+                'notes'         => $validated['notes'] ?? null,
+                'assigned_to'   => $eduLead->assigned_to ?? auth()->id(),
                 'created_by'    => auth()->id(),
                 'status'        => 'pending',
             ]);
@@ -793,82 +847,198 @@ class EduLeadController extends Controller
             $user  = Auth::user();
             $query = EduLead::with(['course.programme', 'leadSource', 'createdBy', 'assignedTo', 'branch']);
 
-            if ($user->isLeadManager()) $query->where('branch_id', $user->branch_id);
+            // Visibility scope
+            $query->visibleTo($user);
 
-            if ($request->filled('interest_level'))    $query->where('interest_level',  $request->interest_level);
-            if ($request->filled('final_status'))      $query->where('final_status',    $request->final_status);
-            if ($request->filled('lead_source_id'))    $query->where('lead_source_id',  $request->lead_source_id);
-            if ($request->filled('course_id'))         $query->where('course_id',       $request->course_id);
-            if ($request->filled('programme_id'))      $query->whereHas('course', fn($q) => $q->where('programme_id', $request->programme_id));
-            if ($request->filled('institution_type'))  $query->where('institution_type', $request->institution_type);
-            if ($request->filled('state'))             $query->where('state',            $request->state);
-            if ($request->filled('district'))          $query->where('district',         $request->district);
-            if ($request->filled('preferred_state'))   $query->where('preferred_state',  $request->preferred_state);
-            if ($request->filled('branch_id'))         $query->where('branch_id',        $request->branch_id);
-            if ($request->filled('date_from'))         $query->whereDate('created_at',  '>=', $request->date_from);
-            if ($request->filled('date_to'))           $query->whereDate('created_at',  '<=', $request->date_to);
-            if ($request->filled('school_department')) $query->where('school_department', $request->school_department);
-            if ($request->filled('college_department'))$query->where('college_department',$request->college_department);
+            // Filters — mirrors index()
+            if ($request->filled('interest_level'))     $query->where('interest_level',   $request->interest_level);
+            if ($request->filled('final_status'))       $query->where('final_status',     $request->final_status);
+            if ($request->filled('lead_source_id'))     $query->where('lead_source_id',   $request->lead_source_id);
+            if ($request->filled('course_id'))          $query->where('course_id',        $request->course_id);
+            if ($request->filled('programme_id'))       $query->whereHas('course', fn($q) => $q->where('programme_id', $request->programme_id));
+            if ($request->filled('institution_type'))   $query->where('institution_type', $request->institution_type);
+            if ($request->filled('state'))              $query->where('state',            'like', '%' . $request->state    . '%');
+            if ($request->filled('district'))           $query->where('district',         'like', '%' . $request->district . '%');
+            if ($request->filled('preferred_state'))    $query->where('preferred_state',  $request->preferred_state);
+            if ($request->filled('branch_id') && ($user->isSuperAdmin() || $user->isOperationHead()))
+                                                        $query->where('branch_id',        $request->branch_id);
+            if ($request->filled('date_from'))          $query->whereDate('created_at',  '>=', $request->date_from);
+            if ($request->filled('date_to'))            $query->whereDate('created_at',  '<=', $request->date_to);
+            if ($request->filled('school_department'))  $query->whereRaw('LOWER(TRIM(school_department)) = ?',  [strtolower(trim($request->school_department))]);
+            if ($request->filled('college_department')) $query->whereRaw('LOWER(TRIM(college_department)) = ?', [strtolower(trim($request->college_department))]);
+            if ($request->filled('assigned_to')) {
+                $request->assigned_to === 'unassigned'
+                    ? $query->whereNull('assigned_to')
+                    : $query->where('assigned_to', $request->assigned_to);
+            }
+            if ($request->filled('agent_name'))         $query->where('agent_name', 'like', '%' . $request->agent_name . '%');
+            if ($request->filled('search')) {
+                $s = '%' . $request->search . '%';
+                $query->where(fn($q) => $q
+                    ->where('name',                'like', $s)
+                    ->orWhere('email',             'like', $s)
+                    ->orWhere('phone',             'like', $s)
+                    ->orWhere('whatsapp_number',   'like', $s)
+                    ->orWhere('lead_code',         'like', $s)
+                    ->orWhere('school',            'like', $s)
+                    ->orWhere('college',           'like', $s)
+                    ->orWhere('agent_name',        'like', $s)
+                    ->orWhere('application_number','like', $s)
+                );
+            }
 
-            $leads    = $query->get();
+            $leads    = $query->orderBy('created_at', 'desc')->get();
             $filename = 'education_leads_' . date('Y-m-d_His') . '.csv';
 
-            $callback = function () use ($leads) {
-                $file = fopen('php://output', 'w');
-                fwrite($file, "\xEF\xBB\xBF"); // UTF-8 BOM
+            // Label maps — same as blade views for consistency
+            $whatsappStatusLabels = [
+                'not_sent'  => 'Not Sent',
+                'sent'      => 'Sent',
+                'delivered' => 'Delivered',
+                'read'      => 'Read',
+            ];
+            $appFormStatusLabels = [
+                'not_submitted' => 'Not Submitted',
+                'submitted'     => 'Submitted',
+                'under_review'  => 'Under Review',
+                'approved'      => 'Approved',
+                'rejected'      => 'Rejected',
+            ];
+            $bookingStatusLabels = [
+                'not_paid' => 'Not Paid',
+                'partial'  => 'Partial',
+                'paid'     => 'Paid',
+                'refunded' => 'Refunded',
+            ];
+            $finalStatusLabels = [
+                'pending'        => 'Pending',
+                'contacted'      => 'Contacted',
+                'follow_up'      => 'Follow Up',
+                'admitted'       => 'Admitted',
+                'not_interested' => 'Not Interested',
+                'dropped'        => 'Dropped',
+            ];
 
+            $callback = function () use (
+                $leads,
+                $whatsappStatusLabels,
+                $appFormStatusLabels,
+                $bookingStatusLabels,
+                $finalStatusLabels
+            ) {
+                $file = fopen('php://output', 'w');
+                fwrite($file, "\xEF\xBB\xBF"); // UTF-8 BOM for Excel compatibility
+
+                // ── Header Row ────────────────────────────────────────────
                 fputcsv($file, [
-                    'Lead Code', 'Name', 'Email', 'Phone', 'WhatsApp',
-                    'State', 'District', 'Preferred State',
-                    'Branch', 'Institution Type',
-                    'School', 'School Department',
-                    'College', 'College Department',
-                    'Programme', 'Course', 'Addon Course',
-                    'Application No.', 'Lead Source', 'Agent Name',
-                    'Interest Level', 'Final Status', 'Call Status',
-                    'WhatsApp Link', 'Application Form URL',
-                    'Booking Payment', 'Fees Collection', 'Cancellation Reason',
-                    'Assigned To', 'Created By', 'Created At',
-                    'Followup Date', 'Remarks',
+                    // Identity
+                    'Lead Code',
+                    'Name',
+                    'Email',
+                    'Phone',
+                    'WhatsApp Number',
+
+                    // Location
+                    'State',
+                    'District',
+                    'Preferred State',
+
+                    // Institution
+                    'Branch',
+                    'Institution Type',
+                    'School',
+                    'School Stream / Dept',
+                    'College',
+                    'College Department',
+
+                    // Course
+                    'Programme',
+                    'Course',
+                    'Addon Course',
+
+                    // Source & Agent
+                    'Lead Source',
+                    'Agent Name',
+
+                    // Application & Payment Tracking
+                    'Application Number',
+                    'WhatsApp Status',
+                    'Application Form Status',
+                    'Booking Status',
+                    'Booking Payment (₹)',
+                    'Fees Collected (₹)',
+                    'Cancellation Reason',
+
+                    // CRM
+                    'Interest Level',
+                    'Final Status',
+
+                    // Assignment
+                    'Assigned To',
+                    'Created By',
+
+                    // Dates
+                    'Created At',
+                    'Last Followup Date',
+                    'Remarks',
                 ]);
 
+                // ── Data Rows ─────────────────────────────────────────────
                 foreach ($leads as $lead) {
                     fputcsv($file, [
+                        // Identity
                         $lead->lead_code,
                         $lead->name,
-                        $lead->email                           ?? '',
+                        $lead->email            ?? '',
                         $lead->phone,
-                        $lead->whatsapp_number                 ?? '',
-                        $lead->state                           ?? '',
-                        $lead->district                        ?? '',
-                        $lead->preferred_state                 ?? '',
-                        $lead->branch?->name                   ?? '',
-                        ucfirst($lead->institution_type        ?? ''),
-                        $lead->school                          ?? '',
-                        $lead->school_department               ?? '',
-                        $lead->college                         ?? '',
-                        $lead->college_department              ?? '',
-                        $lead->course?->programme?->name       ?? '',
-                        $lead->course?->name                   ?? '',
-                        $lead->addon_course                    ?? '',
-                        $lead->application_number              ?? '',
-                        $lead->leadSource?->name               ?? '',
-                        $lead->agent_name                      ?? '',
-                        ucfirst($lead->interest_level          ?? ''),
-                        ucfirst(str_replace('_', ' ', $lead->final_status)),
-                        ucfirst(str_replace('_', ' ', $lead->status        ?? '')),
-                        $lead->whatsapp_link                   ?? '',
-                        $lead->application_form_url            ?? '',
-                        $lead->booking_payment                 ?? '',
-                        $lead->fees_collection                 ?? '',
-                        $lead->cancellation_reason             ?? '',
-                        $lead->assignedTo?->name               ?? 'Unassigned',
-                        $lead->createdBy?->name                ?? '',
+                        $lead->whatsapp_number  ?? '',
+
+                        // Location
+                        $lead->state            ?? '',
+                        $lead->district         ?? '',
+                        $lead->preferred_state  ?? '',
+
+                        // Institution
+                        $lead->branch?->name                            ?? '',
+                        ucfirst($lead->institution_type                 ?? ''),
+                        $lead->school                                   ?? '',
+                        $lead->school_department                        ?? '',
+                        $lead->college                                  ?? '',
+                        $lead->college_department                       ?? '',
+
+                        // Course
+                        $lead->course?->programme?->name                ?? '',
+                        $lead->course?->name                            ?? '',
+                        $lead->addon_course                             ?? '',
+
+                        // Source & Agent
+                        $lead->leadSource?->name                        ?? '',
+                        $lead->agent_name                               ?? '',
+
+                        // Application & Payment Tracking
+                        $lead->application_number                       ?? '',
+                        $whatsappStatusLabels[$lead->whatsapp_status]            ?? ucfirst(str_replace('_', ' ', $lead->whatsapp_status ?? '')),
+                        $appFormStatusLabels[$lead->application_form_status]     ?? ucfirst(str_replace('_', ' ', $lead->application_form_status ?? '')),
+                        $bookingStatusLabels[$lead->booking_status]              ?? ucfirst(str_replace('_', ' ', $lead->booking_status ?? '')),
+                        $lead->booking_payment                          ?? '',
+                        $lead->fees_collection                          ?? '',
+                        $lead->cancellation_reason                      ?? '',
+
+                        // CRM
+                        ucfirst($lead->interest_level                   ?? ''),
+                        $finalStatusLabels[$lead->final_status]                  ?? ucfirst(str_replace('_', ' ', $lead->final_status ?? '')),
+
+                        // Assignment
+                        $lead->assignedTo?->name                        ?? 'Unassigned',
+                        $lead->createdBy?->name                         ?? '',
+
+                        // Dates
                         $lead->created_at->format('d-m-Y H:i'),
-                        $lead->followup_date?->format('d-m-Y') ?? '',
-                        $lead->remarks                         ?? '',
+                        $lead->followup_date?->format('d-m-Y')          ?? '',
+                        $lead->remarks                                  ?? '',
                     ]);
                 }
+
                 fclose($file);
             };
 
@@ -879,9 +1049,10 @@ class EduLeadController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Export error: ' . $e->getMessage());
-            return back()->with('error', 'Error exporting leads');
+            return back()->with('error', 'Error exporting leads: ' . $e->getMessage());
         }
     }
+
 
     // =========================================================================
     // GET COURSES BY PROGRAMME (AJAX)
@@ -994,53 +1165,144 @@ class EduLeadController extends Controller
         return collect();
     }
 
-    private function leadValidationRules(?int $leadId = null): array
+    // =========================================================================
+    // VALIDATION RULES
+    // =========================================================================
+    protected function leadValidationRules(?int $ignoreId = null): array
     {
         return [
-            // Basic
-            'name'            => 'required|string|max:255',
-            'email'           => 'nullable|email|max:255',
-            'phone'           => 'required|string|max:20|unique:edu_leads,phone' . ($leadId ? ',' . $leadId : ''),
-            'whatsapp_number' => 'nullable|string|max:20',
-            'description'     => 'nullable|string',
+            'name'                      => 'required|string|max:255',
+            'email'                     => 'nullable|email|max:255',
+            'phone'                     => 'required|string|max:20',
+            'whatsapp_number'           => 'nullable|string|max:20',
+            'state'                     => 'nullable|string|max:100',
+            'district'                  => 'nullable|string|max:100',
+            'preferred_state'           => 'nullable|string|max:100',
+            'institution_type'          => 'nullable|in:school,college,other',
+            'school'                    => 'nullable|string|max:255',
+            'school_department'         => 'nullable|string|max:255',
+            'college'                   => 'nullable|string|max:255',
+            'college_department'        => 'nullable|string|max:255',
+            'course_id'                 => 'nullable|exists:courses,id',
+            'addon_course'              => 'nullable|string|max:255',
+            'lead_source_id'            => 'required|exists:edu_lead_sources,id',
+            'agent_name'                => 'nullable|string|max:255',
+            'referral_name'             => 'nullable|string|max:255',
+            'interest_level'            => 'nullable|in:hot,warm,cold',
+            'branch_id'                 => 'nullable|exists:branches,id',
+            'assigned_to'               => 'nullable|exists:users,id',
+            'application_number_suffix' => 'nullable|string|max:20',
+            'description'               => 'nullable|string',
+            'remarks'                   => 'nullable|string',
 
-            // Location
-            'state'           => 'nullable|string|max:100',
-            'district'        => 'nullable|string|max:100',
-            'preferred_state' => 'nullable|string|max:100',  // ← new
+            // New unified status field
+            'status' => 'nullable|in:whatsapp_link_submitted,application_form_submitted,booking,cancelled',
 
-            // Agent
-            'agent_name'      => 'nullable|string|max:255',
+            // Booking fields — required only when status = booking
+            'booking_payment' => 'nullable|numeric|min:0',
+            'fees_collection' => 'nullable|numeric|min:0',
 
-            // Institution
-            'institution_type'   => 'nullable|in:school,college,other',
-            'school'             => 'nullable|string|max:255',
-            'school_department'  => 'nullable|string|max:255',
-            'college'            => 'nullable|string|max:255',
-            'college_department' => 'nullable|string|max:255',
+            // Cancellation field — required only when status = cancelled
+            'cancellation_reason' => 'nullable|string|max:1000',
 
-            // Programme & Course
-            'course_id'          => 'nullable|exists:courses,id',
-            'addon_course'       => 'nullable|string|max:255',
-
-            // Application & Payment
-            'application_number_suffix' => 'nullable|string|max:50',  // ← suffix only; full AJK- built in controller
-            'whatsapp_link'             => 'nullable|url|max:500',
-            'application_form_url'      => 'nullable|url|max:500',
-            'booking_payment'           => 'nullable|numeric|min:0',
-            'fees_collection'           => 'nullable|numeric|min:0',
-            'cancellation_reason'       => 'nullable|string',
-
-            // CRM
-            'lead_source_id'  => 'required|exists:edu_lead_sources,id',
-            'assigned_to'     => 'nullable|exists:users,id',
-            'branch_id'       => 'nullable|exists:branches,id',
-            'interest_level'  => 'nullable|in:hot,warm,cold',
-            'final_status'    => 'nullable|in:pending,contacted,not_interested,follow_up,admitted,dropped',
-            'status'          => 'nullable|in:pending,connected,not_connected,interested,not_interested,follow_up_scheduled,admitted,closed',
-            'remarks'         => 'nullable|string',
-            'next_action'     => 'nullable|string',
-            'followup_date'   => 'nullable|date',
+            'final_status' => 'nullable|in:pending,contacted,follow_up,admitted,not_interested,dropped',
         ];
     }
+
+    /**
+     * Update a single tracking field inline (PATCH via JS)
+     * Fields: final_status, status, booking_payment, fees_collection,
+     *         application_number, cancellation_reason
+     */
+    public function updateTracking(Request $request, EduLead $eduLead)
+    {
+        $user = Auth::user();
+
+        $canChange = $user->isSuperAdmin()
+            || $user->isOperationHead()
+            || ($user->isLeadManager() && $eduLead->branch_id === $user->branch_id)
+            || $eduLead->assigned_to === $user->id;
+
+        if (!$canChange) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $field = $request->input('field');
+        $value = $request->input('value');
+
+        // Whitelist allowed fields + their validation rules
+        $allowedFields = [
+            'final_status'        => ['nullable', Rule::in(['pending','contacted','follow_up','admitted','not_interested','dropped'])],
+            'status'              => ['nullable', Rule::in(['whatsapp_link_submitted','application_form_submitted','booking','cancelled'])],
+            'booking_payment'     => ['nullable', 'numeric', 'min:0'],
+            'fees_collection'     => ['nullable', 'numeric', 'min:0'],
+            'application_number'  => ['nullable', 'string', 'max:100'],
+            'cancellation_reason' => ['nullable', 'string', 'max:1000'],
+        ];
+
+        if (!array_key_exists($field, $allowedFields)) {
+            return response()->json(['success' => false, 'message' => 'Invalid field.'], 422);
+        }
+
+        try {
+            $request->validate([$field => $allowedFields[$field]]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first(),
+            ], 422);
+        }
+
+        // Build the update payload
+        $payload = [$field => $value ?: null];
+
+        // Special handling for application_number — prefix with AJK-
+        if ($field === 'application_number') {
+            $suffix = trim($value ?? '');
+            $payload['application_number'] = $suffix ? 'AJK-' . $suffix : null;
+        }
+
+        // Clear booking fields when status changes away from 'booking'
+        if ($field === 'status' && $value !== 'booking') {
+            $payload['booking_payment'] = null;
+            $payload['fees_collection'] = null;
+        }
+
+        // Clear cancellation reason when status changes away from 'cancelled'
+        if ($field === 'status' && $value !== 'cancelled') {
+            $payload['cancellation_reason'] = null;
+        }
+
+        // Track cancelled_at when status set to 'cancelled'
+        if ($field === 'status' && $value === 'cancelled' && $eduLead->status !== 'cancelled') {
+            $payload['cancelled_at'] = now();
+        }
+
+        // Track admitted_at / cancelled_at on final_status changes
+        if ($field === 'final_status') {
+            if ($value === 'admitted' && $eduLead->final_status !== 'admitted') {
+                $payload['admitted_at'] = now();
+            }
+            if ($value === 'dropped' && $eduLead->final_status !== 'dropped') {
+                $payload['cancelled_at'] = now();
+            }
+        }
+
+        $eduLead->update($payload);
+
+        Log::info('Tracking field updated', [
+            'lead_id' => $eduLead->id,
+            'field'   => $field,
+            'value'   => $value,
+            'by'      => $user->id,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Updated successfully.',
+            'field'   => $field,
+            'value'   => $value,
+        ]);
+    }
+
 }
