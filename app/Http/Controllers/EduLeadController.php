@@ -233,6 +233,43 @@ class EduLeadController extends Controller
 
             $validated = $request->validate($this->leadValidationRules());
 
+            // If phone belongs to a soft-deleted lead — restore & update instead of creating new
+            $trashedLead = EduLead::withTrashed()
+                ->where('phone', $validated['phone'])
+                ->whereNotNull('deleted_at')
+                ->first();
+
+            if ($trashedLead) {
+                $trashedLead->restore();
+
+                // Merge new submission data onto the restored lead
+                $trashedLead->update(array_merge($validated, [
+                    'branch_id'   => ($user->isLeadManager() || $user->isTelecaller())
+                                        ? $user->branch_id
+                                        : ($validated['branch_id'] ?? $trashedLead->branch_id),
+                    'created_by'  => $trashedLead->created_by, // keep original creator
+                    'assigned_to' => $user->isTelecaller()
+                                        ? $user->id
+                                        : ($validated['assigned_to'] ?? $trashedLead->assigned_to),
+                    'final_status'   => $validated['final_status']   ?? 'pending',
+                    'interest_level' => $validated['interest_level'] ?? null,
+                ]));
+
+                Log::info('Soft-deleted lead restored on re-create', [
+                    'lead_id'    => $trashedLead->id,
+                    'lead_code'  => $trashedLead->lead_code,
+                    'created_by' => $user->id,
+                ]);
+
+                return response()->json([
+                    'success'      => true,
+                    'message'      => 'This lead was previously deleted and has been restored with updated information.',
+                    'lead_id'      => $trashedLead->id,
+                    'lead_code'    => $trashedLead->lead_code,
+                    'redirect_url' => route('edu-leads.show', $trashedLead->id),
+                ]);
+            }
+
             if (!empty($validated['application_number_suffix'])) {
                 $validated['application_number'] = 'AJK-' . trim($validated['application_number_suffix']);
             }
@@ -310,13 +347,14 @@ class EduLeadController extends Controller
             ], 500);
 
         } catch (\Exception $e) {
-            Log::error('Lead creation error: ' . $e->getMessage()); // ✅ log it, don't expose it
+            Log::error('Lead creation error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Something went wrong. Please try again.',
             ], 500);
         }
     }
+
 
     // =========================================================================
     // SHOW

@@ -487,14 +487,40 @@ class EduLeadBulkImportController extends Controller
                             throw new \Exception('✅ Department/Stream is REQUIRED');
                         }
 
-                        // Duplicate check
-                        if (EduLead::where('phone', $phone)->exists()) {
-                            throw new \Exception("Mobile number {$phone} already exists");
+                        // ✅ Duplicate check — includes soft-deleted rows
+                        $existingLead = EduLead::withTrashed()->where('phone', $phone)->first();
+
+                        if ($existingLead) {
+                            if ($existingLead->trashed()) {
+                                // Restore the soft-deleted lead and update with new data
+                                $existingLead->restore();
+                                $existingLead->update([
+                                    'name'           => !empty($row['student_name']) ? trim($row['student_name']) : $existingLead->name,
+                                    'final_status'   => $finalStatus,
+                                    'interest_level' => $interestLevel,
+                                    'remarks'        => !empty($row['remarks']) ? $row['remarks'] : $existingLead->remarks,
+                                    'assigned_to'    => $assignedTo ?? $existingLead->assigned_to,
+                                    'lead_source_id' => $leadSource?->id ?? $existingLead->lead_source_id,
+                                    'branch_id'      => $branchId ?? $existingLead->branch_id,
+                                ]);
+                                $successful++;
+                                $processed++;
+                                continue; // skip EduLead::create() below
+                            } else {
+                                throw new \Exception("Mobile number {$phone} already exists (active lead)");
+                            }
                         }
 
-                        $cleanWhatsapp = $this->cleanPhone($row['whatsapp']) ?? $phone;
-                        if ($cleanWhatsapp !== $phone && EduLead::where('whatsapp_number', $cleanWhatsapp)->exists()) {
-                            throw new \Exception("WhatsApp number {$cleanWhatsapp} already exists");
+                        $cleanWhatsapp = $this->cleanPhone($row['whatsapp'] ?? '') ?? $phone;
+                        if ($cleanWhatsapp !== $phone) {
+                            $existingWa = EduLead::withTrashed()
+                                ->where('whatsapp_number', $cleanWhatsapp)
+                                ->first();
+
+                            if ($existingWa && !$existingWa->trashed()) {
+                                throw new \Exception("WhatsApp number {$cleanWhatsapp} already exists");
+                            }
+                            // if trashed — allow through, phone is the primary unique key
                         }
 
                         // ═══════════════════════════════════════════════════════════
