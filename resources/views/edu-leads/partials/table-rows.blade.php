@@ -16,11 +16,16 @@
 
 @forelse($leads as $lead)
 <tr>
+
     {{-- Checkbox --}}
     @if($authUser->canAssignLeads())
     <td class="checkbox-col">
         <div class="checkbox-wrapper">
-            <input type="checkbox" class="custom-checkbox lead-checkbox" value="{{ $lead->id }}">
+            <input type="checkbox"
+                   class="custom-checkbox lead-checkbox"
+                   value="{{ $lead->id }}"
+                   data-branch-id="{{ $lead->branch_id }}"
+                   data-branch-name="{{ $lead->branch?->name }}">
         </div>
     </td>
     @endif
@@ -35,6 +40,8 @@
         <a href="{{ route('edu-leads.show', $lead->id) }}" class="lead-name-link fw-semibold">
             {{ $lead->name }}
         </a>
+        {{-- Hidden branch name for bulk assign list display --}}
+        <span class="lead-branch-name d-none">{{ $lead->branch?->name }}</span>
         @if($lead->institution_type)
             <div class="mt-1">{!! $lead->institution_type_badge !!}</div>
         @endif
@@ -66,20 +73,18 @@
         <span class="fs-badge {{ $s['class'] }}">{{ $s['label'] }}</span>
     </td>
 
-    {{-- ── Followups Column ────────────────────────── --}}
+    {{-- Followups --}}
     <td>
         @php
             $totalFu   = $lead->followups->count();
             $pendingFu = $lead->followups->where('status', 'pending')->count();
             $doneFu    = $lead->followups->where('status', 'completed')->count();
 
-            // Overdue = pending AND followup_date is STRICTLY before today (not today itself)
             $overdueFu = $lead->followups->filter(function($f) {
                 return $f->status === 'pending'
                     && \Carbon\Carbon::parse($f->followup_date)->startOfDay()->lt(\Carbon\Carbon::today());
             })->count();
 
-            // Today = pending AND followup_date is today
             $todayFu = $lead->followups->filter(function($f) {
                 return $f->status === 'pending'
                     && \Carbon\Carbon::parse($f->followup_date)->isToday();
@@ -101,7 +106,7 @@
                         <i class="las la-bell"></i> {{ $todayFu }} today
                     </span>
                 @endif
-                @if($pendingFu > 0 && ($pendingFu - $overdueFu - $todayFu) > 0)
+                @if(($pendingFu - $overdueFu - $todayFu) > 0)
                     <span class="badge bg-info text-dark" style="font-size:10px;" title="Upcoming">
                         <i class="las la-clock"></i> {{ $pendingFu - $overdueFu - $todayFu }} upcoming
                     </span>
@@ -182,7 +187,9 @@
             <span class="text-muted">—</span>
         @endif
         @if($lead->addon_course)
-            <div class="text-info" style="font-size:11px;" title="Addon">+ {{ Str::limit($lead->addon_course, 20) }}</div>
+            <div class="text-info" style="font-size:11px;" title="Addon">
+                + {{ Str::limit($lead->addon_course, 20) }}
+            </div>
         @endif
     </td>
 
@@ -217,7 +224,16 @@
         @endif
     </td>
 
-    {{-- Created + Follow-up indicator --}}
+    {{-- Branch --}}
+    <td>
+        @if($lead->branch)
+            <span class="small text-muted">{{ $lead->branch->name }}</span>
+        @else
+            <span class="text-muted">—</span>
+        @endif
+    </td>
+
+    {{-- Created --}}
     <td>
         <span class="text-muted small">{{ $lead->created_at->format('d M Y') }}</span>
     </td>
@@ -232,32 +248,43 @@
                 $authUser->isSuperAdmin() ||
                 $authUser->isOperationHead() ||
                 ($authUser->isLeadManager() && $lead->branch_id === $authUser->branch_id) ||
-                ($authUser->isTelecaller() && $lead->assigned_to == $authUser->id)
+                ($authUser->isTelecaller()  && $lead->assigned_to == $authUser->id)
             )
             <a href="{{ route('edu-leads.edit', $lead->id) }}" title="Edit" class="text-secondary">
                 <i class="las la-pen fs-18"></i>
             </a>
             @endif
             @if($authUser->canAssignLeads())
-            <a href="javascript:void(0)" class="assignLeadBtn text-primary" title="Assign Lead"
-               data-id="{{ $lead->id }}" data-code="{{ $lead->lead_code }}"
-               data-name="{{ $lead->name }}" data-assignee="{{ $lead->assignedTo->name ?? '' }}">
+            <a href="javascript:void(0)"
+               class="assignLeadBtn text-primary"
+               title="Assign Lead"
+               data-id="{{ $lead->id }}"
+               data-code="{{ $lead->lead_code }}"
+               data-name="{{ $lead->name }}"
+               data-branch-id="{{ $lead->branch_id }}"
+               data-branch-name="{{ $lead->branch?->name }}"
+               data-assignee="{{ $lead->assignedTo?->name ?? '' }}">
                 <i class="las la-user-plus fs-18"></i>
             </a>
             @endif
             @if($authUser->canDelete())
-            <a href="javascript:void(0)" class="deleteLeadBtn text-danger" title="Delete Lead"
-               data-id="{{ $lead->id }}" data-name="{{ $lead->name }}">
+            <a href="javascript:void(0)"
+               class="deleteLeadBtn text-danger"
+               title="Delete Lead"
+               data-id="{{ $lead->id }}"
+               data-name="{{ $lead->name }}">
                 <i class="las la-trash-alt fs-18"></i>
             </a>
             @endif
         </div>
     </td>
+
 </tr>
 @empty
 <tr>
-    <td colspan="17" class="text-center py-5 text-muted">
-        <i class="las la-graduation-cap" style="font-size:3rem;opacity:.2;display:block;margin-bottom:8px;"></i>
+    <td colspan="18" class="text-center py-5 text-muted">
+        <i class="las la-graduation-cap"
+           style="font-size:3rem;opacity:.2;display:block;margin-bottom:8px;"></i>
         No leads found matching your filters
     </td>
 </tr>

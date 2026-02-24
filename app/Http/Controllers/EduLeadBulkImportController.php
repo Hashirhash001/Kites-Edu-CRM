@@ -452,6 +452,8 @@ class EduLeadBulkImportController extends Controller
             $processed = $successful = $failed = 0;
             $errors = $failedRowsData = [];
 
+            $seenPhones = [];
+
             $progressKey = "import_progress_{$import->id}";
             Cache::put($progressKey, [
                 'total' => $totalRows, 'processed' => 0, 'successful' => 0,
@@ -463,12 +465,17 @@ class EduLeadBulkImportController extends Controller
                     $rowId = "{$row['sheet_name']} Row {$row['excel_row']}";
                     try {
                         // ═══════════════════════════════════════════════════════════
-                        // ✅ REQUIRED FIELDS VALIDATION (ONLY 3)
+                        //  REQUIRED FIELDS VALIDATION (ONLY 3)
                         // ═══════════════════════════════════════════════════════════
                         $phone = $this->cleanPhone($row['mobile_number']);
                         if (!$phone) {
                             throw new \Exception('✅ Mobile Number is REQUIRED (10-15 digits)');
                         }
+
+                        if (isset($seenPhones[$phone])) {
+                            throw new \Exception("Duplicate mobile number {$phone} within this file");
+                        }
+                        $seenPhones[$phone] = true;
 
                         $schoolCollege = trim((string)$row['school_college']);
                         if (empty($schoolCollege)) {
@@ -593,7 +600,6 @@ class EduLeadBulkImportController extends Controller
                             'assigned_to'          => $assignedTo,
                             'interest_level'       => $interestLevel,
                             'final_status'         => $finalStatus,
-                            'status'               => 'pending',
                             'remarks'              => !empty($row['remarks']) ? $row['remarks'] : null,
                             'followup_date'        => $this->parseDate($row['followup_date']),
                             'branch_id'            => $branchId,

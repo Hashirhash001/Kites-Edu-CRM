@@ -176,6 +176,11 @@
         color: #3b82f6;
     }
 
+    /* ── Per-page select in header ─────────────────────────── */
+    .per-page-wrap { display:flex; align-items:center; gap:6px; }
+    .per-page-wrap label { font-size:.82rem; color:#6c757d; white-space:nowrap; margin:0; }
+    #perPageSelect { width:70px; font-size:.82rem; padding:3px 6px; }
+
 </style>
 @endsection
 
@@ -228,7 +233,6 @@
                     <i class="las la-redo me-1"></i>Reset
                 </button>
                 <div class="filter-collapse-pill" onclick="toggleFilters(); event.stopPropagation();">
-                    {{-- <span id="collapseHintText" class="collapse-pill-text">Hide Filters</span> --}}
                     <span class="filter-toggle-icon" id="filterToggleIcon">
                         <i class="las la-angle-up"></i>
                     </span>
@@ -293,16 +297,22 @@
                 <div class="filter-group-label"><i class="las la-school"></i> Current Institution &amp; Location</div>
                 <div class="row g-3 mb-3">
 
-                    {{-- Institution Type: School (default) / College only — no "All" --}}
                     <div class="col-xl-2 col-lg-2 col-md-3 col-6">
                         <label class="filter-label">Institution Type</label>
                         <select class="form-select form-select-sm" id="filterInstitutionType">
-                            <option value="school" selected>🏫 School</option>
-                            <option value="college">🎓 College</option>
+                            <option value="" {{ request('institution_type', '') === '' ? 'selected' : '' }}>
+                                🏫🎓 All
+                            </option>
+                            <option value="school" {{ request('institution_type') === 'school' ? 'selected' : '' }}>
+                                🏫 School
+                            </option>
+                            <option value="college" {{ request('institution_type') === 'college' ? 'selected' : '' }}>
+                                🎓 College
+                            </option>
                         </select>
+
                     </div>
 
-                    {{-- School Dept --}}
                     <div class="col-xl-3 col-lg-3 col-md-4" id="schoolDeptWrap">
                         <label class="filter-label">School Stream / Dept</label>
                         <select class="form-select form-select-sm" id="filterSchoolDepartment">
@@ -313,7 +323,6 @@
                         </select>
                     </div>
 
-                    {{-- College Dept --}}
                     <div class="col-xl-3 col-lg-3 col-md-4" id="collegeDeptWrap">
                         <label class="filter-label">College Department</label>
                         <select class="form-select form-select-sm" id="filterCollegeDepartment">
@@ -324,7 +333,6 @@
                         </select>
                     </div>
 
-                    {{-- State — wider --}}
                     <div class="col-xl-4 col-lg-3 col-md-4 col-6">
                         <label class="filter-label"><i class="las la-map text-muted"></i> State</label>
                         <select class="form-select form-select-sm" id="filterState">
@@ -335,7 +343,6 @@
                         </select>
                     </div>
 
-                    {{-- District — wider, on new row on smaller screens --}}
                     <div class="col-xl-3 col-lg-3 col-md-4 col-6">
                         <label class="filter-label"><i class="las la-map-pin text-muted"></i> District</label>
                         <select class="form-select form-select-sm" id="filterDistrict">
@@ -399,6 +406,7 @@
                         </select>
                     </div>
                     @endif
+                    @if(in_array(auth()->user()->role, ['super_admin', 'operation_head']))
                     <div class="col-xl-3 col-lg-3 col-md-4">
                         <label class="filter-label">Assigned To Telecaller</label>
                         <select class="form-select form-select-sm" id="filterAssignedTo">
@@ -411,15 +419,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-xl-1 col-lg-2 col-md-2 col-4">
-                        <label class="filter-label">Show</label>
-                        <select class="form-select form-select-sm" id="perPageSelect">
-                            <option value="15">15</option>
-                            <option value="30">30</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                        </select>
-                    </div>
+                    @endif
                 </div>
 
             </form>
@@ -431,17 +431,30 @@
 
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div>
-                    <strong id="leadCount">{{ $leads->total() }}</strong> leads found
-                    <span class="text-muted ms-2" id="pageInfo">
-                        @if($leads->total() > 0)
-                            {{ $leads->firstItem() ?? 1 }}–{{ $leads->lastItem() ?? $leads->total() }} of {{ $leads->total() }}
-                        @else
-                            0–0 of 0
-                        @endif
-                    </span>
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <div>
+                        <strong id="leadCount">{{ $leads->total() }}</strong> leads found
+                        <span class="text-muted ms-2" id="pageInfo">
+                            @if($leads->total() > 0)
+                                {{ $leads->firstItem() ?? 1 }}–{{ $leads->lastItem() ?? $leads->total() }} of {{ $leads->total() }}
+                            @else
+                                0–0 of 0
+                            @endif
+                        </span>
+                    </div>
+                    {{-- Per-page selector moved here from filters --}}
+                    <div class="per-page-wrap">
+                        <label for="perPageSelect" class="text-muted">Show</label>
+                        <select class="form-select form-select-sm" id="perPageSelect">
+                            <option value="15">15</option>
+                            <option value="30">30</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <span class="text-muted" style="font-size:.82rem;">/ page</span>
+                    </div>
                 </div>
-                <div class="d-flex gap-2 flex-wrap">
+                <div class="d-flex gap-2 flex-wrap align-items-center">
                     <span class="badge bg-primary py-2 px-3">
                         <i class="las la-school me-1"></i>Schools
                         <span id="ic-school">{{ $institutionCounts['school'] ?? 0 }}</span>
@@ -508,6 +521,7 @@
                             <th class="sortable" data-column="interest_level">Interest</th>
                             <th class="sortable" data-column="lead_source_id">Source</th>
                             <th class="sortable" data-column="assigned_to">Assigned To</th>
+                            <th class="sortable" data-column="branch_id">Branch</th>
                             <th class="sortable" data-column="created_at">Created</th>
                             <th>Action</th>
                         </tr>
@@ -539,10 +553,12 @@
             </div>
             <form id="assignLeadForm">
                 @csrf
-                <input type="hidden" id="assignLeadId" name="lead_id">
+                <input type="hidden" id="assignLeadId"     name="lead_id">
+                <input type="hidden" id="assignLeadBranch" name="lead_branch_id">
                 <div class="modal-body">
+
                     <div class="alert alert-light border mb-3 py-2 px-3">
-                        <div class="d-flex gap-3">
+                        <div class="d-flex gap-3 flex-wrap">
                             <div>
                                 <small class="text-muted d-block">Lead Code</small>
                                 <strong id="assignLeadCode" class="text-primary"></strong>
@@ -551,12 +567,28 @@
                                 <small class="text-muted d-block">Name</small>
                                 <strong id="assignLeadName"></strong>
                             </div>
+                            <div>
+                                <small class="text-muted d-block">Branch</small>
+                                <span id="assignLeadBranchLabel"
+                                      class="badge bg-soft-primary text-primary border border-primary fw-semibold">
+                                </span>
+                            </div>
                         </div>
                     </div>
+
                     <div class="mb-3" id="currentAssignmentBlock" style="display:none">
                         <small class="text-muted">Currently assigned to</small>
                         <span class="badge bg-secondary ms-2" id="currentAssigneeLabel"></span>
                     </div>
+
+                    <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3">
+                        <i class="las la-info-circle mt-1" style="font-size:1.1rem;flex-shrink:0;"></i>
+                        <div class="small">
+                            Only telecallers assigned to <strong id="assignBranchNotice">this lead's branch</strong>
+                            are shown below. Assigning across branches is not allowed.
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
                             <i class="las la-user-tie me-1"></i>Assign To Telecaller
@@ -564,23 +596,26 @@
                         </label>
                         <select class="form-select" id="assignTelecaller" name="assigned_to" required>
                             <option value="">Choose telecaller...</option>
-                            @foreach($assignableUsers as $u)
-                                <option value="{{ $u->id }}">
-                                    {{ $u->name }}
-                                    @if($u->branch) — {{ $u->branch->name }} @endif
-                                </option>
-                            @endforeach
                         </select>
+                        <div id="assignTelecallerEmpty" class="text-danger small mt-1" style="display:none;">
+                            <i class="las la-exclamation-triangle me-1"></i>
+                            No telecallers are available in this branch.
+                            Please add a telecaller to <strong id="assignBranchEmptyName"></strong> first.
+                        </div>
                     </div>
+
                     <div class="mb-1">
-                        <label class="form-label"><i class="las la-comment me-1"></i>Notes <small class="text-muted">optional</small></label>
+                        <label class="form-label">
+                            <i class="las la-comment me-1"></i>Notes
+                            <small class="text-muted">optional</small>
+                        </label>
                         <textarea class="form-control" id="assignNotes" name="notes" rows="2"
                                   placeholder="Any notes about this assignment..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="assignSubmitBtn">
                         <i class="las la-check me-1"></i>Assign Lead
                     </button>
                 </div>
@@ -600,6 +635,7 @@
             <form id="bulkAssignForm">
                 @csrf
                 <div class="modal-body">
+
                     <div class="alert mb-3 py-3 px-4"
                          style="background:linear-gradient(135deg,#fff3cd,#ffe69c);border-left:4px solid #ffc107;">
                         <div class="d-flex align-items-center gap-3">
@@ -610,14 +646,36 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mb-3"
+                         id="bulkBranchWarning" style="display:none !important;">
+                        <i class="las la-exclamation-triangle mt-1" style="font-size:1.1rem;flex-shrink:0;"></i>
+                        <div class="small">
+                            <strong>Mixed branches detected.</strong>
+                            Leads from different branches are selected. Only leads matching the
+                            selected telecaller's branch will be assigned — others will be skipped automatically.
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3"
+                         id="bulkBranchInfo">
+                        <i class="las la-info-circle mt-1" style="font-size:1.1rem;flex-shrink:0;"></i>
+                        <div class="small">
+                            The selected telecaller must belong to the <strong>same branch</strong> as the leads.
+                            Leads from a different branch will be <strong>skipped</strong> automatically.
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-muted small mb-1">
                             <i class="las la-list me-1"></i>Selected Leads
                         </label>
                         <div id="selectedLeadsList"
-                             style="max-height:200px;overflow-y:auto;border:1px solid #dee2e6;border-radius:8px;background:#f8f9fa;padding:8px;">
+                             style="max-height:200px;overflow-y:auto;border:1px solid #dee2e6;
+                                    border-radius:8px;background:#f8f9fa;padding:8px;">
                         </div>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
                             <i class="las la-user-tie me-1"></i>Assign To Telecaller
@@ -626,16 +684,21 @@
                         <select class="form-select" id="bulkTelecaller" name="assigned_to" required>
                             <option value="">Choose telecaller...</option>
                             @foreach($assignableUsers as $u)
-                                <option value="{{ $u->id }}">
+                                <option value="{{ $u->id }}"
+                                        data-branch="{{ $u->branch_id }}"
+                                        data-branch-name="{{ $u->branch?->name }}">
                                     {{ $u->name }}
                                     @if($u->branch) — {{ $u->branch->name }} @endif
                                 </option>
                             @endforeach
                         </select>
+                        <div id="bulkBranchMatchInfo" class="small mt-2" style="display:none;"></div>
                     </div>
+
                     <div class="mb-1">
                         <label class="form-label fw-semibold">
-                            <i class="las la-comment me-1"></i>Notes <small class="text-muted">optional</small>
+                            <i class="las la-comment me-1"></i>Notes
+                            <small class="text-muted">optional</small>
                         </label>
                         <textarea class="form-control" id="bulkNotes" name="notes" rows="2"
                                   placeholder="Notes about this bulk assignment..."></textarea>
@@ -670,8 +733,14 @@ $(document).ready(function () {
 
     $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
 
-    let currentSort  = { column: 'created_at', direction: 'desc' };
-    let activeStatus = '';
+    let currentSort   = { column: 'created_at', direction: 'desc' };
+    let activeStatus  = '';
+    let initialized   = false;
+
+    // ✅ pagination + request stability
+    let currentPage   = 1;
+    let activeXhr     = null;  // abort in-flight requests to stop “flash then revert”
+    let requestSeq    = 0;     // ignore late responses
 
     // ── SELECT2 FACTORY ─────────────────────────────────────────────
     function s2(selector, placeholder) {
@@ -679,20 +748,20 @@ $(document).ready(function () {
     }
 
     // ── INIT ALL SELECT2 ─────────────────────────────────────────────
-    s2('#filterState',         'Search state...');
-    s2('#filterDistrict',      'Select district...');
-    s2('#filterPreferredState','Search preferred state...');
-    s2('#filterProgramme',     'All programmes...');
-    s2('#filterCourse',        'All courses...');
-    s2('#filterSource',        'All sources...');
-    s2('#filterAssignedTo',    'All telecallers...');
-    s2('#filterBranch',        'All branches...');
-    s2('#assignTelecaller',    'Choose telecaller...');
-    s2('#bulkTelecaller',      'Choose telecaller...');
+    s2('#filterState',          'Search state...');
+    s2('#filterDistrict',       'Select district...');
+    s2('#filterPreferredState', 'Search preferred state...');
+    s2('#filterProgramme',      'All programmes...');
+    s2('#filterCourse',         'All courses...');
+    s2('#filterSource',         'All sources...');
+    s2('#filterAssignedTo',     'All telecallers...');
+    s2('#filterBranch',         'All branches...');
+    s2('#assignTelecaller',     'Choose telecaller...');
+    s2('#bulkTelecaller',       'Choose telecaller...');
 
     // ── BUILD MASTER COURSE LIST from initial DOM ────────────────────
     $('#filterCourse option').each(function () {
-        if (!$(this).val()) return; // skip "All Courses" placeholder
+        if (!$(this).val()) return; // skip placeholder
         allCourseOptions.push({
             val:       $(this).val(),
             text:      $(this).text(),
@@ -700,50 +769,42 @@ $(document).ready(function () {
         });
     });
 
-    const districtMap = @json($districtMap);  {{-- NO ?? [] since we now always pass it --}}
-
+    // ── DISTRICT CASCADE ─────────────────────────────────────────────
     function populateFilterDistricts(state, selectedDistrict) {
         const districts = (state && Array.isArray(districtMap[state])) ? districtMap[state] : [];
         const $d = $('#filterDistrict');
 
-        // Always destroy Select2 cleanly before touching the DOM
-        try {
-            if ($d.hasClass('select2-hidden-accessible')) $d.select2('destroy');
-        } catch(e) {}
+        try { if ($d.hasClass('select2-hidden-accessible')) $d.select2('destroy'); } catch(e) {}
 
-        // Rebuild options
         $d.empty().append('<option value=""></option>');
         districts.forEach(function (dist) {
             const isSelected = (dist === selectedDistrict);
             $d.append(new Option(dist, dist, isSelected, isSelected));
         });
 
-        // Re-init Select2 fresh by ID selector string
         $('#filterDistrict').select2({
-            theme:       'bootstrap-5',
+            theme: 'bootstrap-5',
             placeholder: districts.length > 0 ? 'Search district...' : 'Select a state first...',
-            allowClear:  true,
-            width:       '100%'
+            allowClear: true,
+            width: '100%'
         });
     }
 
-    // State cascade — must use jQuery .on(), not native .onchange
+    // State cascade
     $('#filterState').on('change', function () {
         populateFilterDistricts($(this).val(), '');
         updateActiveFilterCount();
-        loadLeads();
+        if (initialized) loadLeads(1);
     });
 
-    // ── PROGRAMME → COURSE CASCADE (remove/restore from DOM) ─────────
+    // ── PROGRAMME → COURSE CASCADE ───────────────────────────────────
     function cascadeCourses() {
         const programmeId = $('#filterProgramme').val();
         const currentVal  = $('#filterCourse').val();
-
-        // Destroy Select2 before rebuilding options
         const $fc = $('#filterCourse');
+
         if ($fc.hasClass('select2-hidden-accessible')) $fc.select2('destroy');
 
-        // Rebuild options from master list
         $fc.empty().append('<option value="">All Courses</option>');
         allCourseOptions.forEach(function (opt) {
             if (!programmeId || String(opt.programme) === String(programmeId)) {
@@ -753,63 +814,63 @@ $(document).ready(function () {
             }
         });
 
-        // Restore previous value only if it still exists in filtered list
         const stillExists = $fc.find(`option[value="${currentVal}"]`).length > 0;
         $fc.val(stillExists ? currentVal : '');
 
-        // Re-init Select2
         s2('#filterCourse', 'All courses...');
     }
 
     $('#filterProgramme').on('change', function () {
         cascadeCourses();
         updateActiveFilterCount();
-        loadLeads();
+        if (initialized) loadLeads(1);
     });
 
     // ── FILTER PANEL TOGGLE ──────────────────────────────────────────
     window.toggleFilters = function () {
         const $body = $('#filterBody');
         const $icon = $('#filterToggleIcon');
-        const $hint = $('#collapseHintText');
         const isHidden = $body.is(':hidden');
         $body.slideToggle(200);
         $icon.toggleClass('open', isHidden);
-        // $hint.text(isHidden ? 'Hide Filters' : 'Show Filters');
     };
 
-    // ── INSTITUTION TYPE — always school or college, no "all" state ──
-    function applyInstitutionTypeUi(type) {
+    // ── INSTITUTION TYPE UI ──────────────────────────────────────────
+    function applyInstitutionTypeUi(type, silent) {
         if (type === 'college') {
             $('#collegeDeptWrap').show().removeClass('dimmed');
             $('#schoolDeptWrap').hide().addClass('dimmed');
-            $('#filterSchoolDepartment').val('').trigger('change');
-        } else {
-            // default = school
+            if (!silent) $('#filterSchoolDepartment').val('').trigger('change');
+            else         $('#filterSchoolDepartment').val('');
+        } else if (type === 'school') {
             $('#schoolDeptWrap').show().removeClass('dimmed');
             $('#collegeDeptWrap').hide().addClass('dimmed');
-            $('#filterCollegeDepartment').val('').trigger('change');
+            if (!silent) $('#filterCollegeDepartment').val('').trigger('change');
+            else         $('#filterCollegeDepartment').val('');
+        } else {
+            // ✅ "All" — show both dept panels, no filter applied
+            $('#schoolDeptWrap').show().removeClass('dimmed');
+            $('#collegeDeptWrap').show().removeClass('dimmed');
         }
     }
 
     $('#filterInstitutionType').on('change', function () {
-        applyInstitutionTypeUi($(this).val());
+        applyInstitutionTypeUi($(this).val(), false);
         updateActiveFilterCount();
-        loadLeads();
+        if (initialized) loadLeads(1);
     });
 
     // ── ACTIVE FILTER BADGE COUNT ────────────────────────────────────
     function updateActiveFilterCount() {
-        const selectIds = [
+        const ids = [
             'filterInterestLevel', 'filterSource',
-            // removed filterInstitutionType — it always has a value
             'filterSchoolDepartment', 'filterCollegeDepartment',
             'filterProgramme', 'filterCourse',
             'filterState', 'filterDistrict',
-            'filterPreferredState', 'filterBranch', 'filterAssignedTo'
+            'filterPreferredState', 'filterBranch', 'filterAssignedTo',
+            'searchInput', 'filterAgentName', 'dateFrom', 'dateTo',
         ];
-        const textIds = ['searchInput', 'filterAgentName', 'dateFrom', 'dateTo'];
-        const count = [...selectIds, ...textIds].filter(id => {
+        const count = ids.filter(id => {
             const el = document.getElementById(id);
             return el && el.value && el.value.length > 0;
         }).length;
@@ -818,122 +879,179 @@ $(document).ready(function () {
     }
 
     // ── COLLECT FILTER PARAMS ────────────────────────────────────────
-    function getFilterParams() {
+    // ✅ Always include _json=1, page, per_page
+    function getFilterParams(page) {
+        const pp = parseInt($('#perPageSelect').val(), 10);
+        const institutionType = $('#filterInstitutionType').val() || 'school'; // ✅ never send empty
+
         return {
-            search:            $('#searchInput').val(),
-            interestlevel:     $('#filterInterestLevel').val(),
-            institutiontype:   $('#filterInstitutionType').val(),
-            schooldepartment:  $('#filterSchoolDepartment').val(),
-            collegedepartment: $('#filterCollegeDepartment').val(),
-            programmeid:       $('#filterProgramme').val(),
-            courseid:          $('#filterCourse').val(),
-            state:             $('#filterState').val(),
-            district:          $('#filterDistrict').val(),
-            preferredstate:    $('#filterPreferredState').val(),
-            agentname:         $('#filterAgentName').val(),
-            leadsourceid:      $('#filterSource').val(),
-            assignedto:        $('#filterAssignedTo').val(),
-            branchid:          $('#filterBranch').val(),
-            datefrom:          $('#dateFrom').val(),
-            dateto:            $('#dateTo').val(),
-            finalstatus:       activeStatus,
-            sortcolumn:        currentSort.column,
-            sortdirection:     currentSort.direction,
-            perpage:           $('#perPageSelect').val(),
+            _json: 1,
+
+            search:             $('#searchInput').val()             || '',
+            interest_level:     $('#filterInterestLevel').val()    || '',
+            institution_type: $('#filterInstitutionType').val() || '',                      // ✅ always has value
+            school_department:  $('#filterSchoolDepartment').val() || '',
+            college_department: $('#filterCollegeDepartment').val()|| '',
+            programme_id:       $('#filterProgramme').val()        || '',
+            course_id:          $('#filterCourse').val()           || '',
+            state:              $('#filterState').val()            || '',
+            district:           $('#filterDistrict').val()         || '',
+            preferred_state:    $('#filterPreferredState').val()   || '',
+            agent_name:         $('#filterAgentName').val()        || '',
+            lead_source_id:     $('#filterSource').val()           || '',
+            assigned_to:        $('#filterAssignedTo').val()       || '',
+            branch_id:          $('#filterBranch').val()           || '',
+            date_from:          $('#dateFrom').val()               || '',
+            date_to:            $('#dateTo').val()                 || '',
+
+            final_status:       activeStatus,
+            sort_column:        currentSort.column,
+            sort_direction:     currentSort.direction,
+
+            per_page:           Number.isFinite(pp) ? pp : 15,
+            page:               parseInt(page, 10) || 1,
         };
+    }
+
+    // ✅ backend is source of truth for per_page: sync UI after each response
+    function syncPerPageUi(perPageFromBackend) {
+        const pp = parseInt(perPageFromBackend, 10);
+        if (!pp) return;
+        if ($('#perPageSelect option[value="'+pp+'"]').length === 0) {
+            $('#perPageSelect').append(`<option value="${pp}">${pp}</option>`);
+        }
+        // ✅ Use prop approach to set without triggering change
+        $('#perPageSelect')[0].value = String(pp);
     }
 
     // ── PRE-POPULATE FILTERS FROM URL ────────────────────────────────
     function prePopulateFilters() {
         const p = new URLSearchParams(window.location.search);
         const map = {
-            search:            '#searchInput',
-            interestlevel:     '#filterInterestLevel',
-            institutiontype:   '#filterInstitutionType',
-            schooldepartment:  '#filterSchoolDepartment',
-            collegedepartment: '#filterCollegeDepartment',
-            programmeid:       '#filterProgramme',
-            courseid:          '#filterCourse',
-            state:             '#filterState',
-            district:          '#filterDistrict',
-            preferredstate:    '#filterPreferredState',
-            agentname:         '#filterAgentName',
-            leadsourceid:      '#filterSource',
-            assignedto:        '#filterAssignedTo',
-            branchid:          '#filterBranch',
-            datefrom:          '#dateFrom',
-            dateto:            '#dateTo',
-            perpage:           '#perPageSelect',
+            search:             '#searchInput',
+            interest_level:     '#filterInterestLevel',
+            institution_type:   '#filterInstitutionType',
+            school_department:  '#filterSchoolDepartment',
+            college_department: '#filterCollegeDepartment',
+            programme_id:       '#filterProgramme',
+            course_id:          '#filterCourse',
+            state:              '#filterState',
+            district:           '#filterDistrict',
+            preferred_state:    '#filterPreferredState',
+            agent_name:         '#filterAgentName',
+            lead_source_id:     '#filterSource',
+            assigned_to:        '#filterAssignedTo',
+            branch_id:          '#filterBranch',
+            date_from:          '#dateFrom',
+            date_to:            '#dateTo',
+            per_page:           '#perPageSelect',
         };
+
+        // silent .val() only
         $.each(map, function (param, selector) {
             const val = p.get(param);
-            if (val) $(selector).val(val).trigger('change');
+            if (val) $(selector).val(val);
         });
 
-        // Restore district cascade when state is pre-filled from URL
         const preState    = p.get('state');
         const preDistrict = p.get('district');
         if (preState) populateFilterDistricts(preState, preDistrict || '');
 
-        // Restore course cascade when programme pre-filled
-        if (p.get('programmeid')) cascadeCourses();
+        if (p.get('programme_id')) cascadeCourses();
 
-        if (p.get('sortcolumn'))   currentSort.column    = p.get('sortcolumn');
-        if (p.get('sortdirection')) currentSort.direction = p.get('sortdirection');
+        if (p.get('sort_column'))    currentSort.column    = p.get('sort_column');
+        if (p.get('sort_direction')) currentSort.direction = p.get('sort_direction');
         if (currentSort.column) $(`.sortable[data-column="${currentSort.column}"]`).addClass(currentSort.direction);
 
-        if (p.get('finalstatus')) {
-            activeStatus = p.get('finalstatus');
+        if (p.get('final_status')) {
+            activeStatus = p.get('final_status');
             $('.status-tab').removeClass('active');
             $(`.status-tab[data-status="${activeStatus}"]`).addClass('active');
         }
 
-        applyInstitutionTypeUi(p.get('institutiontype') || 'school');
-        // ── AFTER ──
+        if (p.get('page')) currentPage = parseInt(p.get('page'), 10) || 1;
+
+        applyInstitutionTypeUi(p.get('institution_type') || '', true);
         updateActiveFilterCount();
 
-        // Auto-expand filter panel only if URL has active filters
         const hasUrlFilters = [...p.values()].some(v => v.trim() !== '');
         if (hasUrlFilters) {
-            const body = document.getElementById('filterBody');
-            const icon = document.getElementById('filterToggleIcon');
-            body.style.display = 'block';
-            icon.classList.add('open');
+            document.getElementById('filterBody').style.display = 'block';
+            document.getElementById('filterToggleIcon').classList.add('open');
         }
+
+        initialized = true;
     }
 
     // ── LOAD LEADS AJAX ──────────────────────────────────────────────
-    function loadLeads(url) {
-        const requestUrl = url || "{{ route('edu-leads.index') }}";
+    function loadLeads(page) {
+        if (!initialized) return;
+
+        const targetPage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+        currentPage = targetPage;
+
+        // abort in-flight to prevent “flash then revert”
+        if (activeXhr && activeXhr.readyState !== 4) activeXhr.abort();
+
+        const seq = ++requestSeq;
+        const params = getFilterParams(targetPage);
+
         $('#leadsTable').addClass('table-loading');
-        $.ajax({
-            url:  requestUrl,
+
+        activeXhr = $.ajax({
+            url: "{{ route('edu-leads.index') }}",
             type: 'GET',
-            data: getFilterParams(),
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            data: params,
+            dataType: 'json',
+            headers: { 'Accept': 'application/json' },
             success: function (res) {
-                $('#leadsTableBody').html(res.html);
-                $('#paginationContainer').html(res.pagination);
-                $('#leadCount').text(res.total);
-                if (res.from && res.to) {
-                    $('#pageInfo').text(`${res.from}–${res.to} of ${res.total}`);
-                } else {
-                    $('#pageInfo').text(res.total > 0 ? `1–${res.total} of ${res.total}` : '0–0 of 0');
+                if (seq !== requestSeq) return;
+
+                if (!res || res.success !== true) {
+                    $('#leadsTable').removeClass('table-loading');
+                    console.error('Bad response', res);
+                    return;
                 }
-                if (res.statuscounts) {
-                    $('#tc-all').text(res.statuscounts.all ?? 0);
-                    $.each(res.statuscounts, function (k, v) { if (k !== 'all') $(`#tc-${k}`).text(v); });
+
+                // backend per_page wins
+                syncPerPageUi(res.per_page);
+
+                // clamp invalid page -> last_page (you should return last_page from backend)
+                const lastPage = parseInt(res.last_page, 10) || 1;
+                if (targetPage > lastPage && lastPage > 0) {
+                    return loadLeads(lastPage);
                 }
-                if (res.institutioncounts) {
-                    $('#ic-school').text(res.institutioncounts.school ?? 0);
-                    $('#ic-college').text(res.institutioncounts.college ?? 0);
+
+                $('#leadsTableBody').html(res.html || '');
+                $('#paginationContainer').html(res.pagination || '');
+
+                const total = parseInt(res.total, 10) || 0;
+                const from  = parseInt(res.from, 10)  || 0;
+                const to    = parseInt(res.to, 10)    || 0;
+
+                $('#leadCount').text(total);
+                $('#pageInfo').text(total > 0 ? `${from}–${to} of ${total}` : '0–0 of 0');
+
+                if (res.status_counts) {
+                    $('#tc-all').text(res.status_counts.all ?? 0);
+                    $.each(res.status_counts, function (k, v) {
+                        if (k !== 'all') $(`#tc-${k}`).text(v);
+                    });
                 }
+                if (res.institution_counts) {
+                    $('#ic-school').text(res.institution_counts.school  ?? 0);
+                    $('#ic-college').text(res.institution_counts.college ?? 0);
+                }
+
                 $('#leadsTable').removeClass('table-loading');
                 $('#selectAll').prop('checked', false);
                 updateBulkBtn();
             },
-            error: function () {
+            error: function (xhr, status) {
+                if (seq !== requestSeq) return;
                 $('#leadsTable').removeClass('table-loading');
+                if (status === 'abort') return;
+                console.error(xhr.responseText);
                 Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load leads.' });
             }
         });
@@ -942,32 +1060,41 @@ $(document).ready(function () {
     // ── EXPORT ───────────────────────────────────────────────────────
     window.exportWithFilters = function () {
         const params = new URLSearchParams();
-        $.each(getFilterParams(), function (k, v) { if (v) params.set(k, v); });
+        const data = getFilterParams(1);
+        $.each(data, function (k, v) {
+            if (v !== null && v !== undefined && String(v) !== '') params.set(k, v);
+        });
+        // you may want to remove _json for export
+        params.delete('_json');
+        params.delete('page');
         window.location.href = "{{ route('edu-leads.export') }}?" + params.toString();
     };
 
     // ── FILTER CONTROLS ──────────────────────────────────────────────
-    $('#applyFiltersBtn').on('click', function () { updateActiveFilterCount(); loadLeads(); });
+    $('#applyFiltersBtn').on('click', function () { updateActiveFilterCount(); loadLeads(1); });
 
     $('#resetBtn').on('click', function () {
+        initialized = false;
+
         $('#filterForm')[0].reset();
-        $('#filterInstitutionType').val('school').trigger('change');
-        // Reset all Select2
+        $('#filterInstitutionType').val('');
+
+        // reset select2 fields
         $('#filterState, #filterPreferredState, #filterProgramme, #filterSource, #filterAssignedTo, #filterBranch')
-            .val('').trigger('change');
-        // Reset & rebuild district
+            .val(null).trigger('change');
+
         populateFilterDistricts('', '');
-        $('#filterDistrict').val('').trigger('change');
-        // Rebuild course list fully
         cascadeCourses();
-        $('#filterCourse').val('').trigger('change');
-        // Reset institution dept UI
-        $('#schoolDeptWrap, #collegeDeptWrap').show().removeClass('dimmed');
+        applyInstitutionTypeUi('school', true);
+
         activeStatus = '';
+        currentPage  = 1;
         currentSort  = { column: 'created_at', direction: 'desc' };
         $('.sortable').removeClass('asc desc');
+
         $('.status-tab').removeClass('active');
         $('.status-tab[data-status=""]').addClass('active');
+
         $('#activeFilterCount').hide();
         window.location.href = "{{ route('edu-leads.index') }}";
     });
@@ -976,29 +1103,38 @@ $(document).ready(function () {
     let searchTimer;
     $('#searchInput').on('keyup', function () {
         clearTimeout(searchTimer);
-        searchTimer = setTimeout(function () { updateActiveFilterCount(); loadLeads(); }, 450);
+        searchTimer = setTimeout(function () { updateActiveFilterCount(); loadLeads(1); }, 450);
     });
 
     // Agent name – debounced
     let agentTimer;
     $('#filterAgentName').on('keyup', function () {
         clearTimeout(agentTimer);
-        agentTimer = setTimeout(function () { updateActiveFilterCount(); loadLeads(); }, 450);
+        agentTimer = setTimeout(function () { updateActiveFilterCount(); loadLeads(1); }, 450);
     });
 
-    // Instant-change selects
-    $('#filterPreferredState, #filterCourse, #filterSource, #filterAssignedTo, #filterBranch, ' +
-      '#filterSchoolDepartment, #filterCollegeDepartment, #filterDistrict, #filterInterestLevel')
-        .on('change', function () { updateActiveFilterCount(); loadLeads(); });
+    // Instant-change selects (excluding programme/state handled separately above)
+    $('#filterPreferredState, #filterCourse, #filterSource, #filterAssignedTo, #filterBranch,' +
+      '#filterSchoolDepartment, #filterCollegeDepartment, #filterDistrict, #filterInterestLevel'
+    ).on('change', function () { updateActiveFilterCount(); if (initialized) loadLeads(1); });
 
-    $('#dateFrom, #dateTo').on('change', function () { updateActiveFilterCount(); loadLeads(); });
-    $('#perPageSelect').on('change', function () { loadLeads(); });
+    $('#dateFrom, #dateTo').on('change', function () { updateActiveFilterCount(); if (initialized) loadLeads(1); });
+
+    // per_page -> page 1
+    $('#perPageSelect').on('change', function () { if (initialized) loadLeads(1); });
 
     // ── PAGINATION ───────────────────────────────────────────────────
     $(document).on('click', '#paginationContainer .pagination a', function (e) {
         e.preventDefault();
-        const url = $(this).attr('href');
-        if (url) loadLeads(url);
+        const href = $(this).attr('href');
+        if (!href) return;
+
+        // extract only page number
+        let pageNum = 1;
+        try { pageNum = parseInt(new URL(href, window.location.origin).searchParams.get('page'), 10) || 1; }
+        catch (e) { pageNum = 1; }
+
+        loadLeads(pageNum);
     });
 
     // ── SORTING ──────────────────────────────────────────────────────
@@ -1012,7 +1148,7 @@ $(document).ready(function () {
         }
         $('.sortable').removeClass('asc desc');
         $(this).addClass(currentSort.direction);
-        loadLeads();
+        loadLeads(1);
     });
 
     // ── QUICK STATUS TABS ─────────────────────────────────────────────
@@ -1020,61 +1156,122 @@ $(document).ready(function () {
         $('.status-tab').removeClass('active');
         $(this).addClass('active');
         activeStatus = $(this).data('status');
-        loadLeads();
+        loadLeads(1);
     });
 
     // ── CHECKBOXES ───────────────────────────────────────────────────
     const $selectAll = $('#selectAll');
+
     $selectAll.on('change', function () {
         $('.lead-checkbox').prop('checked', $(this).is(':checked'));
         updateBulkBtn();
     });
+
     $(document).on('change', '.lead-checkbox', function () {
         updateBulkBtn();
         const total   = $('.lead-checkbox').length;
         const checked = $('.lead-checkbox:checked').length;
         $selectAll.prop('checked', total > 0 && total === checked);
     });
+
     function updateBulkBtn() {
         const n = $('.lead-checkbox:checked').length;
         $('#bulkcount').text(n);
         $('#bulkAssignBtn').toggleClass('d-none', n === 0);
     }
+
     function getSelectedIds() {
         return $('.lead-checkbox:checked').map(function () { return $(this).val(); }).get();
     }
 
-    // ── SINGLE ASSIGN ─────────────────────────────────────────────────
     @if(auth()->user()->canAssignLeads())
+
+    // ── Telecaller pool — keyed by branch_id ────────────────────────
+    const telecallersByBranch = {};
+    @foreach($assignableUsers as $u)
+        (telecallersByBranch['{{ $u->branch_id }}'] ??= []).push({
+            id:     {{ $u->id }},
+            name:   '{{ addslashes($u->name) }}',
+            branch: '{{ addslashes($u->branch?->name ?? '') }}',
+        });
+    @endforeach
+
+    // ── SINGLE ASSIGN ────────────────────────────────────────────────
     $(document).on('click', '.assignLeadBtn', function () {
-        const btn = $(this);
+        const btn        = $(this);
+        const branchId   = btn.data('branch-id');
+        const branchName = btn.data('branch-name') || 'this branch';
+
         $('#assignLeadId').val(btn.data('id'));
+        $('#assignLeadBranch').val(branchId);
         $('#assignLeadCode').text(btn.data('code'));
         $('#assignLeadName').text(btn.data('name'));
+        $('#assignLeadBranchLabel').text(branchName);
+        $('#assignBranchNotice').text(branchName);
+        $('#assignBranchEmptyName').text(branchName);
         $('#assignNotes').val('');
-        $('#assignTelecaller').val('').trigger('change');
+
+        const $select = $('#assignTelecaller');
+        const options = telecallersByBranch[branchId] || [];
+
+        if ($select.hasClass('select2-hidden-accessible')) $select.select2('destroy');
+        $select.empty().append('<option value="">Choose telecaller...</option>');
+
+        if (options.length === 0) {
+            $('#assignTelecallerEmpty').show();
+            $('#assignSubmitBtn').prop('disabled', true);
+        } else {
+            $('#assignTelecallerEmpty').hide();
+            $('#assignSubmitBtn').prop('disabled', false);
+            options.forEach(function (u) {
+                $select.append(new Option(`${u.name} — ${u.branch}`, u.id));
+            });
+        }
+
+        $select.select2({
+            theme: 'bootstrap-5',
+            placeholder: 'Choose telecaller...',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: $('#assignLeadModal')
+        });
+
         const assignee = btn.data('assignee');
         $('#currentAssigneeLabel').text(assignee);
         $('#currentAssignmentBlock').toggle(!!assignee);
+
         $('#assignLeadModal').modal('show');
     });
 
     $('#assignLeadForm').on('submit', function (e) {
         e.preventDefault();
+
         const telecaller = $('#assignTelecaller').val();
-        if (!telecaller) { Swal.fire({ icon: 'warning', title: 'Select Telecaller', text: 'Please choose a telecaller.' }); return; }
-        const btn = $(this).find('[type=submit]').prop('disabled', true)
-                           .html('<span class="spinner-border spinner-border-sm me-1"></span>Assigning...');
+        if (!telecaller) {
+            Swal.fire({ icon: 'warning', title: 'Select Telecaller', text: 'Please choose a telecaller.' });
+            return;
+        }
+
+        const $btn  = $(this).find('[type=submit]');
+        const orig  = $btn.html();
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Assigning...');
+
         $.ajax({
             url:  `/edu-leads/${$('#assignLeadId').val()}/assign`,
             type: 'POST',
             data: { assigned_to: telecaller, notes: $('#assignNotes').val() },
             success: function (res) {
                 $('#assignLeadModal').modal('hide');
-                Swal.fire({ icon: 'success', title: 'Assigned!', html: `Lead assigned to <strong>${res.telecaller_name}</strong>`, timer: 2500, showConfirmButton: false }).then(() => loadLeads());
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Assigned!',
+                    html: `Lead assigned to <strong>${res.telecaller_name}</strong>`,
+                    timer: 2500,
+                    showConfirmButton: false,
+                }).then(() => loadLeads(currentPage));
             },
             error: function (xhr) {
-                btn.prop('disabled', false).html('<i class="las la-check me-1"></i>Assign Lead');
+                $btn.prop('disabled', false).html(orig);
                 Swal.fire({ icon: 'error', title: 'Error', text: xhr.responseJSON?.message || 'Assignment failed.' });
             }
         });
@@ -1084,63 +1281,136 @@ $(document).ready(function () {
     $('#bulkAssignBtn').on('click', function () {
         const selected = getSelectedIds();
         $('#selectedCount').text(selected.length);
+
         $('#bulkTelecaller').val('').trigger('change');
         $('#bulkNotes').val('');
-        const list = $('#selectedLeadsList').empty();
+        $('#bulkBranchMatchInfo').hide();
+
+        const list     = $('#selectedLeadsList').empty();
+        const branches = new Set();
+
         if (!selected.length) {
             list.html('<p class="text-muted text-center py-2 mb-0"><small>No leads selected</small></p>');
         } else {
             selected.forEach(function (id) {
-                const row      = $(`input.lead-checkbox[value="${id}"]`).closest('tr');
-                const code     = row.find('[data-label="code"]').text().trim() || row.find('td').eq(1).text().trim();
-                const name     = row.find('.lead-name-link').text().trim();
-                const assignee = row.find('.assigned-to-name').text().trim();
-                list.append(`<div class="bulk-lead-item"><span class="badge bg-secondary">${code}</span>
-                    <span class="fw-semibold">${name}</span>
-                    ${assignee ? `<span class="text-muted small ms-auto">${assignee}</span>` : ''}</div>`);
+                const row        = $(`input.lead-checkbox[value="${id}"]`).closest('tr');
+                const code       = row.find('[data-label="code"]').text().trim() || row.find('td').eq(1).text().trim();
+                const name       = row.find('.lead-name-link').text().trim();
+                const assignee   = row.find('.assigned-to-name').text().trim();
+                const branchName = row.find('.lead-branch-name').text().trim();
+                const branchId   = row.find('input.lead-checkbox').data('branch-id');
+
+                if (branchId) branches.add(String(branchId));
+
+                list.append(`
+                    <div class="bulk-lead-item d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-secondary">${code}</span>
+                        <span class="fw-semibold">${name}</span>
+                        ${branchName ? `<span class="badge bg-soft-primary text-primary border border-primary ms-1">${branchName}</span>` : ''}
+                        ${assignee  ? `<span class="text-muted small ms-auto">${assignee}</span>` : ''}
+                    </div>
+                `);
             });
         }
+
+        if (branches.size > 1) $('#bulkBranchWarning').show();
+        else                   $('#bulkBranchWarning').hide();
+
         $('#bulkAssignModal').modal('show');
+    });
+
+    // Live branch match preview
+    $('#bulkTelecaller').on('change', function () {
+        const selected         = getSelectedIds();
+        const telecallerBranch = String($(this).find(':selected').data('branch') || '');
+        const branchName       = $(this).find(':selected').data('branch-name') || '';
+        const $info            = $('#bulkBranchMatchInfo');
+
+        if (!$(this).val() || !selected.length) { $info.hide(); return; }
+
+        let match = 0, skip = 0;
+        selected.forEach(function (id) {
+            const row        = $(`input.lead-checkbox[value="${id}"]`).closest('tr');
+            const leadBranch = String(row.find('input.lead-checkbox').data('branch-id') || '');
+            (leadBranch === telecallerBranch) ? match++ : skip++;
+        });
+
+        if (skip === 0) {
+            $info.html(`<span class="text-success"><i class="las la-check-circle me-1"></i>
+                All <strong>${match}</strong> selected leads are in <strong>${branchName}</strong>. Ready to assign.</span>`).show();
+        } else if (match === 0) {
+            $info.html(`<span class="text-danger"><i class="las la-times-circle me-1"></i>
+                None of the selected leads belong to <strong>${branchName}</strong>. All will be skipped.</span>`).show();
+        } else {
+            $info.html(`<span class="text-warning"><i class="las la-exclamation-triangle me-1"></i>
+                <strong>${match}</strong> lead(s) will be assigned, <strong>${skip}</strong> will be skipped
+                (not in <strong>${branchName}</strong>).</span>`).show();
+        }
     });
 
     $('#bulkAssignForm').on('submit', function (e) {
         e.preventDefault();
+
         const selected   = getSelectedIds();
         const telecaller = $('#bulkTelecaller').val();
+
         if (!selected.length) { Swal.fire({ icon: 'warning', title: 'Nothing Selected', text: 'Select at least one lead.' }); return; }
         if (!telecaller)      { Swal.fire({ icon: 'warning', title: 'Select Telecaller', text: 'Please choose a telecaller.' }); return; }
+
         $('#bulkAssignModal').modal('hide');
+
         $.ajax({
             url:  "{{ route('edu-leads.bulk-assign') }}",
             type: 'POST',
             data: { lead_ids: selected, assigned_to: telecaller, notes: $('#bulkNotes').val() },
             success: function (res) {
-                Swal.fire({ icon: 'success', title: 'Success!', html: `<strong>${res.count}</strong> leads assigned to <strong>${res.telecaller_name}</strong>`, timer: 3000 })
-                    .then(function () { $('.lead-checkbox, #selectAll').prop('checked', false); updateBulkBtn(); loadLeads(); });
+                let html = `<strong>${res.count}</strong> lead(s) assigned to <strong>${res.telecaller_name}</strong>.`;
+                if (res.skipped > 0) html += `<br><small class="text-muted">${res.skipped} skipped (branch mismatch).</small>`;
+
+                Swal.fire({ icon: 'success', title: 'Done!', html, timer: 3500 })
+                    .then(function () {
+                        $('.lead-checkbox, #selectAll').prop('checked', false);
+                        updateBulkBtn();
+                        loadLeads(currentPage);
+                    });
             },
             error: function (xhr) {
                 Swal.fire({ icon: 'error', title: 'Error', text: xhr.responseJSON?.message || 'Bulk assign failed.' });
             }
         });
     });
+
     @endif
 
     // ── DELETE LEAD ───────────────────────────────────────────────────
     $(document).on('click', '.deleteLeadBtn', function () {
         const id   = $(this).attr('data-id');
         const name = $(this).attr('data-name');
+
         Swal.fire({
             title: 'Delete Lead?',
             html:  `Are you sure you want to delete <strong>${name}</strong>?`,
-            icon:  'warning', showCancelButton: true,
-            confirmButtonText: 'Yes, Delete', confirmButtonColor: '#dc3545', cancelButtonColor: '#6c757d'
+            icon:  'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete',
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d'
         }).then(result => {
             if (!result.isConfirmed) return;
+
             $.ajax({
                 url:  `/edu-leads/${id}`,
                 type: 'DELETE',
                 success: function (res) {
-                    if (res.success) Swal.fire({ icon: 'success', title: 'Deleted!', text: res.message, timer: 2000, showConfirmButton: false }).then(loadLeads);
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: res.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => loadLeads(1));
+                    }
                 },
                 error: function (xhr) {
                     Swal.fire({ icon: 'error', title: 'Error', text: xhr.responseJSON?.message || 'Could not delete lead.' });
@@ -1151,6 +1421,7 @@ $(document).ready(function () {
 
     // ── INITIALISE ────────────────────────────────────────────────────
     prePopulateFilters();
+    loadLeads(currentPage);
 
 });
 </script>

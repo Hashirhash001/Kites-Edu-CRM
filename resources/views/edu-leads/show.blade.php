@@ -489,9 +489,10 @@
 
             $canEdit = $user->isSuperAdmin()
                 || $user->isOperationHead()
-                || ($user->isLeadManager() && $eduLead->branch_id === $user->branch_id);
+                || ($user->isLeadManager() && $eduLead->branch_id === $user->branch_id)
+                || ($user->isTelecaller() && $eduLead->assigned_to === $user->id);
 
-            $canChangeStatus = $canEdit || $eduLead->assigned_to === $user->id;
+            $canChangeStatus = $canEdit;
         @endphp
 
         {{-- ── Lead Header (no final status here anymore) ──────────── --}}

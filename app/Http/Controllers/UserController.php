@@ -83,10 +83,11 @@ class UserController extends Controller
             'branch_id' => ['nullable', 'exists:branches,id'],
         ]);
 
-        if ($validated['role'] === 'lead_manager' && empty($validated['branch_id'])) {
+        if (in_array($validated['role'], ['lead_manager', 'telecaller']) && empty($validated['branch_id'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lead Manager must be assigned to a branch.',
+                'message' => 'Lead Managers and Telecallers must be assigned to a branch.',
+                'errors'  => ['branch_id' => ['A branch is required for this role.']],
             ], 422);
         }
 
@@ -155,10 +156,11 @@ class UserController extends Controller
             'password'  => ['nullable', 'min:8', 'confirmed'],
         ]);
 
-        if ($validated['role'] === 'lead_manager' && empty($validated['branch_id'])) {
+        if (in_array($validated['role'], ['lead_manager', 'telecaller']) && empty($validated['branch_id'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lead Manager must be assigned to a branch.',
+                'message' => 'Lead Managers and Telecallers must be assigned to a branch.',
+                'errors'  => ['branch_id' => ['A branch is required for this role.']],
             ], 422);
         }
 

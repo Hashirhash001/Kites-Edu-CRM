@@ -36,32 +36,59 @@ class EduLeadController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $baseQuery = EduLead::with(['course.programme', 'leadSource', 'createdBy', 'assignedTo', 'branch']);
+        $baseQuery = EduLead::with([
+            'course.programme', 'leadSource', 'createdBy', 'assignedTo', 'branch',
+            'followups',
+        ]);
         $baseQuery->visibleTo($user);
 
-        if ($request->filled('interest_level'))   $baseQuery->where('interest_level',  $request->interest_level);
+        // ── Filters — all param names are snake_case to match JS getFilterParams() ──
+        if ($request->filled('interest_level'))
+            $baseQuery->where('interest_level', $request->interest_level);
+
         if ($request->filled('lead_source_id') && $request->lead_source_id != 0)
-                                                $baseQuery->where('lead_source_id',  $request->lead_source_id);
-        if ($request->filled('course_id'))        $baseQuery->where('course_id',       $request->course_id);
-        if ($request->filled('programme_id'))     $baseQuery->whereHas('course', fn($q) => $q->where('programme_id', $request->programme_id));
-        if ($request->filled('institution_type')) $baseQuery->where('institution_type', $request->institution_type);
-        if ($request->filled('state'))            $baseQuery->where('state',    'like', '%' . $request->state    . '%');
-        if ($request->filled('district'))         $baseQuery->where('district', 'like', '%' . $request->district . '%');
-        if ($request->filled('preferred_state'))  $baseQuery->where('preferred_state', $request->preferred_state);
-        if ($request->filled('status'))           $baseQuery->where('status', $request->status);
+            $baseQuery->where('lead_source_id', $request->lead_source_id);
+
+        if ($request->filled('course_id'))
+            $baseQuery->where('course_id', $request->course_id);
+
+        if ($request->filled('programme_id'))
+            $baseQuery->whereHas('course', fn($q) => $q->where('programme_id', $request->programme_id));
+
+        if ($request->filled('institution_type')) {
+            $baseQuery->where('institution_type', $request->institution_type);
+        }
+
+        if ($request->filled('state'))
+            $baseQuery->where('state', 'like', '%' . $request->state . '%');
+
+        if ($request->filled('district'))
+            $baseQuery->where('district', 'like', '%' . $request->district . '%');
+
+        if ($request->filled('preferred_state'))
+            $baseQuery->where('preferred_state', $request->preferred_state);
+
         if ($request->filled('branch_id') && ($user->isSuperAdmin() || $user->isOperationHead()))
-                                                $baseQuery->where('branch_id', $request->branch_id);
-        if ($request->filled('date_from'))        $baseQuery->whereDate('created_at', '>=', $request->date_from);
-        if ($request->filled('date_to'))          $baseQuery->whereDate('created_at', '<=', $request->date_to);
+            $baseQuery->where('branch_id', $request->branch_id);
+
+        if ($request->filled('date_from'))
+            $baseQuery->whereDate('created_at', '>=', $request->date_from);
+
+        if ($request->filled('date_to'))
+            $baseQuery->whereDate('created_at', '<=', $request->date_to);
+
         if ($request->filled('school_department'))
             $baseQuery->whereRaw('LOWER(TRIM(school_department)) = ?', [strtolower(trim($request->school_department))]);
+
         if ($request->filled('college_department'))
             $baseQuery->whereRaw('LOWER(TRIM(college_department)) = ?', [strtolower(trim($request->college_department))]);
+
         if ($request->filled('assigned_to')) {
             $request->assigned_to === 'unassigned'
                 ? $baseQuery->whereNull('assigned_to')
                 : $baseQuery->where('assigned_to', $request->assigned_to);
         }
+
         if ($request->filled('agent_name'))
             $baseQuery->where('agent_name', 'like', '%' . $request->agent_name . '%');
 
@@ -81,6 +108,7 @@ class EduLeadController extends Controller
             );
         }
 
+        // ── Status counts (before applying final_status filter) ───────────────
         $statusCounts = [
             'all'            => (clone $baseQuery)->count(),
             'pending'        => (clone $baseQuery)->where('final_status', 'pending')->count(),
@@ -96,18 +124,29 @@ class EduLeadController extends Controller
             'college' => (clone $baseQuery)->where('institution_type', 'college')->count(),
         ];
 
+        // ── Apply status tab filter ───────────────────────────────────────────
         $query = clone $baseQuery;
         if ($request->filled('final_status')) {
             $query->where('final_status', $request->final_status);
         }
 
-        $sortColumn    = $request->get('sort_column', 'created_at');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $perPage = in_array($request->get('per_page', 15), [15, 30, 50, 100])
-            ? $request->get('per_page', 15) : 15;
+        // ── Sorting & pagination ──────────────────────────────────────────────
+        $allowedSortColumns = [
+            'lead_code', 'name', 'phone', 'final_status', 'course_id',
+            'interest_level', 'lead_source_id', 'assigned_to', 'branch_id', 'created_at',
+        ];
+        $sortColumn = in_array($request->get('sort_column'), $allowedSortColumns)
+            ? $request->get('sort_column') : 'created_at';
+        $sortDirection = in_array($request->get('sort_direction'), ['asc', 'desc'])
+            ? $request->get('sort_direction') : 'desc';
+        $perPage = in_array((int) $request->get('per_page', 15), [15, 30, 50, 100])
+            ? (int) $request->get('per_page', 15) : 15;
 
-        $leads = $query->orderBy($sortColumn, $sortDirection)->paginate($perPage);
+        $page  = (int) $request->get('page', 1);
+        $leads = $query->orderBy($sortColumn, $sortDirection)
+                       ->paginate($perPage, ['*'], 'page', $page);
 
+        // ── Counts for header badges ──────────────────────────────────────────
         $hotLeadsCount = EduLead::where('interest_level', 'hot')
             ->where('final_status', 'pending')
             ->visibleTo($user)
@@ -119,6 +158,7 @@ class EduLeadController extends Controller
             ->when($user->isLeadManager(), fn($q) => $q->whereHas('eduLead', fn($lq) => $lq->where('branch_id', $user->branch_id)))
             ->count();
 
+        // ── View data ─────────────────────────────────────────────────────────
         $courses         = Course::active()->with('programme')->orderBy('name')->get();
         $programmes      = Programme::active()->orderBy('name')->get();
         $leadSources     = EduLeadSource::where('is_active', true)->orderBy('name')->get();
@@ -127,7 +167,9 @@ class EduLeadController extends Controller
         $states          = IndiaGeoHelper::states();
         $districtMap     = IndiaGeoHelper::districtMap();
 
-        if ($request->ajax()) {
+        $isJson = $request->boolean('_json') || $request->wantsJson();
+
+        if ($isJson) {
             return response()->json([
                 'success'            => true,
                 'html'               => view('edu-leads.partials.table-rows', compact('leads'))->render(),
@@ -135,6 +177,7 @@ class EduLeadController extends Controller
                 'total'              => $leads->total(),
                 'per_page'           => $leads->perPage(),
                 'current_page'       => $leads->currentPage(),
+                'last_page'          => $leads->lastPage(),      // ✅ important
                 'from'               => $leads->firstItem() ?? 0,
                 'to'                 => $leads->lastItem()  ?? 0,
                 'status_counts'      => $statusCounts,
@@ -190,7 +233,6 @@ class EduLeadController extends Controller
 
             $validated = $request->validate($this->leadValidationRules());
 
-            // Build full application number from AJK- prefix + suffix
             if (!empty($validated['application_number_suffix'])) {
                 $validated['application_number'] = 'AJK-' . trim($validated['application_number_suffix']);
             }
@@ -200,19 +242,15 @@ class EduLeadController extends Controller
             $validated['status']         = $validated['status']         ?? null;
             $validated['interest_level'] = $validated['interest_level'] ?? null;
 
-            // Clear booking fields if status is not 'booking'
             if (($validated['status'] ?? null) !== 'booking') {
                 $validated['booking_payment'] = null;
                 $validated['fees_collection'] = null;
             }
 
-            // Clear cancellation reason if status is not 'cancelled'
             if (($validated['status'] ?? null) !== 'cancelled') {
                 $validated['cancellation_reason'] = null;
             }
 
-            // Clear referral_name if source is not referral, clear agent_name if not agent
-            // (optional guard — the form already controls this, but belt-and-suspenders)
             $sourceName = strtolower(
                 \App\Models\EduLeadSource::find($validated['lead_source_id'])?->name ?? ''
             );
@@ -223,12 +261,10 @@ class EduLeadController extends Controller
                 $validated['referral_name'] = null;
             }
 
-            // Force branch for lead_manager and telecaller
             $branchId = ($user->isLeadManager() || $user->isTelecaller())
                 ? $user->branch_id
                 : ($validated['branch_id'] ?? null);
 
-            // Telecallers are auto-set as agent
             if ($user->isTelecaller() && empty($validated['agent_name'])) {
                 $validated['agent_name'] = $user->name;
             }
@@ -252,10 +288,33 @@ class EduLeadController extends Controller
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['success' => false, 'message' => 'Please fix the errors below', 'errors' => $e->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => 'Please fix the errors below',
+                'errors'  => $e->errors(),
+            ], 422);
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('Lead creation DB error: ' . $e->getMessage());
+            if ($e->errorInfo[1] === 1062) {
+                $field = str_contains($e->getMessage(), 'phone') ? 'phone' : 'field';
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This phone number is already registered.',
+                    'errors'  => ['phone' => ['This phone number already exists in the system.']],
+                ], 422);
+            }
+            return response()->json([
+                'success' => false,
+                'message' => 'A database error occurred. Please try again.',
+            ], 500);
+
         } catch (\Exception $e) {
-            Log::error('Lead creation error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Error creating lead: ' . $e->getMessage()], 500);
+            Log::error('Lead creation error: ' . $e->getMessage()); // ✅ log it, don't expose it
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong. Please try again.',
+            ], 500);
         }
     }
 
@@ -345,7 +404,6 @@ class EduLeadController extends Controller
 
             $validated = $request->validate($this->leadValidationRules($eduLead->id));
 
-            // Build full application number from AJK- prefix + suffix
             if (array_key_exists('application_number_suffix', $validated)) {
                 $suffix = trim($validated['application_number_suffix'] ?? '');
                 $validated['application_number'] = $suffix ? 'AJK-' . $suffix : null;
@@ -355,18 +413,15 @@ class EduLeadController extends Controller
             $validated['final_status'] = $validated['final_status'] ?? $eduLead->final_status;
             $validated['status']       = $validated['status']       ?? $eduLead->status;
 
-            // Clear booking fields if status is not 'booking'
             if ($validated['status'] !== 'booking') {
                 $validated['booking_payment'] = null;
                 $validated['fees_collection'] = null;
             }
 
-            // Clear cancellation reason if status is not 'cancelled'
             if ($validated['status'] !== 'cancelled') {
                 $validated['cancellation_reason'] = null;
             }
 
-            // Clear agent/referral name based on source
             $sourceName = strtolower(
                 \App\Models\EduLeadSource::find($validated['lead_source_id'] ?? $eduLead->lead_source_id)?->name ?? ''
             );
@@ -377,17 +432,14 @@ class EduLeadController extends Controller
                 $validated['referral_name'] = null;
             }
 
-            // Preserve branch for lead_manager and telecaller
             if ($user->isLeadManager() || $user->isTelecaller()) {
                 $validated['branch_id'] = $user->branch_id;
             }
 
-            // Track admitted_at timestamp
             if ($validated['final_status'] === 'admitted' && $eduLead->final_status !== 'admitted') {
                 $validated['admitted_at'] = now();
             }
 
-            // Track cancelled_at — triggered by status = cancelled OR final_status = dropped
             if ($validated['status'] === 'cancelled' && $eduLead->status !== 'cancelled') {
                 $validated['cancelled_at'] = now();
             } elseif ($validated['final_status'] === 'dropped' && $eduLead->final_status !== 'dropped') {
@@ -407,10 +459,32 @@ class EduLeadController extends Controller
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['success' => false, 'message' => 'Please fix the errors below', 'errors' => $e->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => 'Please fix the errors below',
+                'errors'  => $e->errors(),
+            ], 422);
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('Lead update DB error: ' . $e->getMessage());
+            if ($e->errorInfo[1] === 1062) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This phone number is already registered.',
+                    'errors'  => ['phone' => ['This phone number already exists in the system.']],
+                ], 422);
+            }
+            return response()->json([
+                'success' => false,
+                'message' => 'A database error occurred. Please try again.',
+            ], 500);
+
         } catch (\Exception $e) {
-            Log::error('Lead update error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Error updating lead: ' . $e->getMessage()], 500);
+            Log::error('Lead update error: ' . $e->getMessage()); // ✅ log it, don't expose it
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong. Please try again.',
+            ], 500);
         }
     }
 
@@ -493,8 +567,20 @@ class EduLeadController extends Controller
 
             $assignee = User::findOrFail($validated['assigned_to']);
 
-            if ($user->isLeadManager() && $assignee->branch_id !== $user->branch_id) {
-                return response()->json(['success' => false, 'message' => 'You can only assign to telecallers in your branch.'], 403);
+            // ✅ Assignee must be a telecaller
+            if (!$assignee->isTelecaller()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Leads can only be assigned to telecallers.',
+                ], 422);
+            }
+
+            // ✅ Universal: assignee branch must match the lead's branch — applies to ALL roles
+            if ($assignee->branch_id !== $eduLead->branch_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The selected telecaller does not belong to the same branch as this lead.',
+                ], 422);
             }
 
             $eduLead->update(['assigned_to' => $validated['assigned_to']]);
@@ -513,9 +599,15 @@ class EduLeadController extends Controller
                 'telecaller_name' => $assignee->name,
             ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please fix the errors below',
+                'errors'  => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Lead assign error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Error assigning lead'], 500);
+            return response()->json(['success' => false, 'message' => 'Error assigning lead.'], 500);
         }
     }
 
@@ -538,13 +630,40 @@ class EduLeadController extends Controller
                 'notes'       => 'nullable|string',
             ]);
 
-            $assignee = User::find($validated['assigned_to']);
-            $count    = 0;
+            $assignee = User::findOrFail($validated['assigned_to']);
+
+            // ✅ Assignee must be a telecaller
+            if (!$assignee->isTelecaller()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Leads can only be assigned to telecallers.',
+                ], 422);
+            }
+
+            // ✅ LeadManager: assignee must be in their own branch
+            if ($user->isLeadManager() && $assignee->branch_id !== $user->branch_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You can only assign to telecallers in your branch.',
+                ], 403);
+            }
+
+            $count   = 0;
+            $skipped = 0;
 
             foreach ($validated['lead_ids'] as $leadId) {
                 $lead = EduLead::find($leadId);
-                if (!$lead) continue;
-                if ($user->isLeadManager() && $lead->branch_id !== $user->branch_id) continue;
+                if (!$lead) { $skipped++; continue; }
+
+                // ✅ LeadManager: skip leads outside their branch
+                if ($user->isLeadManager() && $lead->branch_id !== $user->branch_id) {
+                    $skipped++; continue;
+                }
+
+                // ✅ All roles: assignee must belong to the same branch as the lead
+                if ($assignee->branch_id !== $lead->branch_id) {
+                    $skipped++; continue;
+                }
 
                 $lead->update(['assigned_to' => $validated['assigned_to']]);
 
@@ -555,19 +674,32 @@ class EduLeadController extends Controller
                         'note'        => 'Bulk Assignment Note: ' . $validated['notes'],
                     ]);
                 }
+
                 $count++;
+            }
+
+            $message = "Successfully assigned {$count} lead(s) to {$assignee->name}.";
+            if ($skipped > 0) {
+                $message .= " {$skipped} lead(s) were skipped (branch mismatch or not found).";
             }
 
             return response()->json([
                 'success'         => true,
-                'message'         => 'Bulk assignment completed!',
+                'message'         => $message,
                 'count'           => $count,
+                'skipped'         => $skipped,
                 'telecaller_name' => $assignee->name,
             ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please fix the errors below',
+                'errors'  => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Bulk assign error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Error in bulk assignment'], 500);
+            return response()->json(['success' => false, 'message' => 'Error in bulk assignment.'], 500);
         }
     }
 
@@ -845,7 +977,10 @@ class EduLeadController extends Controller
     {
         try {
             $user  = Auth::user();
-            $query = EduLead::with(['course.programme', 'leadSource', 'createdBy', 'assignedTo', 'branch']);
+            $query = EduLead::with([
+                'course.programme', 'leadSource', 'createdBy', 'assignedTo', 'branch',
+                'followups', // ✅ ADD — needed for followup counts
+            ]);
 
             // Visibility scope
             $query->visibleTo($user);
@@ -871,7 +1006,7 @@ class EduLeadController extends Controller
                     ? $query->whereNull('assigned_to')
                     : $query->where('assigned_to', $request->assigned_to);
             }
-            if ($request->filled('agent_name'))         $query->where('agent_name', 'like', '%' . $request->agent_name . '%');
+            if ($request->filled('agent_name')) $query->where('agent_name', 'like', '%' . $request->agent_name . '%');
             if ($request->filled('search')) {
                 $s = '%' . $request->search . '%';
                 $query->where(fn($q) => $q
@@ -890,7 +1025,6 @@ class EduLeadController extends Controller
             $leads    = $query->orderBy('created_at', 'desc')->get();
             $filename = 'education_leads_' . date('Y-m-d_His') . '.csv';
 
-            // Label maps — same as blade views for consistency
             $whatsappStatusLabels = [
                 'not_sent'  => 'Not Sent',
                 'sent'      => 'Sent',
@@ -927,7 +1061,7 @@ class EduLeadController extends Controller
                 $finalStatusLabels
             ) {
                 $file = fopen('php://output', 'w');
-                fwrite($file, "\xEF\xBB\xBF"); // UTF-8 BOM for Excel compatibility
+                fwrite($file, "\xEF\xBB\xBF"); // UTF-8 BOM for Excel
 
                 // ── Header Row ────────────────────────────────────────────
                 fputcsv($file, [
@@ -977,6 +1111,13 @@ class EduLeadController extends Controller
                     'Assigned To',
                     'Created By',
 
+                    // ✅ Followup Counts
+                    'Total Followups',
+                    'Overdue Followups',
+                    'Today Followups',
+                    'Upcoming Followups',
+                    'Completed Followups',
+
                     // Dates
                     'Created At',
                     'Last Followup Date',
@@ -985,57 +1126,80 @@ class EduLeadController extends Controller
 
                 // ── Data Rows ─────────────────────────────────────────────
                 foreach ($leads as $lead) {
+
+                    // ✅ Compute followup counts — same logic as table-rows.blade.php
+                    $today     = \Carbon\Carbon::today();
+                    $totalFu   = $lead->followups->count();
+                    $doneFu    = $lead->followups->where('status', 'completed')->count();
+                    $overdueFu = $lead->followups->filter(fn($f) =>
+                        $f->status === 'pending' &&
+                        \Carbon\Carbon::parse($f->followup_date)->startOfDay()->lt($today)
+                    )->count();
+                    $todayFu   = $lead->followups->filter(fn($f) =>
+                        $f->status === 'pending' &&
+                        \Carbon\Carbon::parse($f->followup_date)->isToday()
+                    )->count();
+                    $pendingFu    = $lead->followups->where('status', 'pending')->count();
+                    $upcomingFu   = max(0, $pendingFu - $overdueFu - $todayFu);
+
                     fputcsv($file, [
                         // Identity
                         $lead->lead_code,
                         $lead->name,
-                        $lead->email            ?? '',
+                        $lead->email           ?? '',
                         $lead->phone,
-                        $lead->whatsapp_number  ?? '',
+                        $lead->whatsapp_number ?? '',
 
                         // Location
-                        $lead->state            ?? '',
-                        $lead->district         ?? '',
-                        $lead->preferred_state  ?? '',
+                        $lead->state           ?? '',
+                        $lead->district        ?? '',
+                        $lead->preferred_state ?? '',
 
                         // Institution
-                        $lead->branch?->name                            ?? '',
-                        ucfirst($lead->institution_type                 ?? ''),
-                        $lead->school                                   ?? '',
-                        $lead->school_department                        ?? '',
-                        $lead->college                                  ?? '',
-                        $lead->college_department                       ?? '',
+                        $lead->branch?->name                                                             ?? '',
+                        ucfirst($lead->institution_type                                                  ?? ''),
+                        $lead->school                                                                    ?? '',
+                        $lead->school_department                                                         ?? '',
+                        $lead->college                                                                   ?? '',
+                        $lead->college_department                                                        ?? '',
 
                         // Course
-                        $lead->course?->programme?->name                ?? '',
-                        $lead->course?->name                            ?? '',
-                        $lead->addon_course                             ?? '',
+                        $lead->course?->programme?->name                                                 ?? '',
+                        $lead->course?->name                                                             ?? '',
+                        $lead->addon_course                                                              ?? '',
 
                         // Source & Agent
-                        $lead->leadSource?->name                        ?? '',
-                        $lead->agent_name                               ?? '',
+                        $lead->leadSource?->name                                                         ?? '',
+                        $lead->agent_name                                                                ?? '',
 
                         // Application & Payment Tracking
-                        $lead->application_number                       ?? '',
-                        $whatsappStatusLabels[$lead->whatsapp_status]            ?? ucfirst(str_replace('_', ' ', $lead->whatsapp_status ?? '')),
-                        $appFormStatusLabels[$lead->application_form_status]     ?? ucfirst(str_replace('_', ' ', $lead->application_form_status ?? '')),
-                        $bookingStatusLabels[$lead->booking_status]              ?? ucfirst(str_replace('_', ' ', $lead->booking_status ?? '')),
-                        $lead->booking_payment                          ?? '',
-                        $lead->fees_collection                          ?? '',
-                        $lead->cancellation_reason                      ?? '',
+                        $lead->application_number                                                        ?? '',
+                        $whatsappStatusLabels[$lead->whatsapp_status]         ?? ucfirst(str_replace('_', ' ', $lead->whatsapp_status          ?? '')),
+                        $appFormStatusLabels[$lead->application_form_status]  ?? ucfirst(str_replace('_', ' ', $lead->application_form_status  ?? '')),
+                        $bookingStatusLabels[$lead->booking_status]           ?? ucfirst(str_replace('_', ' ', $lead->booking_status           ?? '')),
+                        $lead->booking_payment                                                           ?? '',
+                        $lead->fees_collection                                                           ?? '',
+                        $lead->cancellation_reason                                                       ?? '',
 
                         // CRM
-                        ucfirst($lead->interest_level                   ?? ''),
-                        $finalStatusLabels[$lead->final_status]                  ?? ucfirst(str_replace('_', ' ', $lead->final_status ?? '')),
+                        ucfirst($lead->interest_level                                                    ?? ''),
+                        $finalStatusLabels[$lead->final_status]               ?? ucfirst(str_replace('_', ' ', $lead->final_status             ?? '')),
 
                         // Assignment
-                        $lead->assignedTo?->name                        ?? 'Unassigned',
-                        $lead->createdBy?->name                         ?? '',
+                        $lead->assignedTo?->name                                                         ?? 'Unassigned',
+                        $lead->createdBy?->name                                                          ?? '',
+
+                        // ✅ Followup Counts
+                        $totalFu,
+                        $overdueFu,
+                        $todayFu,
+                        $upcomingFu,
+                        $doneFu,
 
                         // Dates
                         $lead->created_at->format('d-m-Y H:i'),
-                        $lead->followup_date?->format('d-m-Y')          ?? '',
-                        $lead->remarks                                  ?? '',
+                        $lead->followup_date?->format('d-m-Y') ?? '',
+                        $lead->remarks                         ?? '',
                     ]);
                 }
 
@@ -1049,10 +1213,9 @@ class EduLeadController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Export error: ' . $e->getMessage());
-            return back()->with('error', 'Error exporting leads: ' . $e->getMessage());
+            return back()->with('error', 'Export failed. Please try again.');
         }
     }
-
 
     // =========================================================================
     // GET COURSES BY PROGRAMME (AJAX)
@@ -1171,10 +1334,20 @@ class EduLeadController extends Controller
     protected function leadValidationRules(?int $ignoreId = null): array
     {
         return [
-            'name'                      => 'required|string|max:255',
-            'email'                     => 'nullable|email|max:255',
-            'phone'                     => 'required|string|max:20',
-            'whatsapp_number'           => 'nullable|string|max:20',
+            'name'             => 'required|string|max:255',
+            'email'            => 'nullable|email|max:255',
+            'phone'            => [
+                'required', 'string', 'max:20',
+                Rule::unique('edu_leads', 'phone')
+                    ->ignore($ignoreId)
+                    ->whereNull('deleted_at'),
+            ],
+            'whatsapp_number'  => [
+                'nullable', 'string', 'max:20',
+                Rule::unique('edu_leads', 'whatsapp_number')
+                    ->ignore($ignoreId)
+                    ->whereNull('deleted_at'),
+            ],
             'state'                     => 'nullable|string|max:100',
             'district'                  => 'nullable|string|max:100',
             'preferred_state'           => 'nullable|string|max:100',
@@ -1194,18 +1367,11 @@ class EduLeadController extends Controller
             'application_number_suffix' => 'nullable|string|max:20',
             'description'               => 'nullable|string',
             'remarks'                   => 'nullable|string',
-
-            // New unified status field
-            'status' => 'nullable|in:whatsapp_link_submitted,application_form_submitted,booking,cancelled',
-
-            // Booking fields — required only when status = booking
-            'booking_payment' => 'nullable|numeric|min:0',
-            'fees_collection' => 'nullable|numeric|min:0',
-
-            // Cancellation field — required only when status = cancelled
-            'cancellation_reason' => 'nullable|string|max:1000',
-
-            'final_status' => 'nullable|in:pending,contacted,follow_up,admitted,not_interested,dropped',
+            'status'                    => 'nullable|in:whatsapp_link_submitted,application_form_submitted,booking,cancelled',
+            'booking_payment'           => 'nullable|numeric|min:0',
+            'fees_collection'           => 'nullable|numeric|min:0',
+            'cancellation_reason'       => 'nullable|string|max:1000',
+            'final_status'              => 'nullable|in:pending,contacted,follow_up,admitted,not_interested,dropped',
         ];
     }
 

@@ -1245,6 +1245,191 @@
 
     @endif
 
+    {{-- ═══════════════════════════════════════════════════ --}}
+    {{-- TELECALLER DASHBOARD                               --}}
+    {{-- ═══════════════════════════════════════════════════ --}}
+    @if($authUser->isTelecaller())
+
+    {{-- Row 1: My Lead Pipeline --}}
+    <div class="row mb-3">
+        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+            <a href="{{ route('edu-leads.index') }}" class="text-decoration-none">
+                <div class="card stat-card mb-0">
+                    <div class="card-body"><div class="d-flex align-items-center w-100">
+                        <div class="flex-grow-1">
+                            <p class="text-muted text-uppercase mb-1 fw-medium fs-12">My Leads</p>
+                            <h4 class="mt-0 mb-0 fw-semibold">{{ $myLeads }}</h4>
+                            <small class="text-muted">Assigned to me</small>
+                        </div>
+                        <div class="avatar-sm flex-shrink-0">
+                            <span class="avatar-title bg-soft-primary text-primary rounded"><i class="las la-user-graduate fs-24"></i></span>
+                        </div>
+                    </div></div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+            <a href="{{ route('edu-leads.index', ['final_status' => 'pending']) }}" class="text-decoration-none">
+                <div class="card stat-card mb-0">
+                    <div class="card-body"><div class="d-flex align-items-center w-100">
+                        <div class="flex-grow-1">
+                            <p class="text-muted text-uppercase mb-1 fw-medium fs-12">Pending</p>
+                            <h4 class="mt-0 mb-0 fw-semibold">{{ $myPending }}</h4>
+                            <small class="text-warning">Needs action</small>
+                        </div>
+                        <div class="avatar-sm flex-shrink-0">
+                            <span class="avatar-title bg-soft-warning text-warning rounded"><i class="las la-clock fs-24"></i></span>
+                        </div>
+                    </div></div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+            <a href="{{ route('edu-leads.index', ['final_status' => 'follow_up']) }}" class="text-decoration-none">
+                <div class="card stat-card mb-0">
+                    <div class="card-body"><div class="d-flex align-items-center w-100">
+                        <div class="flex-grow-1">
+                            <p class="text-muted text-uppercase mb-1 fw-medium fs-12">Follow Up</p>
+                            <h4 class="mt-0 mb-0 fw-semibold">{{ $myFollowUp }}</h4>
+                            <small class="text-info">Scheduled</small>
+                        </div>
+                        <div class="avatar-sm flex-shrink-0">
+                            <span class="avatar-title bg-soft-info text-info rounded"><i class="las la-redo fs-24"></i></span>
+                        </div>
+                    </div></div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+            <a href="{{ route('edu-leads.index', ['final_status' => 'admitted']) }}" class="text-decoration-none">
+                <div class="card stat-card mb-0">
+                    <div class="card-body"><div class="d-flex align-items-center w-100">
+                        <div class="flex-grow-1">
+                            <p class="text-muted text-uppercase mb-1 fw-medium fs-12">Admitted</p>
+                            <h4 class="mt-0 mb-0 fw-semibold">{{ $myAdmitted }}</h4>
+                            <small class="text-success">{{ $myAdmittedThisMonth }} this month</small>
+                        </div>
+                        <div class="avatar-sm flex-shrink-0">
+                            <span class="avatar-title bg-soft-success text-success rounded"><i class="las la-check-circle fs-24"></i></span>
+                        </div>
+                    </div></div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+            <a href="{{ route('edu-leads.index', ['interest_level' => 'hot']) }}" class="text-decoration-none">
+                <div class="card stat-card mb-0">
+                    <div class="card-body"><div class="d-flex align-items-center w-100">
+                        <div class="flex-grow-1">
+                            <p class="text-muted text-uppercase mb-1 fw-medium fs-12">Hot Leads</p>
+                            <h4 class="mt-0 mb-0 fw-semibold">{{ $myHot }}</h4>
+                            <small class="text-warning">{{ $myWarm }} warm</small>
+                        </div>
+                        <div class="avatar-sm flex-shrink-0">
+                            <span class="avatar-title bg-soft-danger text-danger rounded"><i class="las la-fire fs-24"></i></span>
+                        </div>
+                    </div></div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+            <div class="card stat-card mb-0">
+                <div class="card-body"><div class="d-flex align-items-center w-100">
+                    <div class="flex-grow-1">
+                        <p class="text-muted text-uppercase mb-1 fw-medium fs-12">Overdue Followups</p>
+                        <h4 class="mt-0 mb-0 fw-semibold text-danger">{{ $myOverdueFollowups }}</h4>
+                        <small class="text-muted">{{ $myTodayFollowups }} today</small>
+                    </div>
+                    <div class="avatar-sm flex-shrink-0">
+                        <span class="avatar-title bg-soft-danger text-danger rounded"><i class="las la-exclamation-triangle fs-24"></i></span>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Row 2: My Admissions Breakdown --}}
+    <div class="row mb-3">
+        <div class="col-xl-3 col-lg-6 mb-3">
+            <div class="card stat-card mb-0">
+                <div class="card-body"><div class="d-flex align-items-center w-100">
+                    <div class="flex-grow-1">
+                        <p class="text-muted text-uppercase mb-1 fw-medium fs-12">Admitted Today</p>
+                        <h4 class="mt-0 mb-0 fw-semibold">{{ $myAdmittedToday }}</h4>
+                    </div>
+                    <span class="avatar-title bg-soft-success text-success rounded avatar-sm"><i class="las la-calendar-day fs-24"></i></span>
+                </div></div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6 mb-3">
+            <div class="card stat-card mb-0">
+                <div class="card-body"><div class="d-flex align-items-center w-100">
+                    <div class="flex-grow-1">
+                        <p class="text-muted text-uppercase mb-1 fw-medium fs-12">Admitted This Week</p>
+                        <h4 class="mt-0 mb-0 fw-semibold">{{ $myAdmittedThisWeek }}</h4>
+                    </div>
+                    <span class="avatar-title bg-soft-info text-info rounded avatar-sm"><i class="las la-calendar-week fs-24"></i></span>
+                </div></div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6 mb-3">
+            <div class="card stat-card mb-0">
+                <div class="card-body"><div class="d-flex align-items-center w-100">
+                    <div class="flex-grow-1">
+                        <p class="text-muted text-uppercase mb-1 fw-medium fs-12">Admitted This Month</p>
+                        <h4 class="mt-0 mb-0 fw-semibold">{{ $myAdmittedThisMonth }}</h4>
+                    </div>
+                    <span class="avatar-title bg-soft-purple text-purple rounded avatar-sm"><i class="las la-graduation-cap fs-24"></i></span>
+                </div></div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6 mb-3">
+            <div class="card stat-card mb-0">
+                <div class="card-body"><div class="d-flex align-items-center w-100">
+                    <div class="flex-grow-1">
+                        <p class="text-muted text-uppercase mb-1 fw-medium fs-12">This Month's Followups</p>
+                        <h4 class="mt-0 mb-0 fw-semibold">{{ $myMonthFollowups }}</h4>
+                    </div>
+                    <span class="avatar-title bg-soft-warning text-warning rounded avatar-sm"><i class="las la-calendar-alt fs-24"></i></span>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Row 3: Pipeline Breakdown mini-cards --}}
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card mb-0">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="las la-chart-bar me-2 text-primary"></i>My Pipeline Breakdown</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        @foreach ([
+                            ['label'=>'Contacted',     'value'=>$myContacted,     'color'=>'info'],
+                            ['label'=>'Not Interested','value'=>$myNotInterested, 'color'=>'danger'],
+                            ['label'=>'Dropped',       'value'=>$myDropped,       'color'=>'secondary'],
+                            ['label'=>'Cold Leads',    'value'=>$myCold,          'color'=>'primary'],
+                        ] as $stat)
+                        <div class="col-xl-3 col-md-6">
+                            <div class="d-flex justify-content-between align-items-center border rounded p-3">
+                                <div>
+                                    <p class="text-muted mb-1 fs-12 fw-medium text-uppercase">{{ $stat['label'] }}</p>
+                                    <h5 class="mb-0 fw-semibold">{{ $stat['value'] }}</h5>
+                                </div>
+                                <span class="badge bg-{{ $stat['color'] }} rounded-circle p-2 fs-14">
+                                    {{ $myLeads > 0 ? round($stat['value'] / $myLeads * 100, 1) : 0 }}%
+                                </span>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @endif
 
     {{-- ════════════════════════════════════════════════════════════════
          FOLLOWUPS SECTION — 4 buckets: Overdue | Today | This Week | This Month

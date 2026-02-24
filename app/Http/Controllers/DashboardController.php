@@ -79,6 +79,46 @@ class DashboardController extends Controller
             ));
         }
 
+        // ── TELECALLER (assigned leads only) ──────────────────────────────
+        if ($user->isTelecaller()) {
+            $q  = EduLead::where('assigned_to', $user->id);
+            $fq = EduLeadFollowup::where('assigned_to', $user->id)->where('status', 'pending');
+
+            return view('dashboard', [
+                // ── Row 1: My Lead Pipeline ──────────────────────────────
+                'myLeads'         => (clone $q)->count(),
+                'myPending'       => (clone $q)->where('final_status', 'pending')->count(),
+                'myContacted'     => (clone $q)->where('final_status', 'contacted')->count(),
+                'myFollowUp'      => (clone $q)->where('final_status', 'follow_up')->count(),
+                'myAdmitted'      => (clone $q)->where('final_status', 'admitted')->count(),
+                'myDropped'       => (clone $q)->where('final_status', 'dropped')->count(),
+                'myNotInterested' => (clone $q)->where('final_status', 'not_interested')->count(),
+
+                // ── Row 2: Interest Level ────────────────────────────────
+                'myHot'           => (clone $q)->where('interest_level', 'hot')->count(),
+                'myWarm'          => (clone $q)->where('interest_level', 'warm')->count(),
+                'myCold'          => (clone $q)->where('interest_level', 'cold')->count(),
+
+                // ── Row 3: My Admissions (time-based) ───────────────────
+                'myAdmittedToday'     => (clone $q)->where('final_status', 'admitted')
+                                            ->whereDate('admitted_at', today())->count(),
+                'myAdmittedThisWeek'  => (clone $q)->where('final_status', 'admitted')
+                                            ->whereBetween('admitted_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+                'myAdmittedThisMonth' => (clone $q)->where('final_status', 'admitted')
+                                            ->whereYear('admitted_at', now()->year)
+                                            ->whereMonth('admitted_at', now()->month)->count(),
+
+                // ── Row 4: My Follow-up Counts ───────────────────────────
+                'myOverdueFollowups'   => (clone $fq)->whereDate('followup_date', '<', today())->count(),
+                'myTodayFollowups'     => (clone $fq)->whereDate('followup_date', today())->count(),
+                'myWeekFollowups'      => (clone $fq)->whereBetween('followup_date', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+                'myMonthFollowups'     => (clone $fq)->whereBetween('followup_date', [now()->startOfMonth(), now()->endOfMonth()])->count(),
+
+                // ── Followup Detail Sections (reuses existing partial) ───
+                'followupData'         => $this->getFollowupData($user),
+            ]);
+        }
+
         // Fallback
         return view('dashboard');
     }
