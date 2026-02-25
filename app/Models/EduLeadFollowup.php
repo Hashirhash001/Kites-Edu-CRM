@@ -12,6 +12,7 @@ class EduLeadFollowup extends Model
 
     protected $fillable = [
         'edu_lead_id',
+        'followup_number',
         'assigned_to',
         'followup_date',
         'followup_time',
@@ -20,17 +21,41 @@ class EduLeadFollowup extends Model
         'notes',
         'completed_at',
         'created_by',
+
+        // Outcome fields — filled when marked complete
+        'outcome_final_status',
+        'outcome_status',
+        'outcome_interest',
+        'outcome_notes',
+        'next_action',
     ];
 
     protected $casts = [
         'followup_date' => 'date',
-        'completed_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'completed_at'  => 'datetime',
+        'created_at'    => 'datetime',
+        'updated_at'    => 'datetime',
+        'deleted_at'    => 'datetime',
     ];
 
-    // Relationships
+    // ── Boot: auto-set followup_number on creation ────────────────────
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (EduLeadFollowup $followup) {
+            if (empty($followup->followup_number)) {
+                // Always assign the next sequential display number
+                // regardless of deleted records
+                $followup->followup_number = static::withTrashed()
+                    ->where('edu_lead_id', $followup->edu_lead_id)
+                    ->max('followup_number') + 1 ?? 1;
+            }
+        });
+    }
+
+    // ── Relationships ─────────────────────────────────────────────────
+
     public function eduLead(): BelongsTo
     {
         return $this->belongsTo(EduLead::class, 'edu_lead_id');
@@ -46,7 +71,8 @@ class EduLeadFollowup extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // Scopes
+    // ── Scopes ────────────────────────────────────────────────────────
+
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
@@ -67,4 +93,29 @@ class EduLeadFollowup extends Model
         return $query->where('status', 'pending')
                      ->whereDate('followup_date', '<', today());
     }
+
+    // ── Helpers ───────────────────────────────────────────────────────
+
+    public function getOrdinalLabelAttribute(): string
+    {
+        $n = (int) ($this->followup_number ?? 0);
+
+        if ($n === 0) {
+            // Fallback: derive position from sorted collection on the fly
+            $n = static::withTrashed()
+                    ->where('edu_lead_id', $this->edu_lead_id)
+                    ->where('id', '<=', $this->id)
+                    ->count();
+        }
+
+        $suffix = match($n % 10) {
+            1 => $n % 100 === 11 ? 'th' : 'st',
+            2 => $n % 100 === 12 ? 'th' : 'nd',
+            3 => $n % 100 === 13 ? 'th' : 'rd',
+            default => 'th',
+        };
+
+        return $n . $suffix;
+    }
+
 }

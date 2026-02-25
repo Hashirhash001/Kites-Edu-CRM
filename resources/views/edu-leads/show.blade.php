@@ -379,6 +379,7 @@
     /* Final Status pills */
     .pill-pending        { background: #fef9c3; color: #854d0e; border-color: #fde047; }
     .pill-contacted      { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+    .pill-notattended   { background: #3730a3; color: #fff; border-color: #3730a3; }
     .pill-follow_up      { background: #ffedd5; color: #9a3412; border-color: #fdba74; }
     .pill-admitted       { background: #dcfce7; color: #14532d; border-color: #86efac; }
     .pill-not_interested { background: #fee2e2; color: #7f1d1d; border-color: #fca5a5; }
@@ -444,6 +445,131 @@
     .tracking-save-btn { display: none; }   /* ← this is almost certainly the cause */
     .tracking-cancel-btn { display: none; }
 
+    /* ── Followup Timeline ─────────────────────────────────────── */
+    .followup-timeline { position: relative; padding-left: 0; }
+
+    .followup-node {
+        position: relative;
+        display: flex;
+        gap: 16px;
+        margin-bottom: 1.25rem;
+    }
+
+    .followup-node:last-child { margin-bottom: 0; }
+
+    /* The vertical line running through all nodes */
+    .followup-node::before {
+        content: '';
+        position: absolute;
+        left: 22px;
+        top: 44px;
+        bottom: -20px;
+        width: 2px;
+        background: #e2e8f0;
+        z-index: 0;
+    }
+    .followup-node:last-child::before { display: none; }
+
+    /* The circle badge on the left */
+    .followup-badge {
+        flex-shrink: 0;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .8rem;
+        font-weight: 800;
+        z-index: 1;
+        border: 3px solid #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,.12);
+    }
+    .followup-badge.badge-pending   { background: #dbeafe; color: #1d4ed8; }
+    .followup-badge.badge-completed { background: #dcfce7; color: #15803d; }
+    .followup-badge.badge-overdue   { background: #fee2e2; color: #b91c1c; }
+    .followup-badge.badge-today     { background: #fef9c3; color: #854d0e; }
+
+    /* The card on the right */
+    .followup-card {
+        flex: 1;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,.05);
+        overflow: hidden;
+        transition: box-shadow .2s;
+    }
+    .followup-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.1); }
+
+    .followup-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: .75rem 1rem;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .followup-card-body   { padding: .9rem 1rem; }
+    .followup-card-footer {
+        padding: .6rem 1rem;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    /* Outcome block inside a completed followup */
+    .outcome-block {
+        background: linear-gradient(135deg, #f0fdf4, #f8fafc);
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: .75rem 1rem;
+        margin-top: .75rem;
+    }
+    .outcome-block-header {
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        color: #16a34a;
+        margin-bottom: .5rem;
+    }
+    .outcome-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+    /* Status progression arrow strip */
+    .status-progression {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: .5rem;
+    }
+    .progression-arrow {
+        color: #94a3b8;
+        font-size: .8rem;
+    }
+
+    /* No followups empty state */
+    .followup-empty {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: #94a3b8;
+    }
+    .followup-empty i { font-size: 3rem; opacity: .2; display: block; margin-bottom: .75rem; }
 
 </style>
 @endsection
@@ -458,6 +584,7 @@
 
             $finalStatusLabels = [
                 'pending'        => ['label' => '⏳ Pending',        'class' => 'pill-pending'],
+                'not_attended'   => ['label' => '🚫 Not Attended',      'class' => 'pill-notattended'],
                 'contacted'      => ['label' => '📞 Contacted',      'class' => 'pill-contacted'],
                 'follow_up'      => ['label' => '🔔 Follow Up',      'class' => 'pill-follow_up'],
                 'admitted'       => ['label' => '✅ Admitted',        'class' => 'pill-admitted'],
@@ -959,6 +1086,16 @@
                     </div>
                     @endif
 
+                    @if($eduLead->district)
+                    <div class="info-row">
+                        <span class="info-label">District</span>
+                        <span class="info-value">
+                            <i class="las la-map-marker me-1 text-muted"></i>
+                            {{ $eduLead->district }}
+                        </span>
+                    </div>
+                    @endif
+
                     @if($eduLead->address)
                     <div class="info-row" style="flex-direction:column; align-items:flex-start;">
                         <span class="info-label mb-1">Address</span>
@@ -978,10 +1115,25 @@
                         <span class="info-value">{{ $eduLead->leadSource->name ?? '—' }}</span>
                     </div>
 
+                    @if($eduLead->agent_name)
                     <div class="info-row">
+                        <span class="info-label">Agent</span>
+                        <span class="info-value">{{ $eduLead->agent_name ?? '—' }}</a>
+                        </span>
+                    </div>
+                    @endif
+
+                    @if($eduLead->referral_name)
+                    <div class="info-row">
+                        <span class="info-label">Referral</span>
+                        <span class="info-value">{{ $eduLead->referral_name ?? '—' }}</span>
+                    </div>
+                    @endif
+
+                    {{-- <div class="info-row">
                         <span class="info-label">Call Status</span>
                         <span class="info-value">{!! $eduLead->status_badge !!}</span>
-                    </div>
+                    </div> --}}
 
                     <div class="info-row">
                         <span class="info-label">Branch</span>
@@ -1086,105 +1238,278 @@
             ══════════════════════════════ --}}
             <div class="col-lg-7">
 
-                {{-- ── SCHEDULED FOLLOWUPS ────────────────────────────── --}}
+                {{-- ── FOLLOWUP TIMELINE ──────────────────────────────────────── --}}
                 <div class="info-card">
-                    <div class="info-card-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5><i class="las la-calendar-check me-2"></i>Scheduled Followups</h5>
-                            <button class="btn btn-sm btn-primary action-button"
-                                    data-bs-toggle="modal" data-bs-target="#addFollowupModal">
-                                <i class="las la-plus me-1"></i>Add Followup
+                    <div class="info-card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="las la-history me-2"></i>Followup Timeline
+                        </h5>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-secondary">
+                                {{ $eduLead->followups->count() }} total
+                            </span>
+                            @if($canEdit)
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                    data-bs-target="#addFollowupModal">
+                                <i class="las la-plus me-1"></i>Schedule
                             </button>
+                            @endif
                         </div>
                     </div>
 
-                    <div id="followupsContainer">
-                        @forelse($eduLead->followups as $followup)
-                            <div class="followup-item
-                                {{ $followup->status === 'completed' ? 'completed' : '' }}
-                                {{ $followup->followup_date->isToday() && $followup->status === 'pending' ? 'today' : '' }}
-                                {{ $followup->followup_date->isPast() && !$followup->followup_date->isToday() && $followup->status === 'pending' ? 'overdue' : '' }}"
-                                id="followup-{{ $followup->id }}">
+                    @php
+                        $followups = $eduLead->followups()
+                                            ->orderBy('followup_number')
+                                            ->get()
+                                            ->values();
 
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <div class="d-flex gap-2 flex-wrap">
-                                        @if($followup->followup_date->isToday() && $followup->status === 'pending')
-                                            <span class="badge bg-warning text-dark">📅 Today</span>
-                                        @elseif($followup->followup_date->isPast() && !$followup->followup_date->isToday() && $followup->status === 'pending')
-                                            <span class="badge bg-danger">⚠️ Overdue</span>
-                                        @endif
+                        $finalStatusLabelsLocal = [
+                            'pending'        => ['label' => '⏳ Pending',        'bg' => '#fef9c3', 'color' => '#854d0e'],
+                            'not_attended'   => ['label' => '🚫 Not Attended',   'bg' => '#ede9fe', 'color' => '#6d28d9'],
+                            'contacted'      => ['label' => '📞 Contacted',      'bg' => '#dbeafe', 'color' => '#1d4ed8'],
+                            'follow_up'      => ['label' => '🔔 Follow Up',      'bg' => '#ffedd5', 'color' => '#c2410c'],
+                            'admitted'       => ['label' => '✅ Admitted',        'bg' => '#dcfce7', 'color' => '#15803d'],
+                            'not_interested' => ['label' => '❌ Not Interested',  'bg' => '#fee2e2', 'color' => '#b91c1c'],
+                            'dropped'        => ['label' => '🚫 Dropped',         'bg' => '#f1f5f9', 'color' => '#475569'],
+                        ];
+
+                        $nextActionLabelsLocal = [
+                            'whatsapp_link_submitted'    => '📲 WhatsApp Submitted',
+                            'application_form_submitted' => '📋 App Form Submitted',
+                            'booking'                    => '💳 Booking',
+                            'cancelled'                  => '🚫 Cancelled',
+                        ];
+
+                        $interestColors = [
+                            'hot'  => ['bg' => '#fee2e2', 'color' => '#b91c1c'],
+                            'warm' => ['bg' => '#fef3c7', 'color' => '#b45309'],
+                            'cold' => ['bg' => '#dbeafe', 'color' => '#1d4ed8'],
+                        ];
+
+                        // Helper closure — converts integer to ordinal suffix
+                        $ordinal = function (int $n): string {
+                            $suffix = match($n % 10) {
+                                1 => $n % 100 === 11 ? 'th' : 'st',
+                                2 => $n % 100 === 12 ? 'th' : 'nd',
+                                3 => $n % 100 === 13 ? 'th' : 'rd',
+                                default => 'th',
+                            };
+                            return $n . $suffix;
+                        };
+                    @endphp
+
+                    <div style="padding: 1.25rem;">
+                        @if($followups->isEmpty())
+                            <div class="followup-empty">
+                                <i class="las la-calendar-times"></i>
+                                <p class="mb-1 fw-semibold">No followups scheduled yet</p>
+                                <p class="small mb-0">Schedule the first followup to start tracking interactions.</p>
+                            </div>
+                        @else
+                        <div class="followup-timeline">
+                            @foreach($followups as $fu)
+                            @php
+                                $displayNum     = $loop->iteration;
+                                $displayOrdinal = $ordinal($displayNum);
+
+                                $isCompleted = $fu->status === 'completed';
+                                $isOverdue   = !$isCompleted && \Carbon\Carbon::parse($fu->followup_date)->startOfDay()->lt(\Carbon\Carbon::today());
+                                $isToday     = !$isCompleted && \Carbon\Carbon::parse($fu->followup_date)->isToday();
+
+                                $badgeClass = $isCompleted ? 'badge-completed'
+                                            : ($isOverdue  ? 'badge-overdue'
+                                            : ($isToday    ? 'badge-today' : 'badge-pending'));
+
+                                $cardBorderColor = $isCompleted ? '#86efac'
+                                                : ($isOverdue  ? '#fca5a5'
+                                                : ($isToday    ? '#fde68a' : '#bfdbfe'));
+
+                                $outcomeFinalMeta = $finalStatusLabelsLocal[$fu->outcome_final_status] ?? null;
+                                $outcomeInterest  = $interestColors[$fu->outcome_interest] ?? null;
+                            @endphp
+
+                            <div class="followup-node" id="followup-node-{{ $fu->id }}">
+
+                                {{-- ── Circle badge ──────────────────────────────── --}}
+                                <div class="followup-badge {{ $badgeClass }}"
+                                    title="{{ $displayOrdinal }} Followup">
+                                    {{ $displayNum }}
+                                </div>
+
+                                {{-- ── Card ──────────────────────────────────────── --}}
+                                <div class="followup-card" style="border-color: {{ $cardBorderColor }};">
+
+                                    {{-- Header --}}
+                                    <div class="followup-card-header">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <span class="fw-700" style="font-size:.9rem;">
+                                                {{ $displayOrdinal }} Followup
+                                            </span>
+                                            <span class="text-muted" style="font-size:.82rem;">
+                                                <i class="las la-calendar me-1"></i>
+                                                {{ $fu->followup_date->format('d M Y') }}
+                                                @if($fu->followup_time)
+                                                    · {{ \Carbon\Carbon::parse($fu->followup_time)->format('h:i A') }}
+                                                @endif
+                                            </span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            @if($isCompleted)
+                                                <span class="badge bg-success">✅ Completed</span>
+                                            @elseif($isOverdue)
+                                                <span class="badge bg-danger">⚠️ Overdue</span>
+                                            @elseif($isToday)
+                                                <span class="badge bg-warning text-dark">🔔 Due Today</span>
+                                            @else
+                                                <span class="badge bg-info text-dark">🕐 Upcoming</span>
+                                            @endif
+                                        </div>
                                     </div>
 
-                                    <div class="d-flex gap-2 align-items-center">
-                                        <span class="badge bg-{{ $followup->status === 'completed' ? 'success' : ($followup->status === 'cancelled' ? 'secondary' : 'primary') }}">
-                                            {{ ucfirst($followup->status) }}
-                                        </span>
-                                        @if($user->isSuperAdmin() || $followup->created_by === $user->id || $followup->assigned_to === $user->id)
-                                        <button class="btn btn-sm btn-outline-danger deleteFollowup"
-                                                data-id="{{ $followup->id }}" title="Delete">
-                                            <i class="las la-trash"></i>
+                                    {{-- Body --}}
+                                    <div class="followup-card-body">
+
+                                        @if($fu->notes)
+                                        <div class="mb-2 small text-muted">
+                                            <i class="las la-sticky-note me-1"></i>{{ $fu->notes }}
+                                        </div>
+                                        @endif
+
+                                        <div class="d-flex gap-3 flex-wrap" style="font-size:.8rem; color:#64748b;">
+                                            @if($fu->assignedToUser)
+                                            <span>
+                                                <i class="las la-user-check me-1"></i>{{ $fu->assignedToUser->name }}
+                                            </span>
+                                            @endif
+                                            @if($fu->createdBy)
+                                            <span>
+                                                <i class="las la-user-edit me-1"></i>Created by {{ $fu->createdBy->name }}
+                                            </span>
+                                            @endif
+                                        </div>
+
+                                        {{-- Outcome block --}}
+                                        @if($isCompleted && $fu->outcome_final_status)
+                                        <div class="outcome-block mt-3">
+                                            <div class="outcome-block-header">
+                                                <i class="las la-check-circle me-1"></i>Outcome
+                                            </div>
+
+                                            <div class="status-progression">
+                                                <span class="small text-muted fw-semibold">Final Status:</span>
+                                                @if($outcomeFinalMeta)
+                                                <span class="outcome-pill"
+                                                    style="background:{{ $outcomeFinalMeta['bg'] }};
+                                                            color:{{ $outcomeFinalMeta['color'] }};">
+                                                    {{ $outcomeFinalMeta['label'] }}
+                                                </span>
+                                                @endif
+
+                                                @if($fu->outcome_interest && $outcomeInterest)
+                                                <span class="progression-arrow">·</span>
+                                                <span class="outcome-pill"
+                                                    style="background:{{ $outcomeInterest['bg'] }};
+                                                            color:{{ $outcomeInterest['color'] }};">
+                                                    @if($fu->outcome_interest === 'hot') 🔥
+                                                    @elseif($fu->outcome_interest === 'warm') ☀️
+                                                    @else ❄️ @endif
+                                                    {{ ucfirst($fu->outcome_interest) }}
+                                                </span>
+                                                @endif
+
+                                                @if($fu->outcome_status)
+                                                <span class="progression-arrow">·</span>
+                                                <span class="outcome-pill"
+                                                    style="background:#f0f9ff; color:#0369a1;">
+                                                    {{ $nextActionLabelsLocal[$fu->outcome_status] ?? $fu->outcome_status }}
+                                                </span>
+                                                @endif
+                                            </div>
+
+                                            @if($fu->outcome_notes)
+                                            <div class="mt-2 small" style="color:#374151; line-height:1.5;">
+                                                <i class="las la-comment-alt me-1 text-muted"></i>{{ $fu->outcome_notes }}
+                                            </div>
+                                            @endif
+
+                                            @if($fu->next_action)
+                                            <div class="mt-2 small" style="color:#6d28d9;">
+                                                <i class="las la-arrow-right me-1"></i>
+                                                <strong>Next:</strong> {{ $fu->next_action }}
+                                            </div>
+                                            @endif
+
+                                            @if($fu->completed_at)
+                                            <div class="mt-2" style="font-size:.72rem; color:#94a3b8;">
+                                                <i class="las la-check me-1"></i>
+                                                Completed {{ $fu->completed_at->format('d M Y, h:i A') }}
+                                                @if($fu->assignedToUser)
+                                                    by {{ $fu->assignedToUser->name }}
+                                                @endif
+                                            </div>
+                                            @endif
+                                        </div>
+                                        @endif
+
+                                    </div>
+
+                                    {{-- Footer --}}
+                                    @if($canEdit)
+                                    <div class="followup-card-footer">
+
+                                        @if(!$isCompleted)
+                                        <button type="button"
+                                                class="btn btn-sm btn-success completeFollowupBtn"
+                                                data-id="{{ $fu->id }}"
+                                                data-number="{{ $displayNum }}"
+                                                data-final-status="{{ $eduLead->final_status }}"
+                                                data-status="{{ $eduLead->status }}"
+                                                data-interest="{{ $eduLead->interest_level }}"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#completeFollowupModal">
+                                            <i class="las la-check me-1"></i>Mark {{ $displayOrdinal }} Complete
                                         </button>
                                         @endif
-                                    </div>
-                                </div>
 
-                                <div class="row g-2 mb-2">
-                                    <div class="col-md-4">
-                                        <p class="mb-0 small">
-                                            <i class="las la-calendar me-1 text-muted"></i>
-                                            <strong>{{ $followup->followup_date->format('d M Y') }}</strong>
-                                            @if($followup->followup_time)
-                                                &nbsp;@ {{ \Carbon\Carbon::parse($followup->followup_time)->format('h:i A') }}
-                                            @endif
-                                        </p>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <p class="mb-0 small">
-                                            <i class="las la-user me-1 text-muted"></i>
-                                            {{ $followup->assignedToUser->name ?? 'Unassigned' }}
-                                        </p>
-                                    </div>
-                                    @if($followup->time_preference)
-                                    <div class="col-md-4">
-                                        <p class="mb-0 small">
-                                            <i class="las la-clock me-1 text-muted"></i>
-                                            <span class="text-muted">{{ ucfirst($followup->time_preference) }}</span>
-                                        </p>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-primary editFollowupBtn"
+                                                data-id="{{ $fu->id }}"
+                                                data-number="{{ $displayNum }}"
+                                                data-date="{{ $fu->followup_date->format('Y-m-d') }}"
+                                                data-time="{{ $fu->followup_time ?? '' }}"
+                                                data-notes="{{ $fu->notes ?? '' }}"
+                                                data-priority="{{ $fu->priority ?? 'medium' }}"
+                                                data-outcome-final-status="{{ $fu->outcome_final_status ?? '' }}"
+                                                data-outcome-status="{{ $fu->outcome_status ?? '' }}"
+                                                data-outcome-interest="{{ $fu->outcome_interest ?? '' }}"
+                                                data-outcome-notes="{{ $fu->outcome_notes ?? '' }}"
+                                                data-next-action="{{ $fu->next_action ?? '' }}"
+                                                data-is-completed="{{ $isCompleted ? '1' : '0' }}"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editFollowupModal">
+                                            <i class="las la-pen me-1"></i>Edit
+                                        </button>
+
+                                        {{-- @if(!$isCompleted) --}}
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger deleteFollowupBtn ms-auto"
+                                                data-id="{{ $fu->id }}"
+                                                data-number="{{ $displayNum }}">
+                                            <i class="las la-trash me-1"></i>Delete
+                                        </button>
+                                        {{-- @endif --}}
+
                                     </div>
                                     @endif
-                                </div>
 
-                                @if($followup->notes)
-                                <div class="mt-1 p-2 bg-light rounded small text-muted">
-                                    <i class="las la-comment-alt me-1"></i>{{ $followup->notes }}
-                                </div>
-                                @endif
-
-                                @if($followup->status === 'pending' && ($user->isSuperAdmin() || $followup->assigned_to === $user->id))
-                                <div class="mt-2">
-                                    <button class="btn btn-sm btn-success markFollowupComplete" data-id="{{ $followup->id }}">
-                                        <i class="las la-check me-1"></i>Mark Complete
-                                    </button>
-                                </div>
-                                @endif
-
-                                @if($followup->status === 'completed' && $followup->completed_at)
-                                <div class="mt-2">
-                                    <small class="text-success">
-                                        <i class="las la-check-circle me-1"></i>
-                                        Completed {{ $followup->completed_at->format('d M Y, h:i A') }}
-                                    </small>
-                                </div>
-                                @endif
-                            </div>
-                        @empty
-                            <div class="empty-state">
-                                <i class="las la-calendar-times"></i>
-                                <p class="mb-0">No followups scheduled yet</p>
-                            </div>
-                        @endforelse
+                                </div>{{-- /.followup-card --}}
+                            </div>{{-- /.followup-node --}}
+                            @endforeach
+                        </div>{{-- /.followup-timeline --}}
+                        @endif
                     </div>
                 </div>
+
 
                 {{-- ── CALL LOGS ───────────────────────────────────────── --}}
                 {{-- <div class="info-card">
@@ -1459,6 +1784,308 @@
     </div>
 </div>
 
+{{-- ── COMPLETE FOLLOWUP MODAL ────────────────────────────────── --}}
+@if($canEdit)
+<div class="modal fade" id="completeFollowupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+
+            <div class="modal-header" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff;">
+                <h5 class="modal-title">
+                    <i class="las la-check-circle me-2"></i>
+                    Complete <span id="completeFollowupLabel">Followup</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form id="completeFollowupForm">
+                @csrf
+                <input type="hidden" id="completeFollowupId" name="followup_id">
+
+                <div class="modal-body">
+
+                    {{-- Final Status --}}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="las la-flag-checkered me-1 text-primary"></i>
+                            Final Status <span class="text-danger">*</span>
+                            <small class="text-muted fw-normal ms-1">— what is the lead's status now?</small>
+                        </label>
+                        <select class="form-select" name="outcome_final_status"
+                                id="outcomeFinalStatus" required>
+                            <option value="">— Select final status —</option>
+                            <option value="pending">⏳ Pending</option>
+                            <option value="not_attended">🚫 Not Attended</option>
+                            <option value="contacted">📞 Contacted</option>
+                            <option value="follow_up">🔔 Follow Up</option>
+                            <option value="admitted">✅ Admitted</option>
+                            <option value="not_interested">❌ Not Interested</option>
+                            <option value="dropped">🚫 Dropped</option>
+                        </select>
+                    </div>
+
+                    {{-- Next Action Status --}}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="las la-toggle-on me-1 text-info"></i>
+                            Next Action Status
+                            <small class="text-muted fw-normal ms-1">— optional pipeline step</small>
+                        </label>
+                        <select class="form-select" name="outcome_status" id="outcomeStatus">
+                            <option value="">— None —</option>
+                            <option value="whatsapp_link_submitted">📲 WhatsApp Link Submitted</option>
+                            <option value="application_form_submitted">📋 Application Form Submitted</option>
+                            <option value="booking">💳 Booking</option>
+                            <option value="cancelled">🚫 Cancelled</option>
+                        </select>
+                    </div>
+
+                    {{-- Interest Level --}}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="las la-fire me-1 text-danger"></i>
+                            Interest Level
+                            <small class="text-muted fw-normal ms-1">— how interested is the lead?</small>
+                        </label>
+                        <div class="d-flex gap-2">
+                            @foreach(['hot' => '🔥 Hot', 'warm' => '☀️ Warm', 'cold' => '❄️ Cold'] as $val => $lbl)
+                            <div class="form-check flex-fill text-center border rounded p-2"
+                                 style="cursor:pointer;" id="interest-opt-{{ $val }}">
+                                <input class="form-check-input d-none" type="radio"
+                                       name="outcome_interest" value="{{ $val }}"
+                                       id="interest{{ $val }}">
+                                <label class="form-check-label fw-semibold w-100"
+                                       for="interest{{ $val }}" style="cursor:pointer;">
+                                    {{ $lbl }}
+                                </label>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    {{-- Outcome Notes --}}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="las la-comment-alt me-1 text-warning"></i>
+                            What happened?
+                            <small class="text-muted fw-normal ms-1">— summary of interaction</small>
+                        </label>
+                        <textarea class="form-control" name="outcome_notes" id="outcomeNotes"
+                                  rows="3" placeholder="Student called, discussed fees, wants to apply..."></textarea>
+                    </div>
+
+                    {{-- Next Action --}}
+                    <div class="mb-1">
+                        <label class="form-label fw-semibold">
+                            <i class="las la-arrow-right me-1 text-success"></i>
+                            Next Action
+                            <small class="text-muted fw-normal ms-1">— what's the plan?</small>
+                        </label>
+                        <input type="text" class="form-control" name="next_action" id="outcomeNextAction"
+                               placeholder="Send brochure, schedule campus visit...">
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="completeFollowupSubmitBtn">
+                        <i class="las la-check me-1"></i>Save Outcome & Complete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- ── EDIT FOLLOWUP MODAL ────────────────────────────────────── --}}
+@if($canEdit)
+<div class="modal fade" id="editFollowupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="las la-pen me-2"></i>
+                    Edit <span id="editFollowupLabel">Followup</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <form id="editFollowupForm">
+                @csrf
+                @method('PUT')
+                <input type="hidden" id="editFollowupId">
+
+                <div class="modal-body">
+
+                    {{-- ── SECTION 1: Schedule ──────────────────────── --}}
+                    <div class="mb-1 pb-1"
+                         style="font-size:.72rem; font-weight:700; text-transform:uppercase;
+                                letter-spacing:.6px; color:#94a3b8;">
+                        <i class="las la-calendar me-1"></i>Schedule
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">
+                                Date <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" class="form-control"
+                                   name="followup_date" id="editFollowupDate" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Time</label>
+                            <input type="time" class="form-control"
+                                   name="followup_time" id="editFollowupTime">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Priority</label>
+                            <select class="form-select" name="priority" id="editFollowupPriority">
+                                <option value="low">🟢 Low</option>
+                                <option value="medium">🟡 Medium</option>
+                                <option value="high">🔴 High</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">
+                                <i class="las la-sticky-note me-1 text-warning"></i>Schedule Notes
+                            </label>
+                            <textarea class="form-control" name="notes" id="editFollowupNotes"
+                                      rows="2" placeholder="Notes about this followup..."></textarea>
+                        </div>
+                    </div>
+
+                    {{-- ── SECTION 2: Outcome (shown always, relevant for completed) ── --}}
+                    <div class="p-3 rounded-3 mb-1"
+                         style="background:#f0fdf4; border:1px solid #bbf7d0;">
+
+                        <div class="mb-3 pb-1"
+                             style="font-size:.72rem; font-weight:700; text-transform:uppercase;
+                                    letter-spacing:.6px; color:#16a34a;">
+                            <i class="las la-check-circle me-1"></i>Outcome
+                            <span id="editOutcomePendingHint"
+                                  class="text-muted fw-normal ms-2"
+                                  style="font-size:.7rem; text-transform:none; letter-spacing:0;">
+                                (fill when completing this followup)
+                            </span>
+                        </div>
+
+                        <div class="row g-3">
+
+                            {{-- Final Status --}}
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="las la-flag-checkered me-1 text-primary"></i>
+                                    Final Status
+                                </label>
+                                <select class="form-select" name="outcome_final_status"
+                                        id="editOutcomeFinalStatus">
+                                    <option value="">— No change —</option>
+                                    <option value="pending">⏳ Pending</option>
+                                    <option value="not_attended">🚫 Not Attended</option>
+                                    <option value="contacted">📞 Contacted</option>
+                                    <option value="follow_up">🔔 Follow Up</option>
+                                    <option value="admitted">✅ Admitted</option>
+                                    <option value="not_interested">❌ Not Interested</option>
+                                    <option value="dropped">🚫 Dropped</option>
+                                </select>
+                            </div>
+
+                            {{-- Next Action Status --}}
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="las la-toggle-on me-1 text-info"></i>
+                                    Next Action Status
+                                </label>
+                                <select class="form-select" name="outcome_status"
+                                        id="editOutcomeStatus">
+                                    <option value="">— None —</option>
+                                    <option value="whatsapp_link_submitted">📲 WhatsApp Submitted</option>
+                                    <option value="application_form_submitted">📋 App Form Submitted</option>
+                                    <option value="booking">💳 Booking</option>
+                                    <option value="cancelled">🚫 Cancelled</option>
+                                </select>
+                            </div>
+
+                            {{-- Interest Level --}}
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">
+                                    <i class="las la-fire me-1 text-danger"></i>
+                                    Interest Level
+                                </label>
+                                <div class="d-flex gap-2">
+                                    <div class="form-check flex-fill text-center border rounded p-2"
+                                         id="edit-interest-opt-none"
+                                         style="cursor:pointer;">
+                                        <input class="form-check-input d-none" type="radio"
+                                               name="outcome_interest" value=""
+                                               id="editInterestNone">
+                                        <label class="form-check-label fw-semibold w-100"
+                                               for="editInterestNone" style="cursor:pointer;">
+                                            — None
+                                        </label>
+                                    </div>
+                                    @foreach(['hot' => '🔥 Hot', 'warm' => '☀️ Warm', 'cold' => '❄️ Cold'] as $val => $lbl)
+                                    <div class="form-check flex-fill text-center border rounded p-2"
+                                         id="edit-interest-opt-{{ $val }}"
+                                         style="cursor:pointer;">
+                                        <input class="form-check-input d-none" type="radio"
+                                               name="outcome_interest" value="{{ $val }}"
+                                               id="editInterest{{ ucfirst($val) }}">
+                                        <label class="form-check-label fw-semibold w-100"
+                                               for="editInterest{{ ucfirst($val) }}"
+                                               style="cursor:pointer;">
+                                            {{ $lbl }}
+                                        </label>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            {{-- What happened --}}
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">
+                                    <i class="las la-comment-alt me-1 text-warning"></i>
+                                    What Happened?
+                                </label>
+                                <textarea class="form-control" name="outcome_notes"
+                                          id="editOutcomeNotes" rows="3"
+                                          placeholder="Describe what happened during this interaction..."></textarea>
+                            </div>
+
+                            {{-- Next Action --}}
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">
+                                    <i class="las la-arrow-right me-1 text-success"></i>
+                                    Next Action
+                                </label>
+                                <input type="text" class="form-control"
+                                       name="next_action" id="editNextAction"
+                                       placeholder="Send brochure, schedule campus visit...">
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="editFollowupSubmitBtn">
+                        <i class="las la-save me-1"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+@endif
+
 @endsection
 
 @section('extra-scripts')
@@ -1470,6 +2097,38 @@ $(document).ready(function () {
     const CSRF = '{{ csrf_token() }}';
     const LEAD = {{ $eduLead->id }};
 
+    // Ordinal suffix helper — mirrors the blade $ordinal closure
+    function ordinal(n) {
+        n = parseInt(n);
+        const s = ['th','st','nd','rd'];
+        const v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+    // Re-numbers all visible followup nodes after a DOM deletion
+    function reNumberFollowups() {
+        $('.followup-node:visible').each(function (index) {
+            const n    = index + 1;
+            const ord  = ordinal(n);
+
+            // Update bubble
+            $(this).find('.followup-badge').text(n);
+
+            // Update card title
+            $(this).find('.fw-700').first().text(ord + ' Followup');
+
+            // Update data-number on action buttons so next modal open is correct
+            $(this).find('.completeFollowupBtn, .editFollowupBtn, .deleteFollowupBtn')
+                .data('number', n)
+                .attr('data-number', n);
+
+            // Update "Mark Xth Complete" button text
+            $(this).find('.completeFollowupBtn').html(
+                `<i class="las la-check me-1"></i>Mark ${ord} Complete`
+            );
+        });
+    }
+
     // ══════════════════════════════════════════════════════════════════
     // TRACKING FIELD LABEL MAPS
     // ══════════════════════════════════════════════════════════════════
@@ -1478,6 +2137,7 @@ $(document).ready(function () {
         final_status: {
             pending        : { label: '⏳ Pending',        cls: 'pill-pending' },
             contacted      : { label: '📞 Contacted',      cls: 'pill-contacted' },
+            not_attended   : { label: '🚫 Not Attended',     cls: 'pill-notattended' },
             follow_up      : { label: '🔔 Follow Up',      cls: 'pill-follow_up' },
             admitted       : { label: '✅ Admitted',        cls: 'pill-admitted' },
             not_interested : { label: '❌ Not Interested',  cls: 'pill-not_interested' },
@@ -1733,48 +2393,241 @@ $(document).ready(function () {
             });
     });
 
-    // ══════════════════════════════════════════════════════════════════
-    // MARK FOLLOWUP COMPLETE
-    // ══════════════════════════════════════════════════════════════════
-    $(document).on('click', '.markFollowupComplete', function () {
-        const id = $(this).data('id');
-        const $btn = $(this);
+    // ── Complete Followup Modal ──────────────────────────────────────
+    $(document).on('click', '.completeFollowupBtn', function () {
+        const id           = $(this).data('id');
+        const number       = $(this).data('number');
+        const finalStatus  = $(this).data('final-status') || '';
+        const status       = $(this).data('status')       || '';
+        const interest     = $(this).data('interest')     || '';
+
+        // ── Set followup id & label ──────────────────────────────────
+        $('#completeFollowupId').val(id);
+        $('#completeFollowupLabel').text('Followup #' + number);
+
+        // ── Reset everything first ───────────────────────────────────
+        $('#completeFollowupForm')[0].reset();
+        $('.form-check[id^="interest-opt-"]').css({ background: '', 'border-color': '#dee2e6' });
+
+        // ── Pre-select Final Status ──────────────────────────────────
+        if (finalStatus) {
+            $('#outcomeFinalStatus').val(finalStatus);
+        }
+
+        // ── Pre-select Next Action Status ────────────────────────────
+        if (status) {
+            $('#outcomeStatus').val(status);
+        }
+
+        // ── Pre-select & highlight Interest Level ────────────────────
+        if (interest) {
+            $('#interest' + interest).prop('checked', true);
+            const colors = { hot: '#fee2e2', warm: '#fef3c7', cold: '#dbeafe' };
+            $('#interest-opt-' + interest).css({
+                background:    colors[interest] || '',
+                'border-color': '#6366f1'
+            });
+        }
+    });
+
+    // ── Interest level visual toggle ─────────────────────────────────
+    $(document).on('change', 'input[name="outcome_interest"]', function () {
+        const colors = { hot: '#fee2e2', warm: '#fef3c7', cold: '#dbeafe' };
+        $('.form-check[id^="interest-opt-"]').css({ background: '', 'border-color': '#dee2e6' });
+        $('#interest-opt-' + this.value).css({
+            background: colors[this.value],
+            'border-color': '#6366f1'
+        });
+    });
+
+    // ── Submit complete followup ─────────────────────────────────────
+    $('#completeFollowupForm').on('submit', function (e) {
+        e.preventDefault();
+
+        const id  = $('#completeFollowupId').val();
+        const btn = $('#completeFollowupSubmitBtn');
+        const orig = btn.html();
+
+        btn.prop('disabled', true)
+        .html('<span class="spinner-border spinner-border-sm me-1"></span>Saving...');
+
+        $.ajax({
+            url:  '/edu-leads/followups/' + id + '/complete',
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function (res) {
+                $('#completeFollowupModal').modal('hide');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Followup Completed!',
+                    text: res.message,
+                    timer: 2000,
+                    showConfirmButton: false,
+                }).then(() => window.location.reload());
+            },
+            error: function (xhr) {
+                btn.prop('disabled', false).html(orig);
+                const errors = xhr.responseJSON?.errors;
+                if (errors) {
+                    const msg = Object.values(errors).flat().join('\n');
+                    Swal.fire({ icon: 'warning', title: 'Validation Error', text: msg });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: xhr.responseJSON?.message || 'Something went wrong.' });
+                }
+            }
+        });
+    });
+
+    // ── Open Edit Modal ──────────────────────────────────────────────
+    $(document).on('click', '.editFollowupBtn', function () {
+        const id                  = $(this).data('id');
+        const number              = $(this).data('number');
+        const date                = $(this).data('date');
+        const time                = $(this).data('time')                 || '';
+        const notes               = $(this).data('notes')               || '';
+        const priority            = $(this).data('priority')            || 'medium';
+        const outcomeFinalStatus  = $(this).data('outcome-final-status')|| '';
+        const outcomeStatus       = $(this).data('outcome-status')      || '';
+        const outcomeInterest     = $(this).data('outcome-interest')    || '';
+        const outcomeNotes        = $(this).data('outcome-notes')       || '';
+        const nextAction          = $(this).data('next-action')         || '';
+        const isCompleted         = $(this).data('is-completed') == '1';
+
+        // Basic fields
+        $('#editFollowupId').val(id);
+        $('#editFollowupLabel').text(ordinal(number) + ' Followup');
+        $('#editFollowupDate').val(date);
+        $('#editFollowupTime').val(time);
+        $('#editFollowupNotes').val(notes);
+        $('#editFollowupPriority').val(priority);
+
+        // Outcome fields
+        $('#editOutcomeFinalStatus').val(outcomeFinalStatus);
+        $('#editOutcomeStatus').val(outcomeStatus);
+        $('#editOutcomeNotes').val(outcomeNotes);
+        $('#editNextAction').val(nextAction);
+
+        // Reset all interest options styling
+        const interestColors = { hot: '#fee2e2', warm: '#fef3c7', cold: '#dbeafe' };
+        $('[id^="edit-interest-opt-"]').css({ background: '', 'border-color': '#dee2e6' });
+
+        // Select correct interest radio
+        const interestId = outcomeInterest
+            ? '#editInterest' + outcomeInterest.charAt(0).toUpperCase() + outcomeInterest.slice(1)
+            : '#editInterestNone';
+        $(interestId).prop('checked', true);
+
+        if (outcomeInterest && interestColors[outcomeInterest]) {
+            $('#edit-interest-opt-' + outcomeInterest).css({
+                background:     interestColors[outcomeInterest],
+                'border-color': '#6366f1'
+            });
+        } else {
+            $('#edit-interest-opt-none').css({
+                background:     '#f1f5f9',
+                'border-color': '#6366f1'
+            });
+        }
+
+        // Show/hide the pending hint
+        if (isCompleted) {
+            $('#editOutcomePendingHint').hide();
+        } else {
+            $('#editOutcomePendingHint').show();
+        }
+    });
+
+    // ── Interest toggle highlight in edit modal ──────────────────────
+    $(document).on('change', '#editFollowupForm input[name="outcome_interest"]', function () {
+        const colors = { hot: '#fee2e2', warm: '#fef3c7', cold: '#dbeafe' };
+        $('[id^="edit-interest-opt-"]').css({ background: '', 'border-color': '#dee2e6' });
+        const key = this.value || 'none';
+        $('#edit-interest-opt-' + key).css({
+            background:     colors[this.value] || '#f1f5f9',
+            'border-color': '#6366f1'
+        });
+    });
+
+    // ── Submit Edit ──────────────────────────────────────────────────
+    $('#editFollowupForm').on('submit', function (e) {
+        e.preventDefault();
+
+        const id   = $('#editFollowupId').val();
+        const btn  = $('#editFollowupSubmitBtn');
+        const orig = btn.html();
+
+        btn.prop('disabled', true)
+        .html('<span class="spinner-border spinner-border-sm me-1"></span>Saving...');
+
+        $.ajax({
+            url:  '/edu-leads/followups/' + id,
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function (res) {
+                $('#editFollowupModal').modal('hide');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Updated!',
+                    text: res.message,
+                    timer: 2000,
+                    showConfirmButton: false,
+                }).then(() => window.location.reload());
+            },
+            error: function (xhr) {
+                btn.prop('disabled', false).html(orig);
+                const errors = xhr.responseJSON?.errors;
+                const msg = errors
+                    ? Object.values(errors).flat().join('\n')
+                    : (xhr.responseJSON?.message || 'Something went wrong.');
+                Swal.fire({ icon: 'error', title: 'Error', text: msg });
+            }
+        });
+    });
+
+    // ── Delete Followup ──────────────────────────────────────────────
+    $(document).on('click', '.deleteFollowupBtn', function () {
+        const id     = $(this).data('id');
+        const number = $(this).data('number');
+
         Swal.fire({
-            title: 'Mark as Complete?', text: 'This will mark the followup as completed.', icon: 'question',
-            showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#6c757d', confirmButtonText: 'Yes, Complete It',
+            title: `Delete ${ordinal(number)} Followup?`,
+            text:  'This action cannot be undone.',
+            icon:  'warning',
+            showCancelButton:   true,
+            confirmButtonText:  'Yes, Delete',
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor:  '#6c757d',
         }).then(result => {
             if (!result.isConfirmed) return;
-            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
-            $.post(`/edu-lead-followups/${id}/complete`, { _token: CSRF })
-                .done(function (response) {
-                    if (response.success) {
-                        const $item = $(`#followup-${id}`);
-                        $item.removeClass('overdue today').addClass('completed');
-                        $item.find('.markFollowupComplete').remove();
-                        $item.find('.badge.bg-primary').removeClass('bg-primary').addClass('bg-success').text('Completed');
-                        $item.append(`<div class="mt-2"><small class="text-success"><i class="las la-check-circle me-1"></i>Completed ${response.completed_at ?? 'just now'}</small></div>`);
-                        Swal.fire({ icon: 'success', title: 'Completed!', timer: 1500, showConfirmButton: false });
-                    }
-                })
-                .fail(function (xhr) {
-                    $btn.prop('disabled', false).html('<i class="las la-check me-1"></i>Mark Complete');
-                    Swal.fire({ icon: 'error', title: 'Error!', text: xhr.responseJSON?.message || 'Failed.', confirmButtonColor: '#dc3545' });
-                });
+
+            $.ajax({
+                url:  '/edu-leads/followup/' + id,
+                type: 'DELETE',
+                data: { _token: $('meta[name="csrf-token"]').attr('content') },
+                success: function (res) {
+                    Swal.fire({
+                        icon: 'success', title: 'Deleted!',
+                        text: res.message, timer: 1800, showConfirmButton: false,
+                    }).then(() => {
+                        $('#followup-node-' + id).fadeOut(300, function () {
+                            $(this).remove();
+                            reNumberFollowups(); // ← re-index remaining nodes
+                        });
+                    });
+                },
+                error: function (xhr) {
+                    Swal.fire({
+                        icon: 'error', title: 'Cannot Delete',
+                        text: xhr.responseJSON?.message || 'Error deleting followup.',
+                    });
+                }
+            });
         });
     });
 
     // ══════════════════════════════════════════════════════════════════
     // DELETE HANDLERS
     // ══════════════════════════════════════════════════════════════════
-    $(document).on('click', '.deleteFollowup', function () {
-        const id = $(this).data('id');
-        confirmDelete('Delete Followup?').then(ok => {
-            if (!ok) return;
-            $.ajax({ url: `/edu-leads/followup/${id}`, method: 'DELETE', data: { _token: CSRF } })
-                .done(r => { if (r.success) fadeRemove(`#followup-${id}`, '#followupsContainer', 'followups'); })
-                .fail(deleteError);
-        });
-    });
 
     $(document).on('click', '.deleteCall', function () {
         const id = $(this).data('id');

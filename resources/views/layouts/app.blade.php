@@ -186,8 +186,7 @@
                             $authId     = $authUser->id;
 
                             // Hot leads — scoped by role
-                            $hotQuery = \App\Models\EduLead::where('interest_level', 'hot')
-                                ->where('final_status', 'pending');
+                            $hotQuery = \App\Models\EduLead::where('interest_level', 'hot');
 
                             if ($authRole === 'telecaller') {
                                 $hotQuery->where('assigned_to', $authId);

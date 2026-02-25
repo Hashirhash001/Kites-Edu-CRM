@@ -5,6 +5,7 @@
     $statusLabels = [
         'pending'        => ['label' => '⏳ Pending',       'class' => 'fs-pending'],
         'contacted'      => ['label' => '📞 Contacted',     'class' => 'fs-contacted'],
+        'not_attended'   => ['class' => 'fs-notattended',    'label' => '🚫 Not Attended'],
         'follow_up'      => ['label' => '🔔 Follow Up',     'class' => 'fs-follow_up'],
         'admitted'       => ['label' => '✅ Admitted',       'class' => 'fs-admitted'],
         'not_interested' => ['label' => '❌ Not Interested', 'class' => 'fs-not_interested'],
@@ -122,11 +123,34 @@
         @endif
     </td>
 
-    {{-- Agent --}}
+    {{-- Interest Level --}}
+    <td>
+        @if($lead->interest_level)
+            <span class="badge
+                @if($lead->interest_level === 'hot') bg-danger
+                @elseif($lead->interest_level === 'warm') bg-warning text-dark
+                @else bg-info text-dark @endif">
+                {{ $interestIcons[$lead->interest_level] ?? '' }} {{ ucfirst($lead->interest_level) }}
+            </span>
+        @else
+            <span class="text-muted small">—</span>
+        @endif
+    </td>
+
+    {{-- Agent / Referral --}}
     <td>
         @if($lead->agent_name)
-            <span class="small text-muted"><i class="las la-user-tie"></i> {{ $lead->agent_name }}</span>
-        @else
+            <span class="small"><i class="las la-user-tie text-info"></i> {{ $lead->agent_name }}</span>
+        @endif
+
+        @if($lead->referral_name)
+            <div class="small mt-1">
+                <i class="las la-share-alt text-success"></i>
+                <span class="text-success fw-semibold" title="Referral">{{ $lead->referral_name }}</span>
+            </div>
+        @endif
+
+        @if(!$lead->agent_name && !$lead->referral_name)
             <span class="text-muted">—</span>
         @endif
     </td>
@@ -190,20 +214,6 @@
             <div class="text-info" style="font-size:11px;" title="Addon">
                 + {{ Str::limit($lead->addon_course, 20) }}
             </div>
-        @endif
-    </td>
-
-    {{-- Interest Level --}}
-    <td>
-        @if($lead->interest_level)
-            <span class="badge
-                @if($lead->interest_level === 'hot') bg-danger
-                @elseif($lead->interest_level === 'warm') bg-warning text-dark
-                @else bg-info text-dark @endif">
-                {{ $interestIcons[$lead->interest_level] ?? '' }} {{ ucfirst($lead->interest_level) }}
-            </span>
-        @else
-            <span class="text-muted small">—</span>
         @endif
     </td>
 

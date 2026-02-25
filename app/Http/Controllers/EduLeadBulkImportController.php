@@ -572,6 +572,8 @@ class EduLeadBulkImportController extends Controller
                             'contacted'      => 'contacted',
                             'dropped'        => 'dropped',
                             'pending'        => 'pending',
+                            'not_attended'   => 'not_attended',
+                            'not attended'   => 'not_attended',
                         ];
                         $finalStatus = $statusMap[strtolower(trim((string)$row['final_status']))] ?? 'pending';
 

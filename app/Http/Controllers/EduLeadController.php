@@ -90,7 +90,10 @@ class EduLeadController extends Controller
         }
 
         if ($request->filled('agent_name'))
-            $baseQuery->where('agent_name', 'like', '%' . $request->agent_name . '%');
+            $baseQuery->where(fn($q) => $q
+                ->where('agent_name',    'like', '%' . $request->agent_name . '%')
+                ->orWhere('referral_name', 'like', '%' . $request->agent_name . '%')
+            );
 
         if ($request->filled('search')) {
             $s = '%' . $request->search . '%';
@@ -117,6 +120,7 @@ class EduLeadController extends Controller
             'admitted'       => (clone $baseQuery)->where('final_status', 'admitted')->count(),
             'not_interested' => (clone $baseQuery)->where('final_status', 'not_interested')->count(),
             'dropped'        => (clone $baseQuery)->where('final_status', 'dropped')->count(),
+            'not_attended'   => (clone $baseQuery)->where('final_status', 'not_attended')->count(),
         ];
 
         $institutionCounts = [
@@ -148,7 +152,7 @@ class EduLeadController extends Controller
 
         // ── Counts for header badges ──────────────────────────────────────────
         $hotLeadsCount = EduLead::where('interest_level', 'hot')
-            ->where('final_status', 'pending')
+            // ->where('final_status', 'pending')
             ->visibleTo($user)
             ->count();
 
@@ -544,7 +548,7 @@ class EduLeadController extends Controller
 
         $validated = $request->validate([
             'final_status' => ['required', \Illuminate\Validation\Rule::in([
-                'pending', 'contacted', 'follow_up', 'admitted', 'not_interested', 'dropped',
+                'pending', 'contacted', 'follow_up', 'admitted', 'not_interested', 'dropped', 'not_attended'
             ])],
         ]);
 
@@ -880,9 +884,13 @@ class EduLeadController extends Controller
         try {
             $validated = $request->validate([
                 'followup_date' => 'required|date|after_or_equal:today',
-                'followup_time' => 'nullable|date_format:H:i',
+                'followup_time' => 'nullable|date_format:H:i,H:i:s',
                 'notes'         => 'nullable|string|max:1000',
             ]);
+
+            if (!empty($validated['followup_time'])) {
+                $validated['followup_time'] = substr($validated['followup_time'], 0, 5);
+            }
 
             EduLeadFollowup::create([
                 'edu_lead_id'   => $eduLead->id,
@@ -909,18 +917,203 @@ class EduLeadController extends Controller
     }
 
     // =========================================================================
-    // COMPLETE FOLLOWUP
+    // COMPLETE FOLLOWUP  — now records outcome & updates lead status
     // =========================================================================
-    public function completeFollowup(EduLeadFollowup $followup)
+    public function completeFollowup(Request $request, EduLeadFollowup $followup)
     {
-        if ($followup->status !== 'pending') {
-            return response()->json(['success' => false, 'message' => 'Already completed']);
+        try {
+            $user = Auth::user();
+
+            if ($followup->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This followup is already completed.',
+                ], 422);
+            }
+
+            $validated = $request->validate([
+                'outcome_final_status' => ['required', Rule::in([
+                    'pending', 'contacted', 'follow_up', 'admitted',
+                    'not_interested', 'dropped', 'not_attended',
+                ])],
+                'outcome_status'   => ['nullable', Rule::in([
+                    'whatsapp_link_submitted', 'application_form_submitted',
+                    'booking', 'cancelled',
+                ])],
+                'outcome_interest' => ['nullable', Rule::in(['hot', 'warm', 'cold'])],
+                'outcome_notes'    => ['nullable', 'string', 'max:2000'],
+                'next_action'      => ['nullable', 'string', 'max:500'],
+            ]);
+
+            $lead = $followup->eduLead;
+
+            // ── Snapshot old values for history ──────────────────────────
+            $oldFinalStatus = $lead->final_status;
+            $oldStatus      = $lead->status;
+            $oldInterest    = $lead->interest_level;
+
+            // ── Mark followup complete with outcome ───────────────────────
+            $followup->update(array_merge($validated, [
+                'status'       => 'completed',
+                'completed_at' => now(),
+            ]));
+
+            // ── Propagate outcome onto the lead ───────────────────────────
+            $leadUpdates = [
+                'final_status' => $validated['outcome_final_status'],
+            ];
+
+            if (!empty($validated['outcome_status'])) {
+                $leadUpdates['status'] = $validated['outcome_status'];
+            }
+
+            if (!empty($validated['outcome_interest'])) {
+                $leadUpdates['interest_level'] = $validated['outcome_interest'];
+            }
+
+            if ($validated['outcome_final_status'] === 'admitted' && $lead->final_status !== 'admitted') {
+                $leadUpdates['admitted_at'] = now();
+            }
+
+            $lead->update($leadUpdates);
+
+            // ── Write status history row (linked to this followup) ────────
+            $changes = [];
+
+            if ($oldFinalStatus !== $validated['outcome_final_status']) {
+                $changes['old_status'] = $oldFinalStatus;
+                $changes['new_status'] = $validated['outcome_final_status'];
+            }
+
+            if (!empty($validated['outcome_interest']) && $oldInterest !== $validated['outcome_interest']) {
+                $changes['old_interest_level'] = $oldInterest;
+                $changes['new_interest_level'] = $validated['outcome_interest'];
+            }
+
+            if (!empty($changes)) {
+                $lead->statusHistory()->create(array_merge($changes, [
+                    'user_id'     => $user->id,
+                    'followup_id' => $followup->id,
+                ]));
+            }
+
+            Log::info('Followup completed with outcome', [
+                'followup_id'    => $followup->id,
+                'followup_number'=> $followup->followup_number,
+                'lead_id'        => $lead->id,
+                'old_status'     => $oldFinalStatus,
+                'new_status'     => $validated['outcome_final_status'],
+                'completed_by'   => $user->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Followup completed successfully.",
+                'lead'    => [
+                    'final_status'   => $lead->final_status,
+                    'status'         => $lead->status,
+                    'interest_level' => $lead->interest_level,
+                ],
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please fix the errors below',
+                'errors'  => $e->errors(),
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Complete followup error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error completing followup.',
+            ], 500);
         }
+    }
 
-        $followup->update(['status' => 'completed', 'completed_at' => now()]);
-        $followup->eduLead->update(['followup_status' => 'completed']);
+    // =========================================================================
+    // UPDATE FOLLOWUP
+    // =========================================================================
+    public function updateFollowup(Request $request, EduLeadFollowup $followup)
+    {
+        try {
+            $user = Auth::user();
 
-        return response()->json(['success' => true, 'message' => 'Follow-up marked as completed!']);
+            $canEdit = $user->isSuperAdmin()
+                || $user->isOperationHead()
+                || ($user->isLeadManager() && $followup->eduLead->branch_id === $user->branch_id)
+                || ($user->isTelecaller()  && $followup->assigned_to === $user->id);
+
+            if (!$canEdit) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            }
+
+            $validated = $request->validate([
+                'followup_date'        => 'required|date',
+                'followup_time'        => 'nullable|date_format:H:i,H:i:s',
+                'notes'                => 'nullable|string|max:1000',
+                'priority'             => 'nullable|in:low,medium,high',
+                'outcome_final_status' => ['nullable', Rule::in([
+                    'pending', 'contacted', 'follow_up', 'admitted',
+                    'not_interested', 'dropped', 'not_attended',
+                ])],
+                'outcome_status'       => ['nullable', Rule::in([
+                    'whatsapp_link_submitted', 'application_form_submitted',
+                    'booking', 'cancelled', '',
+                ])],
+                'outcome_interest'     => ['nullable', Rule::in(['hot', 'warm', 'cold', ''])],
+                'outcome_notes'        => 'nullable|string|max:2000',
+                'next_action'          => 'nullable|string|max:500',
+            ]);
+
+            // Strip seconds from time if present (e.g. "14:30:00" → "14:30")
+            if (!empty($validated['followup_time'])) {
+                $validated['followup_time'] = substr($validated['followup_time'], 0, 5);
+            }
+
+            // Treat empty strings as null for nullable fields
+            foreach (['outcome_status', 'outcome_interest'] as $field) {
+                if (isset($validated[$field]) && $validated[$field] === '') {
+                    $validated[$field] = null;
+                }
+            }
+
+            $followup->update($validated);
+
+            // If outcome_final_status was edited, propagate to the lead
+            $lead = $followup->eduLead;
+            $leadUpdates = [];
+
+            if (!empty($validated['outcome_final_status'])) {
+                $leadUpdates['final_status'] = $validated['outcome_final_status'];
+            }
+            if (!empty($validated['outcome_status'])) {
+                $leadUpdates['status'] = $validated['outcome_status'];
+            }
+            if (!empty($validated['outcome_interest'])) {
+                $leadUpdates['interest_level'] = $validated['outcome_interest'];
+            }
+
+            if (!empty($leadUpdates)) {
+                $lead->update($leadUpdates);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Followup updated successfully.",
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors'  => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Update followup error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error updating followup.'], 500);
+        }
     }
 
     // =========================================================================
@@ -960,20 +1153,36 @@ class EduLeadController extends Controller
     // =========================================================================
     public function deleteFollowup(EduLeadFollowup $followup)
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        if (!$user->isSuperAdmin() &&
-            $followup->created_by  !== $user->id &&
-            $followup->assigned_to !== $user->id) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            $canDelete = $user->isSuperAdmin()
+                || $user->isOperationHead()
+                || ($user->isLeadManager() && $followup->eduLead->branch_id === $user->branch_id)
+                || ($user->isTelecaller()  && $followup->assigned_to === $user->id);
+
+            if (!$canDelete) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            }
+
+            // if ($followup->status === 'completed') {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Completed followups cannot be deleted.',
+            //     ], 422);
+            // }
+
+            $followup->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Followup deleted.",
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Delete followup error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error deleting followup.'], 500);
         }
-
-        if ($followup->status === 'completed') {
-            return response()->json(['success' => false, 'message' => 'Cannot delete completed followups'], 400);
-        }
-
-        $followup->delete();
-        return response()->json(['success' => true, 'message' => 'Followup deleted successfully!']);
     }
 
     // =========================================================================
@@ -1409,7 +1618,7 @@ class EduLeadController extends Controller
             'booking_payment'           => 'nullable|numeric|min:0',
             'fees_collection'           => 'nullable|numeric|min:0',
             'cancellation_reason'       => 'nullable|string|max:1000',
-            'final_status'              => 'nullable|in:pending,contacted,follow_up,admitted,not_interested,dropped',
+            'final_status'              => 'nullable|in:pending,contacted,follow_up,admitted,not_interested,not_attended,dropped',
         ];
     }
 
@@ -1436,7 +1645,7 @@ class EduLeadController extends Controller
 
         // Whitelist allowed fields + their validation rules
         $allowedFields = [
-            'final_status'        => ['nullable', Rule::in(['pending','contacted','follow_up','admitted','not_interested','dropped'])],
+            'final_status'        => ['nullable', Rule::in(['pending','contacted','follow_up','admitted', 'not_interested','dropped','not_attended'])],
             'status'              => ['nullable', Rule::in(['whatsapp_link_submitted','application_form_submitted','booking','cancelled'])],
             'booking_payment'     => ['nullable', 'numeric', 'min:0'],
             'fees_collection'     => ['nullable', 'numeric', 'min:0'],

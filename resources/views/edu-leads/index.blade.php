@@ -79,12 +79,20 @@
     .fs-admitted       { background:#d1fae5; color:#065f46; }
     .fs-not_interested { background:#fee2e2; color:#991b1b; }
     .fs-dropped        { background:#f3f4f6; color:#374151; }
+    .fs-notattended {
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+
+    .status-tab[data-status="not_attended"].active {
+        background: #3730a3;
+    }
 
     /* ── Filter panel ──────────────────────────────────────── */
     .filter-card-header {
         display:flex; justify-content:space-between; align-items:center;
-        padding:.85rem 1.25rem; background:#f8fafc; border-bottom:1px solid #e2e8f0;
-        border-radius:8px 8px 0 0; cursor:pointer; user-select:none; transition:background .2s ease;
+        padding:.85rem 1.25rem; background:#e9f4ff; border:1px solid #dad4ff;
+        border-radius:8px 8px 0 0 !important; cursor:pointer; user-select:none; transition:background .2s ease;
     }
     .filter-card-header:hover { background:#f1f5f9; }
     .filter-toggle-icon {
@@ -181,6 +189,79 @@
     .per-page-wrap label { font-size:.82rem; color:#6c757d; white-space:nowrap; margin:0; }
     #perPageSelect { width:70px; font-size:.82rem; padding:3px 6px; }
 
+    /* ── Active Filters Bar ────────────────────────────────────── */
+    #activeFiltersBar {
+        display: none;          /* hidden when no filters active    */
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        background: #f0f4ff;
+        border-bottom: 1px solid #c7d2fe;
+        position: sticky;
+        top: 0;                 /* sticks to viewport top on scroll */
+        z-index: 50;
+    }
+    #activeFiltersBar .filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: #fff;
+        border: 1px solid #a5b4fc;
+        border-radius: 20px;
+        padding: 3px 10px 3px 10px;
+        font-size: .76rem;
+        font-weight: 600;
+        color: #3730a3;
+        white-space: nowrap;
+    }
+    #activeFiltersBar .filter-chip .chip-remove {
+        cursor: pointer;
+        color: #6366f1;
+        font-size: .9rem;
+        line-height: 1;
+        margin-left: 2px;
+        transition: color .15s;
+    }
+    #activeFiltersBar .filter-chip .chip-remove:hover { color: #dc2626; }
+    #activeFiltersBar .clear-all-btn {
+        margin-left: auto;
+        font-size: .75rem;
+        font-weight: 700;
+        color: #dc2626;
+        cursor: pointer;
+        padding: 3px 10px;
+        border-radius: 20px;
+        border: 1px solid #fca5a5;
+        background: #fff;
+        transition: background .15s;
+    }
+    #activeFiltersBar .clear-all-btn:hover { background: #fee2e2; }
+    #activeFiltersBar .filters-label {
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: #6366f1;
+        white-space: nowrap;
+    }
+
+    /* ── Fixed-height scrollable table ────────────────────────── */
+    .table-container {
+        overflow-x: auto;
+        overflow-y: auto;          /* ← was 'visible' */
+        max-height: 62vh;          /* adjust to taste  */
+        width: 100%;
+    }
+    /* Keep thead sticky inside the scroll container */
+    .table-container thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #f8f9fa;
+        box-shadow: 0 2px 2px -1px rgba(0,0,0,.1);
+    }
+
 </style>
 @endsection
 
@@ -205,17 +286,17 @@
                         <i class="las la-fire"></i>
                         <span id="hotLeadsCountBadge">{{ $hotLeadsCount }}</span> Hot
                     </span>
-                    <span class="badge bg-warning text-dark fs-6">
+                    {{-- <span class="badge bg-warning text-dark fs-6">
                         <i class="las la-clock"></i>
                         <span id="pendingFollowupsBadge">{{ $pendingFollowupsCount }}</span> Followups
-                    </span>
+                    </span> --}}
                 </div>
             </div>
         </div>
     </div>
 
     {{-- ── FILTERS CARD ──────────────────────────────────────── --}}
-    <div class="card mb-3" id="filterCard">
+    <div class="card mb-3" id="filterCard" style="border-radius: 0;">
 
         <div class="filter-card-header" onclick="toggleFilters()">
             <div class="d-flex align-items-center gap-2">
@@ -228,7 +309,7 @@
                         onclick="event.stopPropagation()">
                     <i class="las la-check me-1"></i>Apply
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary px-3" id="resetBtn"
+                <button type="button" class="btn btn-sm btn-outline-secondary px-3 text-dark" id="resetBtn"
                         onclick="event.stopPropagation()">
                     <i class="las la-redo me-1"></i>Reset
                 </button>
@@ -245,15 +326,24 @@
 
                 {{-- ── GROUP 1: Search & Basics ─────────────────────── --}}
                 <div class="filter-group-label"><i class="las la-search"></i> Search &amp; Basics</div>
-                <div class="row g-3 mb-3">
-                    <div class="col-xl-4 col-lg-4 col-md-6">
+                <div class="row g-3 mb-1">
+
+                    {{-- Unified Search --}}
+                    <div class="col-xl-4 col-lg-5 col-md-12">
                         <label class="filter-label">Search</label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-white"><i class="las la-search text-muted"></i></span>
                             <input type="text" class="form-control" id="searchInput"
-                                placeholder="Name, phone, email, lead code, app no...">
+                                placeholder="Name, phone, email, agent, referral...">
                         </div>
+                        {{-- <div class="text-muted mt-1" style="font-size:.7rem; line-height:1.3;">
+                            <i class="las la-info-circle"></i>
+                            Searches: name · phone · email · lead code · app no ·
+                            <i class="las la-user-tie"></i> agent · <i class="las la-share-alt"></i> referral
+                        </div> --}}
                     </div>
+
+                    {{-- Interest --}}
                     <div class="col-xl-2 col-lg-3 col-md-4 col-6">
                         <label class="filter-label"><i class="las la-fire text-danger"></i> Interest</label>
                         <select class="form-select form-select-sm" id="filterInterestLevel">
@@ -263,14 +353,9 @@
                             <option value="cold">Cold</option>
                         </select>
                     </div>
-                    <div class="col-xl-3 col-lg-3 col-md-4 col-6">
-                        <label class="filter-label"><i class="las la-user-tie text-info"></i> Agent</label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white"><i class="las la-user text-muted"></i></span>
-                            <input type="text" class="form-control" id="filterAgentName" placeholder="Agent name...">
-                        </div>
-                    </div>
-                    <div class="col-xl-3 col-lg-3 col-md-4 col-6">
+
+                    {{-- Lead Source --}}
+                    <div class="col-xl-2 col-lg-4 col-md-4 col-6">
                         <label class="filter-label"><i class="las la-bullhorn text-info"></i> Lead Source</label>
                         <select class="form-select form-select-sm" id="filterSource">
                             <option value="">All Sources</option>
@@ -279,9 +364,9 @@
                             @endforeach
                         </select>
                     </div>
-                </div>
-                <div class="row g3 mb-3">
-                    <div class="col-xl-5 col-lg-5 col-md-6">
+
+                    {{-- Date Range --}}
+                    <div class="col-xl-4 col-lg-5 col-md-6">
                         <label class="filter-label"><i class="las la-calendar text-success"></i> Created Date Range</label>
                         <div class="input-group input-group-sm">
                             <input type="date" class="form-control" id="dateFrom" title="From date">
@@ -289,13 +374,14 @@
                             <input type="date" class="form-control" id="dateTo" title="To date">
                         </div>
                     </div>
+
                 </div>
 
                 <hr class="filter-divider">
 
                 {{-- ── GROUP 2: Current Institution, Dept & Location ── --}}
                 <div class="filter-group-label"><i class="las la-school"></i> Current Institution &amp; Location</div>
-                <div class="row g-3 mb-3">
+                <div class="row g-3 mb-1">
 
                     <div class="col-xl-2 col-lg-2 col-md-3 col-6">
                         <label class="filter-label">Institution Type</label>
@@ -313,7 +399,7 @@
 
                     </div>
 
-                    <div class="col-xl-3 col-lg-3 col-md-4" id="schoolDeptWrap">
+                    <div class="col-xl-2 col-lg-3 col-md-4" id="schoolDeptWrap">
                         <label class="filter-label">School Stream / Dept</label>
                         <select class="form-select form-select-sm" id="filterSchoolDepartment">
                             <option value="">All Streams</option>
@@ -323,7 +409,7 @@
                         </select>
                     </div>
 
-                    <div class="col-xl-3 col-lg-3 col-md-4" id="collegeDeptWrap">
+                    <div class="col-xl-2 col-lg-3 col-md-4" id="collegeDeptWrap">
                         <label class="filter-label">College Department</label>
                         <select class="form-select form-select-sm" id="filterCollegeDepartment">
                             <option value="">All Departments</option>
@@ -333,7 +419,7 @@
                         </select>
                     </div>
 
-                    <div class="col-xl-4 col-lg-3 col-md-4 col-6">
+                    <div class="col-xl-3 col-lg-3 col-md-4 col-6">
                         <label class="filter-label"><i class="las la-map text-muted"></i> State</label>
                         <select class="form-select form-select-sm" id="filterState">
                             <option value=""></option>
@@ -356,7 +442,7 @@
 
                 {{-- ── GROUP 3: Preferred Destination & Course ──────── --}}
                 <div class="filter-group-label"><i class="las la-globe"></i> Preferred Destination &amp; Course</div>
-                <div class="row g-3 mb-3">
+                <div class="row g-3 mb-1">
                     <div class="col-xl-5 col-lg-3 col-md-4 col-6">
                         <label class="filter-label"><i class="las la-star text-warning"></i> Preferred State</label>
                         <select class="form-select form-select-sm" id="filterPreferredState">
@@ -394,7 +480,7 @@
 
                 {{-- ── GROUP 4: Assignment ──────────────────────────── --}}
                 <div class="filter-group-label"><i class="las la-users-cog"></i> Assignment</div>
-                <div class="row g-3">
+                <div class="row g-3 mb-1">
                     @if(in_array(auth()->user()->role, ['super_admin', 'operation_head']))
                     <div class="col-xl-3 col-lg-3 col-md-4">
                         <label class="filter-label">Branch</label>
@@ -423,6 +509,17 @@
                 </div>
 
             </form>
+        </div>
+    </div>
+
+    {{-- ── Active Filters Bar ─────────────────────────────────── --}}
+    <div id="activeFiltersBar" class="card mb-0" style="border-radius:0; border-top:none; display:none;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:8px 14px;">
+            <span class="filters-label"><i class="las la-filter me-1"></i>Active:</span>
+            <div id="filterChipsContainer" style="display:inline-flex; flex-wrap:wrap; gap:5px;"></div>
+            <button type="button" class="clear-all-btn ms-auto" id="clearAllFiltersBtn">
+                <i class="las la-times me-1"></i>Clear All
+            </button>
         </div>
     </div>
 
@@ -488,6 +585,9 @@
         <div class="status-tabs" id="statusTabs">
             <span class="status-tab active" data-status="">All <span class="tab-count" id="tc-all">{{ $statusCounts['all'] ?? $leads->total() }}</span></span>
             <span class="status-tab" data-status="pending">Pending <span class="tab-count" id="tc-pending">{{ $statusCounts['pending'] ?? 0 }}</span></span>
+            <span class="status-tab" data-status="not_attended">
+                Not Attended <span class="tab-count" id="tc-not_attended">{{ $statusCounts['not_attended'] ?? 0 }}</span>
+            </span>
             <span class="status-tab" data-status="contacted">Contacted <span class="tab-count" id="tc-contacted">{{ $statusCounts['contacted'] ?? 0 }}</span></span>
             <span class="status-tab" data-status="follow_up">Follow Up <span class="tab-count" id="tc-follow_up">{{ $statusCounts['follow_up'] ?? 0 }}</span></span>
             <span class="status-tab" data-status="admitted">Admitted <span class="tab-count" id="tc-admitted">{{ $statusCounts['admitted'] ?? 0 }}</span></span>
@@ -512,13 +612,13 @@
                             <th class="sortable" data-column="phone">Phone</th>
                             <th class="sortable" data-column="final_status">Status</th>
                             <th>Followups</th>
-                            <th>Agent</th>
+                            <th class="sortable" data-column="interest_level">Interest</th>
+                            <th>Agent/Referral</th>
                             <th>Institution</th>
                             <th>Department</th>
                             <th>State / District</th>
                             <th>Preferred State</th>
                             <th class="sortable" data-column="course_id">Course</th>
-                            <th class="sortable" data-column="interest_level">Interest</th>
                             <th class="sortable" data-column="lead_source_id">Source</th>
                             <th class="sortable" data-column="assigned_to">Assigned To</th>
                             <th class="sortable" data-column="branch_id">Branch</th>
@@ -860,23 +960,196 @@ $(document).ready(function () {
         if (initialized) loadLeads(1);
     });
 
-    // ── ACTIVE FILTER BADGE COUNT ────────────────────────────────────
-    function updateActiveFilterCount() {
-        const ids = [
-            'filterInterestLevel', 'filterSource',
-            'filterSchoolDepartment', 'filterCollegeDepartment',
-            'filterProgramme', 'filterCourse',
-            'filterState', 'filterDistrict',
-            'filterPreferredState', 'filterBranch', 'filterAssignedTo',
-            'searchInput', 'filterAgentName', 'dateFrom', 'dateTo',
-        ];
-        const count = ids.filter(id => {
-            const el = document.getElementById(id);
-            return el && el.value && el.value.length > 0;
-        }).length;
-        const $badge = $('#activeFilterCount');
-        count > 0 ? $badge.text(count).show() : $badge.hide();
+    // ─────────────────────────────────────────────────────────────────
+    // ACTIVE FILTERS BAR — meta map, chip renderer, & count badge
+    // ─────────────────────────────────────────────────────────────────
+
+    const filterMeta = [
+        {
+            id: 'searchInput',
+            label: 'Search',
+            clear: () => $('#searchInput').val('')
+        },
+        {
+            id: 'filterInterestLevel',
+            label: 'Interest',
+            clear: () => $('#filterInterestLevel').val('').trigger('change')
+        },
+        {
+            id: 'filterAgentName',
+            label: 'Agent/Referral',
+            clear: () => $('#filterAgentName').val('')
+        },
+        {
+            id: 'filterSource',
+            label: 'Source',
+            clear: () => $('#filterSource').val(null).trigger('change')
+        },
+        {
+            id: 'dateFrom',
+            label: 'From',
+            clear: () => $('#dateFrom').val('').trigger('change')
+        },
+        {
+            id: 'dateTo',
+            label: 'To',
+            clear: () => $('#dateTo').val('').trigger('change')
+        },
+        {
+            id: 'filterInstitutionType',
+            label: 'Institution',
+            clear: () => $('#filterInstitutionType').val('').trigger('change')
+        },
+        {
+            id: 'filterSchoolDepartment',
+            label: 'School Dept',
+            clear: () => $('#filterSchoolDepartment').val('').trigger('change')
+        },
+        {
+            id: 'filterCollegeDepartment',
+            label: 'College Dept',
+            clear: () => $('#filterCollegeDepartment').val('').trigger('change')
+        },
+        {
+            id: 'filterState',
+            label: 'State',
+            clear: () => $('#filterState').val(null).trigger('change')
+        },
+        {
+            id: 'filterDistrict',
+            label: 'District',
+            clear: () => $('#filterDistrict').val(null).trigger('change')
+        },
+        {
+            id: 'filterPreferredState',
+            label: 'Pref. State',
+            clear: () => $('#filterPreferredState').val(null).trigger('change')
+        },
+        {
+            id: 'filterProgramme',
+            label: 'Programme',
+            clear: () => $('#filterProgramme').val(null).trigger('change')
+        },
+        {
+            id: 'filterCourse',
+            label: 'Course',
+            clear: () => $('#filterCourse').val(null).trigger('change')
+        },
+        {
+            id: 'filterBranch',
+            label: 'Branch',
+            clear: () => $('#filterBranch').val(null).trigger('change')
+        },
+        {
+            id: 'filterAssignedTo',
+            label: 'Assigned To',
+            clear: () => $('#filterAssignedTo').val(null).trigger('change')
+        },
+    ];
+
+    /**
+     * Returns the human-readable display value of a filter field,
+     * or null if the field is empty / default.
+     */
+    function getReadableValue(id) {
+        const el = document.getElementById(id);
+        if (!el || !el.value || el.value === '') return null;
+
+        if (el.tagName === 'SELECT') {
+            const opt = el.options[el.selectedIndex];
+            // Treat placeholder options (value="") as empty
+            if (!opt || opt.value === '') return null;
+            return opt.text || null;
+        }
+
+        return el.value.trim() || null;
     }
+
+    /**
+     * Rebuilds the active-filters chip bar and updates the badge count.
+     * Drop-in replacement for the original updateActiveFilterCount().
+     */
+    function updateActiveFilterCount() {
+        let count = 0;
+        const $chips = $('#filterChipsContainer').empty();
+
+        // — One chip per active filter field —
+        filterMeta.forEach(function (f) {
+            const val = getReadableValue(f.id);
+            if (!val) return;
+            count++;
+
+            $chips.append(
+                $('<span class="filter-chip"></span>').append(
+                    $('<span class="chip-label"></span>').html(
+                        f.label + ': <strong>' + $('<span>').text(val).html() + '</strong>'
+                    ),
+                    $('<span class="chip-remove" title="Remove filter">&times;</span>')
+                        .attr('data-filter-id', f.id)
+                )
+            );
+        });
+
+        // — Chip for the active status tab (if not "All") —
+        if (activeStatus) {
+            count++;
+            // Grab tab label text without the count badge text
+            const $tab   = $('.status-tab[data-status="' + activeStatus + '"]');
+            const tabLabel = $tab.contents()
+                .filter(function () { return this.nodeType === 3; }) // text nodes only
+                .first().text().trim()
+                || $tab.text().replace(/\d+/g, '').trim(); // fallback
+
+            $chips.append(
+                $('<span class="filter-chip" style="border-color:#f97316;color:#c2410c;"></span>').append(
+                    $('<span class="chip-label"></span>').html(
+                        'Status: <strong>' + $('<span>').text(tabLabel).html() + '</strong>'
+                    ),
+                    $('<span class="chip-remove" title="Remove filter">&times;</span>')
+                        .attr('data-filter-id', '__status__')
+                )
+            );
+        }
+
+        // — Badge on the filter card header —
+        const $badge = $('#activeFilterCount');
+        if (count > 0) {
+            $badge.text(count).show();
+        } else {
+            $badge.hide();
+        }
+
+        // — Show/hide the sticky bar —
+        $('#activeFiltersBar').toggle(count > 0);
+    }
+
+    // ── Individual chip × removal ─────────────────────────────────────
+    $(document).on('click', '.chip-remove', function () {
+        const id = $(this).data('filter-id');
+
+        if (id === '__status__') {
+            // Reset status tab to "All"
+            activeStatus = '';
+            $('.status-tab').removeClass('active');
+            $('.status-tab[data-status=""]').addClass('active');
+            updateActiveFilterCount();
+            loadLeads(1);
+            return;
+        }
+
+        const meta = filterMeta.find(f => f.id === id);
+        if (meta) {
+            meta.clear();            // clear the field
+            updateActiveFilterCount();
+            loadLeads(1);
+        }
+    });
+
+    // ── "Clear All" button ────────────────────────────────────────────
+    $('#clearAllFiltersBtn').on('click', function () {
+        $('#resetBtn').trigger('click');  // reuses your existing full-reset logic
+    });
+
 
     // ── COLLECT FILTER PARAMS ────────────────────────────────────────
     // ✅ Always include _json=1, page, per_page

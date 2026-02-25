@@ -93,8 +93,11 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::post('/edu-leads/{eduLead}/notes', [EduLeadController::class, 'addNote'])
         ->name('edu-leads.addNote');
 
-    Route::post('/edu-lead-followups/{followup}/complete', [EduLeadController::class, 'completeFollowup'])
-        ->name('edu-leads.completeFollowup');
+    Route::post('edu-leads/followups/{followup}/complete', [EduLeadController::class, 'completeFollowup'])
+     ->name('edu-leads.followups.complete');
+
+    Route::put('/edu-leads/followups/{followup}', [EduLeadController::class, 'updateFollowup'])
+     ->name('edu-leads.followups.update');
 
     Route::delete('/edu-leads/followup/{followup}', [EduLeadController::class, 'deleteFollowup'])
         ->name('edu-leads.deleteFollowup');

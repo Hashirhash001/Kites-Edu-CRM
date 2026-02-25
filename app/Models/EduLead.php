@@ -113,6 +113,22 @@ class EduLead extends Model
                 ]));
             }
         });
+
+        // ── Cascade soft-delete to all related records ────────────────
+        static::deleting(function ($lead) {
+            $lead->followups()->each(fn($m) => $m->delete());
+            $lead->callLogs()->each(fn($m) => $m->delete());
+            $lead->notes()->each(fn($m) => $m->delete());
+            $lead->statusHistory()->each(fn($m) => $m->delete());
+        });
+
+        // ── Cascade restore to all related records ────────────────────
+        static::restoring(function ($lead) {
+            $lead->followups()->withTrashed()->each(fn($m) => $m->restore());
+            $lead->callLogs()->withTrashed()->each(fn($m) => $m->restore());
+            $lead->notes()->withTrashed()->each(fn($m) => $m->restore());
+            $lead->statusHistory()->withTrashed()->each(fn($m) => $m->restore());
+        });
     }
 
     public static function generateLeadCode(): string
@@ -264,6 +280,7 @@ class EduLead extends Model
             'follow_up_scheduled' => '<span class="badge bg-primary">Follow-up Scheduled</span>',
             'admitted'            => '<span class="badge bg-success">✅ Admitted</span>',
             'closed'              => '<span class="badge bg-dark">Closed</span>',
+            'not_attended' => '<span class="badge bg-secondary">🚫 Not Attended</span>',
         ];
         return $badges[$this->status] ?? '<span class="badge bg-secondary">N/A</span>';
     }

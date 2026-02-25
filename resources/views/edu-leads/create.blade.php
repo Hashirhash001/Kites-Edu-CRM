@@ -452,6 +452,9 @@
                                     </label>
                                     <select class="form-select" id="final_status" name="final_status">
                                         <option value="pending"        @selected(old('final_status', $eduLead->final_status ?? 'pending')        === 'pending')       >⏳ Pending</option>
+                                        <option value="not_attended" {{ old('final_status', $eduLead->final_status ?? '') === 'not_attended' ? 'selected' : '' }}>
+                                            🚫 Not Attended
+                                        </option>
                                         <option value="contacted"      @selected(old('final_status', $eduLead->final_status ?? '')               === 'contacted')      >📞 Contacted</option>
                                         <option value="follow_up"      @selected(old('final_status', $eduLead->final_status ?? '')               === 'follow_up')      >🔔 Follow Up</option>
                                         <option value="admitted"       @selected(old('final_status', $eduLead->final_status ?? '')               === 'admitted')       >✅ Admitted</option>

@@ -31,14 +31,6 @@
         </div>
 
         <div class="d-flex flex-column align-items-end gap-2">
-            {{-- Priority --}}
-            @if($followup->priority === 'high')
-                <span class="priority-badge high"><i class="las la-arrow-up"></i> High</span>
-            @elseif($followup->priority === 'medium')
-                <span class="priority-badge medium"><i class="las la-minus"></i> Medium</span>
-            @else
-                <span class="priority-badge low"><i class="las la-arrow-down"></i> Low</span>
-            @endif
 
             {{-- Overdue label --}}
             @if($isOverdue)
@@ -58,16 +50,6 @@
                 &nbsp;·&nbsp;{{ \Carbon\Carbon::parse($followup->followup_time)->format('h:i A') }}
             @endif
         </div>
-
-        @if($lead)
-            @php
-                $interestColors = ['hot' => 'danger', 'warm' => 'warning', 'cold' => 'info'];
-                $ic = $interestColors[$lead->interest_level] ?? 'secondary';
-            @endphp
-            <span class="badge bg-{{ $ic }} bg-opacity-15 text-{{ $ic }} border border-{{ $ic }} border-opacity-25 text-white">
-                {{ ucfirst($lead->interest_level ?? 'N/A') }}
-            </span>
-        @endif
     </div>
 
     {{-- Notes --}}
@@ -80,12 +62,12 @@
     {{-- Actions --}}
     <div class="d-flex justify-content-end mt-3">
         @if($lead)
-            <a href="{{ route('edu-leads.show', $lead) }}" class="btn btn-sm btn-outline-secondary me-2">
+            <a href="{{ route('edu-leads.show', $lead) }}" class="btn btn-sm btn-outline-secondary me-2 text-black">
                 <i class="las la-eye me-1"></i> View Lead
             </a>
         @endif
-        <button class="btn-complete btn btn-sm btn-complete-followup" data-id="{{ $followup->id }}">
+        {{-- <button class="btn-complete btn btn-sm btn-complete-followup" data-id="{{ $followup->id }}">
             <i class="las la-check me-1"></i> Mark Complete
-        </button>
+        </button> --}}
     </div>
 </div>

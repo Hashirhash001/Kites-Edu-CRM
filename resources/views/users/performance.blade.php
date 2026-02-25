@@ -175,7 +175,7 @@
     .leaderboard-table {
         min-width: 1200px;
         width: 100%;
-        border-collapse: separate;
+        border-collapse: collapse;
         border-spacing: 0;
     }
     .leaderboard-table thead th {
@@ -277,7 +277,7 @@
 
 
 @section('content')
-<div class="content-wrapper">
+<div class="content-wrapper mt-3">
 <div id="confettiContainer"></div>
 
 {{-- ── Page Title ──────────────────────────────────────────────── --}}

@@ -136,75 +136,153 @@
     .pipeline-stat { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem 1.25rem; transition: var(--transition); background: #fff; }
     .pipeline-stat:hover { box-shadow: var(--shadow-md); border-color: #c7d2fe; }
 
-    /* ══════════════════════════════════════════════════════════════════
-       ── Institution Overview card ──────────────────────────────────
-    ══════════════════════════════════════════════════════════════════ */
+    /* ══════════════════════════════════════════════════════════════
+    INSTITUTION OVERVIEW CARD
+    ══════════════════════════════════════════════════════════════ */
+    .inst-overview-card .card-body {
+        padding: 0;
+    }
 
-    /* The outer card contains two halves side-by-side */
-    .inst-overview-card .card-body { padding: 0; }
+    /* Two halves side by side */
+    .inst-halves {
+        display: flex;
+        flex-wrap: wrap;
+    }
 
     .inst-half {
+        flex: 1 1 280px;  /* grow/shrink, min 280px before wrapping */
         padding: 1.25rem 1.5rem;
-        flex: 1 1 0;
         min-width: 0;
     }
 
-    /* Divider between the two halves */
+    /* Divider between halves — vertical on desktop, horizontal on mobile */
     .inst-half + .inst-half {
         border-left: 1px solid var(--border);
     }
 
-    /* Top section: icon + big count */
+    /* ── Header row: icon + count + view button ──────────────────── */
     .inst-half-header {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        margin-bottom: 1rem;
-        padding-bottom: 0.85rem;
+        gap: .85rem;
+        margin-bottom: .85rem;
+        padding-bottom: .85rem;
         border-bottom: 1px solid var(--border);
     }
 
     .inst-half-icon {
-        width: 52px;
-        height: 52px;
+        width: 44px;
+        height: 44px;
         flex-shrink: 0;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: var(--radius-sm);
-        font-size: 1.6rem;
+        font-size: 1.4rem;
     }
 
-    .inst-half-meta { flex: 1; min-width: 0; }
-    .inst-half-meta .inst-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 0.1rem; }
-    .inst-half-meta .inst-count { font-size: 2rem; font-weight: 800; line-height: 1.1; color: var(--text-primary); }
-    .inst-half-meta .inst-sub   { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .inst-half-meta {
+        flex: 1;
+        min-width: 0;
+    }
 
-    /* Dept list rows */
-    .dept-list { display: flex; flex-direction: column; gap: 0.35rem; }
+    .inst-label {
+        font-size: .68rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin-bottom: .1rem;
+    }
+
+    .inst-count {
+        font-size: 1.75rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--text-primary);
+    }
+
+    .inst-sub {
+        font-size: .72rem;
+        color: var(--text-muted);
+        margin-top: .1rem;
+    }
+
+    /* ── Department/stream list ──────────────────────────────────── */
+    .dept-list {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: .35rem;
+    }
 
     .dept-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.4rem 0.7rem;
+        padding: .35rem .6rem;
         border-radius: 6px;
         background: var(--bg-subtle);
         border: 1px solid var(--border);
         transition: var(--transition);
+        min-width: 0;
     }
-    .dept-row:hover { background: #f0f4ff; border-color: #c7d2fe; }
-    .dept-row-label { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
-    .dept-row-count { font-size: 0.82rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 20px; }
+    .dept-row:hover {
+        background: #f0f4ff;
+        border-color: #c7d2fe;
+    }
 
-    /* School = blue chip, College = purple chip */
+    .dept-row-label {
+        font-size: .76rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+        margin-right: 6px;
+    }
+
+    .dept-row-count {
+        font-size: .72rem;
+        font-weight: 700;
+        padding: .12rem .5rem;
+        border-radius: 20px;
+        flex-shrink: 0;
+    }
+
     .dept-count-school  { background: #dbeafe; color: #1d4ed8; }
     .dept-count-college { background: #ede9fe; color: #6d28d9; }
 
-    /* On mobile: stack halves vertically */
+    /* ── Responsive ─────────────────────────────────────────────── */
     @media (max-width: 767px) {
-        .inst-half + .inst-half { border-left: none; border-top: 1px solid var(--border); }
-        .inst-half-meta .inst-count { font-size: 1.6rem; }
+        /* Stack halves vertically */
+        .inst-half + .inst-half {
+            border-left: none;
+            border-top: 1px solid var(--border);
+        }
+
+        .inst-half {
+            padding: 1rem 1.1rem;
+        }
+
+        .inst-count {
+            font-size: 1.4rem;
+        }
+
+        /* Single column dept list on mobile */
+        .dept-list {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .inst-half-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 1.1rem;
+        }
+
+        .inst-count { font-size: 1.25rem; }
     }
 
     /* ── Role rows ──────────────────────────────────────────────────── */
@@ -242,6 +320,311 @@
         .stat-card .avatar-title { width: 40px; height: 40px; font-size: 1.2rem; }
         .count-badge { font-size: 0.75rem; padding: 0.25rem 0.6rem; }
     }
+
+    /* ══════════════════════════════════════════════════════════════
+    FOLLOWUP SECTION — Summary bar
+    ══════════════════════════════════════════════════════════════ */
+    .fu-summary-bar {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: .6rem 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .fu-summary-title {
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .fu-summary-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .fu-summary-chip {
+        font-size: .72rem;
+        font-weight: 700;
+        padding: .2rem .75rem;
+        border-radius: 20px;
+        white-space: nowrap;
+    }
+    .fu-summary-chip.chip-overdue { background: #fee2e2; color: #b91c1c; }
+    .fu-summary-chip.chip-today   { background: #fff7ed; color: #c2410c; }
+    .fu-summary-chip.chip-week    { background: #dbeafe; color: #1d4ed8; }
+    .fu-summary-chip.chip-month   { background: #dcfce7; color: #15803d; }
+
+    /* ══════════════════════════════════════════════════════════════
+    FOLLOWUP SECTION — Panel wrapper
+    ══════════════════════════════════════════════════════════════ */
+    .fu-panel {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Panel header */
+    .fu-panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: .7rem 1.1rem;
+        cursor: pointer;
+        user-select: none;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+        flex-shrink: 0;
+        transition: filter .2s;
+    }
+    .fu-panel-header::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,.1) 50%, transparent);
+        transform: translateX(-100%);
+        transition: transform .5s ease;
+    }
+    .fu-panel-header:hover::before { transform: translateX(100%); }
+    .fu-panel-header:hover         { filter: brightness(1.07); }
+
+    .fu-panel-header.overdue { background: linear-gradient(135deg, #dc2626, #991b1b); box-shadow: 0 3px 8px rgba(220,38,38,.25); }
+    .fu-panel-header.today   { background: linear-gradient(135deg, #f97316, #c2410c); box-shadow: 0 3px 8px rgba(249,115,22,.25); }
+    .fu-panel-header.week    { background: linear-gradient(135deg, #0ea5e9, #0369a1); box-shadow: 0 3px 8px rgba(14,165,233,.25); }
+    .fu-panel-header.month   { background: linear-gradient(135deg, #059669, #047857); box-shadow: 0 3px 8px rgba(5,150,105,.25); }
+
+    .fu-panel-title {
+        font-weight: 700;
+        font-size: .88rem;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .fu-panel-count {
+        background: rgba(255,255,255,.25);
+        color: #fff;
+        padding: .15rem .6rem;
+        border-radius: 20px;
+        font-size: .74rem;
+        font-weight: 700;
+        border: 1px solid rgba(255,255,255,.3);
+    }
+
+    .fu-toggle-icon {
+        font-size: 1rem;
+        font-weight: 700;
+        opacity: .85;
+        transition: transform .3s ease;
+        line-height: 1;
+    }
+    .fu-toggle-icon.collapsed { transform: rotate(-90deg); }
+
+    /* Panel body */
+    .fu-panel-body {
+        overflow-y: auto;
+        max-height: 480px;
+        padding: .75rem;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+    FOLLOWUP SECTION — Cards grid (side by side)
+    ══════════════════════════════════════════════════════════════ */
+    .fu-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: .65rem;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+    FOLLOWUP CARD — Individual card
+    ══════════════════════════════════════════════════════════════ */
+    .followup-item {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;  /* pushes footer to bottom */
+        height: 100%;
+    }
+    .followup-item:hover {
+        box-shadow: var(--shadow-md);
+        border-color: #c7d2fe;
+        transform: translateY(-1px);
+    }
+
+    /* Left accent stripe */
+    .followup-item.type-overdue { border-left: 3px solid #ef4444; }
+    .followup-item.type-today   { border-left: 3px solid #f97316; }
+    .followup-item.type-week    { border-left: 3px solid #0ea5e9; }
+    .followup-item.type-month   { border-left: 3px solid #059669; }
+
+    /* Body — flex-grow so footer always pins to bottom */
+    .followup-item-body {
+        padding: .75rem .9rem;
+        flex: 1;
+    }
+
+    /* Lead name */
+    .followup-lead-name {
+        font-weight: 700;
+        font-size: .88rem;
+        color: var(--text-primary);
+        text-decoration: none;
+        transition: color .2s;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        display: inline-block;
+        vertical-align: middle;
+    }
+    .followup-lead-name:hover { color: #2563eb; }
+
+    .followup-lead-code {
+        font-size: .67rem;
+        font-weight: 600;
+        color: #94a3b8;
+        background: #f1f5f9;
+        padding: 1px 6px;
+        border-radius: 4px;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    /* Date badge */
+    .followup-date-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: #fefce8;
+        color: #713f12;
+        padding: .2rem .6rem;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: .71rem;
+        border: 1px solid #fde047;
+        white-space: nowrap;
+    }
+    .type-overdue .followup-date-badge { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+    .type-today   .followup-date-badge { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+
+    /* Meta row */
+    .followup-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px 10px;
+        font-size: .72rem;
+        color: #64748b;
+        align-items: center;
+    }
+    .followup-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+    }
+    .followup-meta i { font-size: .78rem; color: #94a3b8; }
+
+    /* Notes */
+    .followup-notes {
+        padding: .35rem .6rem;
+        background: var(--bg-subtle);
+        border-radius: 5px;
+        border-left: 3px solid #cbd5e1;
+        font-size: .74rem;
+        color: #64748b;
+        line-height: 1.5;
+    }
+
+    /* Card footer */
+    .followup-item-footer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: .45rem .9rem;
+        background: #f8fafc;
+        border-top: 1px solid #f1f5f9;
+        flex-wrap: wrap;
+    }
+
+    /* Complete button */
+    .btn-complete-followup {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #fff !important;
+        font-weight: 600;
+        font-size: .74rem;
+        padding: .28rem .75rem;
+        border-radius: 6px;
+        transition: var(--transition);
+        box-shadow: 0 2px 5px rgba(16,185,129,.2);
+        white-space: nowrap;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+    }
+    .btn-complete-followup:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(16,185,129,.3);
+        color: #fff !important;
+    }
+
+    /* View lead link */
+    .followup-view-link {
+        font-size: .72rem;
+        color: #94a3b8;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        transition: color .2s;
+    }
+    .followup-view-link:hover { color: #2563eb; }
+
+    /* ══════════════════════════════════════════════════════════════
+    RESPONSIVE
+    ══════════════════════════════════════════════════════════════ */
+    @media (max-width: 1199px) {
+        .fu-cards-grid { grid-template-columns: repeat(2, 1fr); }
+        .fu-panel-body { max-height: 420px; }
+    }
+
+    @media (max-width: 767px) {
+        /* Cards go single column inside each panel on mobile */
+        .fu-cards-grid { grid-template-columns: 1fr; }
+        .fu-panel-body { max-height: 320px; padding: .5rem; }
+        .fu-panel-header { padding: .6rem .85rem; }
+        .fu-panel-title { font-size: .82rem; }
+        .followup-item-body { padding: .65rem .8rem; }
+        .followup-item-footer { padding: .4rem .8rem; }
+    }
+
+    @media (max-width: 575px) {
+        .fu-summary-bar { padding: .5rem .85rem; gap: 8px; }
+        .fu-summary-title { display: none; } /* hide label, keep chips */
+    }
+
 </style>
 @endsection
 
@@ -534,10 +917,11 @@
                         <i class="las la-university text-primary fs-18"></i>
                         <h5 class="card-title mb-0 fw-semibold">Institution Overview</h5>
                     </div>
-                    <div class="card-body p-0">
-                        <div class="d-flex flex-wrap">
 
-                            {{-- ── School Half ── --}}
+                    <div class="card-body p-0">
+                        <div class="inst-halves">
+
+                            {{-- ── School Half ─────────────────────────────── --}}
                             <div class="inst-half">
                                 <div class="inst-half-header">
                                     <div class="inst-half-icon bg-soft-primary">
@@ -549,28 +933,26 @@
                                         <div class="inst-sub">{{ $otherInstLeads }} from other institutions</div>
                                     </div>
                                     <a href="{{ route('edu-leads.index', ['institution_type' => 'school']) }}"
-                                       class="btn btn-sm btn-outline-primary ms-auto align-self-start">
+                                    class="btn btn-sm btn-outline-primary flex-shrink-0 align-self-start">
                                         View
                                     </a>
                                 </div>
+
                                 @if(!empty($schoolDepts))
-                                    <div class="dept-list">
-                                        @foreach($schoolDepts as $stream => $count)
-                                        <div class="dept-row">
-                                            <span class="dept-row-label">
-                                                <i class="las la-angle-right me-1 text-muted" style="font-size:.7rem;"></i>
-                                                {{ $stream }}
-                                            </span>
-                                            <span class="dept-row-count dept-count-school">{{ $count }}</span>
-                                        </div>
-                                        @endforeach
+                                <div class="dept-list">
+                                    @foreach($schoolDepts as $stream => $count)
+                                    <div class="dept-row">
+                                        <span class="dept-row-label">{{ $stream }}</span>
+                                        <span class="dept-row-count dept-count-school">{{ $count }}</span>
                                     </div>
+                                    @endforeach
+                                </div>
                                 @else
-                                    <p class="text-muted mb-0 fs-13">No stream data available.</p>
+                                <p class="text-muted mb-0" style="font-size:.82rem;">No stream data available.</p>
                                 @endif
                             </div>
 
-                            {{-- ── College Half ── --}}
+                            {{-- ── College Half ────────────────────────────── --}}
                             <div class="inst-half">
                                 <div class="inst-half-header">
                                     <div class="inst-half-icon bg-soft-purple">
@@ -582,30 +964,29 @@
                                         <div class="inst-sub">Across all departments</div>
                                     </div>
                                     <a href="{{ route('edu-leads.index', ['institution_type' => 'college']) }}"
-                                       class="btn btn-sm btn-outline-primary ms-auto align-self-start">
+                                    class="btn btn-sm btn-outline-primary flex-shrink-0 align-self-start">
                                         View
                                     </a>
                                 </div>
+
                                 @if(!empty($collegeDepts))
-                                    <div class="dept-list">
-                                        @foreach($collegeDepts as $dept => $count)
-                                        <div class="dept-row">
-                                            <span class="dept-row-label">
-                                                <i class="las la-angle-right me-1 text-muted" style="font-size:.7rem;"></i>
-                                                {{ $dept }}
-                                            </span>
-                                            <span class="dept-row-count dept-count-college">{{ $count }}</span>
-                                        </div>
-                                        @endforeach
+                                <div class="dept-list">
+                                    @foreach($collegeDepts as $dept => $count)
+                                    <div class="dept-row">
+                                        <span class="dept-row-label">{{ $dept }}</span>
+                                        <span class="dept-row-count dept-count-college">{{ $count }}</span>
                                     </div>
+                                    @endforeach
+                                </div>
                                 @else
-                                    <p class="text-muted mb-0 fs-13">No department data available.</p>
+                                <p class="text-muted mb-0" style="font-size:.82rem;">No department data available.</p>
                                 @endif
                             </div>
 
-                        </div>
+                        </div>{{-- /.inst-halves --}}
                     </div>
                 </div>
+
             </div>
         </div>
 
@@ -883,51 +1264,73 @@
                         <i class="las la-university text-primary fs-18"></i>
                         <h5 class="card-title mb-0 fw-semibold">Institution Overview</h5>
                     </div>
+
                     <div class="card-body p-0">
-                        <div class="d-flex flex-wrap">
+                        <div class="inst-halves">
+
+                            {{-- ── School Half ─────────────────────────────── --}}
                             <div class="inst-half">
                                 <div class="inst-half-header">
-                                    <div class="inst-half-icon bg-soft-primary"><i class="las la-school text-primary"></i></div>
+                                    <div class="inst-half-icon bg-soft-primary">
+                                        <i class="las la-school text-primary"></i>
+                                    </div>
                                     <div class="inst-half-meta">
                                         <div class="inst-label">School Leads</div>
                                         <div class="inst-count text-primary">{{ $schoolLeads }}</div>
                                         <div class="inst-sub">{{ $otherInstLeads }} from other institutions</div>
                                     </div>
-                                    <a href="{{ route('edu-leads.index', ['institution_type' => 'school']) }}" class="btn btn-sm btn-outline-primary ms-auto align-self-start">View</a>
+                                    <a href="{{ route('edu-leads.index', ['institution_type' => 'school']) }}"
+                                    class="btn btn-sm btn-outline-primary flex-shrink-0 align-self-start">
+                                        View
+                                    </a>
                                 </div>
+
                                 @if(!empty($schoolDepts))
                                 <div class="dept-list">
                                     @foreach($schoolDepts as $stream => $count)
                                     <div class="dept-row">
-                                        <span class="dept-row-label"><i class="las la-angle-right me-1 text-muted" style="font-size:.7rem;"></i>{{ $stream }}</span>
+                                        <span class="dept-row-label">{{ $stream }}</span>
                                         <span class="dept-row-count dept-count-school">{{ $count }}</span>
                                     </div>
                                     @endforeach
                                 </div>
+                                @else
+                                <p class="text-muted mb-0" style="font-size:.82rem;">No stream data available.</p>
                                 @endif
                             </div>
+
+                            {{-- ── College Half ────────────────────────────── --}}
                             <div class="inst-half">
                                 <div class="inst-half-header">
-                                    <div class="inst-half-icon bg-soft-purple"><i class="las la-graduation-cap text-purple"></i></div>
+                                    <div class="inst-half-icon bg-soft-purple">
+                                        <i class="las la-graduation-cap text-purple"></i>
+                                    </div>
                                     <div class="inst-half-meta">
                                         <div class="inst-label">College Leads</div>
                                         <div class="inst-count text-purple">{{ $collegeLeads }}</div>
                                         <div class="inst-sub">Across all departments</div>
                                     </div>
-                                    <a href="{{ route('edu-leads.index', ['institution_type' => 'college']) }}" class="btn btn-sm btn-outline-primary ms-auto align-self-start">View</a>
+                                    <a href="{{ route('edu-leads.index', ['institution_type' => 'college']) }}"
+                                    class="btn btn-sm btn-outline-primary flex-shrink-0 align-self-start">
+                                        View
+                                    </a>
                                 </div>
+
                                 @if(!empty($collegeDepts))
                                 <div class="dept-list">
                                     @foreach($collegeDepts as $dept => $count)
                                     <div class="dept-row">
-                                        <span class="dept-row-label"><i class="las la-angle-right me-1 text-muted" style="font-size:.7rem;"></i>{{ $dept }}</span>
+                                        <span class="dept-row-label">{{ $dept }}</span>
                                         <span class="dept-row-count dept-count-college">{{ $count }}</span>
                                     </div>
                                     @endforeach
                                 </div>
+                                @else
+                                <p class="text-muted mb-0" style="font-size:.82rem;">No department data available.</p>
                                 @endif
                             </div>
-                        </div>
+
+                        </div>{{-- /.inst-halves --}}
                     </div>
                 </div>
             </div>
@@ -1160,51 +1563,73 @@
                         <i class="las la-university text-primary fs-18"></i>
                         <h5 class="card-title mb-0 fw-semibold">Institution Overview</h5>
                     </div>
+
                     <div class="card-body p-0">
-                        <div class="d-flex flex-wrap">
+                        <div class="inst-halves">
+
+                            {{-- ── School Half ─────────────────────────────── --}}
                             <div class="inst-half">
                                 <div class="inst-half-header">
-                                    <div class="inst-half-icon bg-soft-primary"><i class="las la-school text-primary"></i></div>
+                                    <div class="inst-half-icon bg-soft-primary">
+                                        <i class="las la-school text-primary"></i>
+                                    </div>
                                     <div class="inst-half-meta">
                                         <div class="inst-label">School Leads</div>
                                         <div class="inst-count text-primary">{{ $schoolLeads }}</div>
                                         <div class="inst-sub">{{ $otherInstLeads }} from other institutions</div>
                                     </div>
-                                    <a href="{{ route('edu-leads.index', ['institution_type' => 'school']) }}" class="btn btn-sm btn-outline-primary ms-auto align-self-start">View</a>
+                                    <a href="{{ route('edu-leads.index', ['institution_type' => 'school']) }}"
+                                    class="btn btn-sm btn-outline-primary flex-shrink-0 align-self-start">
+                                        View
+                                    </a>
                                 </div>
+
                                 @if(!empty($schoolDepts))
                                 <div class="dept-list">
                                     @foreach($schoolDepts as $stream => $count)
                                     <div class="dept-row">
-                                        <span class="dept-row-label"><i class="las la-angle-right me-1 text-muted" style="font-size:.7rem;"></i>{{ $stream }}</span>
+                                        <span class="dept-row-label">{{ $stream }}</span>
                                         <span class="dept-row-count dept-count-school">{{ $count }}</span>
                                     </div>
                                     @endforeach
                                 </div>
+                                @else
+                                <p class="text-muted mb-0" style="font-size:.82rem;">No stream data available.</p>
                                 @endif
                             </div>
+
+                            {{-- ── College Half ────────────────────────────── --}}
                             <div class="inst-half">
                                 <div class="inst-half-header">
-                                    <div class="inst-half-icon bg-soft-purple"><i class="las la-graduation-cap text-purple"></i></div>
+                                    <div class="inst-half-icon bg-soft-purple">
+                                        <i class="las la-graduation-cap text-purple"></i>
+                                    </div>
                                     <div class="inst-half-meta">
                                         <div class="inst-label">College Leads</div>
                                         <div class="inst-count text-purple">{{ $collegeLeads }}</div>
                                         <div class="inst-sub">Across all departments</div>
                                     </div>
-                                    <a href="{{ route('edu-leads.index', ['institution_type' => 'college']) }}" class="btn btn-sm btn-outline-primary ms-auto align-self-start">View</a>
+                                    <a href="{{ route('edu-leads.index', ['institution_type' => 'college']) }}"
+                                    class="btn btn-sm btn-outline-primary flex-shrink-0 align-self-start">
+                                        View
+                                    </a>
                                 </div>
+
                                 @if(!empty($collegeDepts))
                                 <div class="dept-list">
                                     @foreach($collegeDepts as $dept => $count)
                                     <div class="dept-row">
-                                        <span class="dept-row-label"><i class="las la-angle-right me-1 text-muted" style="font-size:.7rem;"></i>{{ $dept }}</span>
+                                        <span class="dept-row-label">{{ $dept }}</span>
                                         <span class="dept-row-count dept-count-college">{{ $count }}</span>
                                     </div>
                                     @endforeach
                                 </div>
+                                @else
+                                <p class="text-muted mb-0" style="font-size:.82rem;">No department data available.</p>
                                 @endif
                             </div>
-                        </div>
+
+                        </div>{{-- /.inst-halves --}}
                     </div>
                 </div>
             </div>
@@ -1431,130 +1856,162 @@
 
     @endif
 
-    {{-- ════════════════════════════════════════════════════════════════
-         FOLLOWUPS SECTION — 4 buckets: Overdue | Today | This Week | This Month
-    ════════════════════════════════════════════════════════════════ --}}
+    {{-- ── FOLLOWUPS SECTION ───────────────────────────────────────── --}}
     @if(isset($followupData))
 
-        {{-- ── Overdue ──────────────────────────────────────────────── --}}
+    @php
+        $hasAnyFollowup =
+            (isset($followupData['overdueFollowups'])  && $followupData['overdueFollowups']->count()  > 0) ||
+            (isset($followupData['todayFollowups'])     && $followupData['todayFollowups']->count()    > 0) ||
+            (isset($followupData['thisWeekFollowups'])  && $followupData['thisWeekFollowups']->count() > 0) ||
+            (isset($followupData['thisMonthFollowups']) && $followupData['thisMonthFollowups']->count()> 0);
+    @endphp
+
+    @if($hasAnyFollowup)
+
+    {{-- ── Summary Bar ─────────────────────────────────────────── --}}
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="fu-summary-bar">
+                <span class="fu-summary-title">
+                    <i class="las la-calendar-check"></i> Followups
+                </span>
+                <div class="fu-summary-chips">
+                    @if(isset($followupData['overdueFollowups']) && $followupData['overdueFollowups']->count() > 0)
+                    <span class="fu-summary-chip chip-overdue">
+                        ⚠️ {{ $followupData['overdueFollowups']->count() }} Overdue
+                    </span>
+                    @endif
+                    @if(isset($followupData['todayFollowups']) && $followupData['todayFollowups']->count() > 0)
+                    <span class="fu-summary-chip chip-today">
+                        🔔 {{ $followupData['todayFollowups']->count() }} Today
+                    </span>
+                    @endif
+                    @if(isset($followupData['thisWeekFollowups']) && $followupData['thisWeekFollowups']->count() > 0)
+                    <span class="fu-summary-chip chip-week">
+                        📅 {{ $followupData['thisWeekFollowups']->count() }} This Week
+                    </span>
+                    @endif
+                    @if(isset($followupData['thisMonthFollowups']) && $followupData['thisMonthFollowups']->count() > 0)
+                    <span class="fu-summary-chip chip-month">
+                        🗓️ {{ $followupData['thisMonthFollowups']->count() }} This Month
+                    </span>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ── 2×2 Panel Grid ───────────────────────────────────────── --}}
+    <div class="row g-3 mb-3">
+
+        {{-- Overdue --}}
         @if(isset($followupData['overdueFollowups']) && $followupData['overdueFollowups']->count() > 0)
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card mb-0">
-                    <div class="section-header overdue" onclick="toggleSection('overdueSection', this)">
-                        <h5><i class="las la-exclamation-circle"></i> Overdue Followups</h5>
-                        <div class="section-header-right">
-                            <span class="count-badge">{{ $followupData['overdueFollowups']->count() }}</span>
-                            <span class="toggle-icon collapsed">›</span>
-                        </div>
+        <div class="col-xl-6 col-lg-6 col-12">
+            <div class="fu-panel">
+                <div class="fu-panel-header overdue" onclick="toggleFuPanel('overduePanel', this)">
+                    <span class="fu-panel-title">
+                        <i class="las la-exclamation-circle"></i> Overdue
+                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fu-panel-count">{{ $followupData['overdueFollowups']->count() }}</span>
+                        <span class="fu-toggle-icon collapsed">›</span>
                     </div>
-                    <div id="overdueSection" class="followup-collapse-container p-3" style="display:none;">
-                        <div class="d-flex flex-column gap-3">
-                            @foreach($followupData['overdueFollowups'] as $followup)
-                                @include('partials.followup-card', ['followup' => $followup])
-                            @endforeach
-                        </div>
-                    </div>
+                </div>
+                <div id="overduePanel" class="fu-panel-body" style="display:none;">
+                        @foreach($followupData['overdueFollowups'] as $followup)
+                            @include('partials.followup-card', ['followup' => $followup, 'type' => 'overdue'])
+                        @endforeach
                 </div>
             </div>
         </div>
         @endif
 
-        {{-- ── Today's Followups ────────────────────────────────────── --}}
+        {{-- Today --}}
         @if(isset($followupData['todayFollowups']) && $followupData['todayFollowups']->count() > 0)
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card mb-0">
-                    <div class="section-header today" onclick="toggleSection('todaySection', this)">
-                        <h5><i class="las la-calendar-day"></i> Today's Followups</h5>
-                        <div class="section-header-right">
-                            <span class="count-badge">{{ $followupData['todayFollowups']->count() }}</span>
-                            <span class="toggle-icon collapsed">›</span>
-                        </div>
+        <div class="col-xl-6 col-lg-6 col-12">
+            <div class="fu-panel">
+                <div class="fu-panel-header today" onclick="toggleFuPanel('todayPanel', this)">
+                    <span class="fu-panel-title">
+                        <i class="las la-calendar-day"></i> Today
+                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fu-panel-count">{{ $followupData['todayFollowups']->count() }}</span>
+                        <span class="fu-toggle-icon collapsed">›</span>
                     </div>
-                    <div id="todaySection" class="followup-collapse-container p-3" style="display:none;">
-                        <div class="d-flex flex-column gap-3">
-                            @foreach($followupData['todayFollowups'] as $followup)
-                                @include('partials.followup-card', ['followup' => $followup])
-                            @endforeach
-                        </div>
-                    </div>
+                </div>
+                <div id="todayPanel" class="fu-panel-body" style="display:none;">
+                        @foreach($followupData['todayFollowups'] as $followup)
+                            @include('partials.followup-card', ['followup' => $followup, 'type' => 'today'])
+                        @endforeach
                 </div>
             </div>
         </div>
         @endif
 
-        {{-- ── This Week ────────────────────────────────────────────── --}}
+        {{-- This Week --}}
         @if(isset($followupData['thisWeekFollowups']) && $followupData['thisWeekFollowups']->count() > 0)
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card mb-0">
-                    <div class="section-header week" onclick="toggleSection('weekSection', this)">
-                        <h5><i class="las la-calendar-week"></i> This Week's Followups</h5>
-                        <div class="section-header-right">
-                            <span class="count-badge">{{ $followupData['thisWeekFollowups']->count() }}</span>
-                            <span class="toggle-icon collapsed">›</span>
-                        </div>
+        <div class="col-xl-6 col-lg-6 col-12">
+            <div class="fu-panel">
+                <div class="fu-panel-header week" onclick="toggleFuPanel('weekPanel', this)">
+                    <span class="fu-panel-title">
+                        <i class="las la-calendar-week"></i> This Week
+                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fu-panel-count">{{ $followupData['thisWeekFollowups']->count() }}</span>
+                        <span class="fu-toggle-icon collapsed">›</span>
                     </div>
-                    <div id="weekSection" class="followup-collapse-container p-3" style="display:none;">
-                        <div class="d-flex flex-column gap-3">
-                            @foreach($followupData['thisWeekFollowups'] as $followup)
-                                @include('partials.followup-card', ['followup' => $followup])
-                            @endforeach
-                        </div>
-                    </div>
+                </div>
+                <div id="weekPanel" class="fu-panel-body" style="display:none;">
+                        @foreach($followupData['thisWeekFollowups'] as $followup)
+                            @include('partials.followup-card', ['followup' => $followup, 'type' => 'week'])
+                        @endforeach
                 </div>
             </div>
         </div>
         @endif
 
-        {{-- ── This Month ───────────────────────────────────────────── --}}
+        {{-- This Month --}}
         @if(isset($followupData['thisMonthFollowups']) && $followupData['thisMonthFollowups']->count() > 0)
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card mb-0">
-                    <div class="section-header month" onclick="toggleSection('monthSection', this)">
-                        <h5><i class="las la-calendar-alt"></i> This Month's Followups</h5>
-                        <div class="section-header-right">
-                            <span class="count-badge">{{ $followupData['thisMonthFollowups']->count() }}</span>
-                            <span class="toggle-icon collapsed">›</span>
-                        </div>
+        <div class="col-xl-6 col-lg-6 col-12">
+            <div class="fu-panel">
+                <div class="fu-panel-header month" onclick="toggleFuPanel('monthPanel', this)">
+                    <span class="fu-panel-title">
+                        <i class="las la-calendar-alt"></i> This Month
+                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fu-panel-count">{{ $followupData['thisMonthFollowups']->count() }}</span>
+                        <span class="fu-toggle-icon collapsed">›</span>
                     </div>
-                    <div id="monthSection" class="followup-collapse-container p-3" style="display:none;">
-                        <div class="d-flex flex-column gap-3">
-                            @foreach($followupData['thisMonthFollowups'] as $followup)
-                                @include('partials.followup-card', ['followup' => $followup])
-                            @endforeach
-                        </div>
-                    </div>
+                </div>
+                <div id="monthPanel" class="fu-panel-body" style="display:none;">
+                        @foreach($followupData['thisMonthFollowups'] as $followup)
+                            @include('partials.followup-card', ['followup' => $followup, 'type' => 'month'])
+                        @endforeach
                 </div>
             </div>
         </div>
         @endif
 
-        {{-- ── All-clear empty state ────────────────────────────────── --}}
-        @php
-            $hasAnyFollowup =
-                (isset($followupData['overdueFollowups'])   && $followupData['overdueFollowups']->count() > 0)   ||
-                (isset($followupData['todayFollowups'])     && $followupData['todayFollowups']->count() > 0)     ||
-                (isset($followupData['thisWeekFollowups'])  && $followupData['thisWeekFollowups']->count() > 0)  ||
-                (isset($followupData['thisMonthFollowups']) && $followupData['thisMonthFollowups']->count() > 0);
-        @endphp
-        @if(!$hasAnyFollowup)
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body text-center py-5">
-                        <i class="las la-calendar-check" style="font-size:3rem;opacity:.2;display:block;margin-bottom:8px;"></i>
-                        <h5 class="text-muted">No Pending Followups</h5>
-                        <p class="text-muted mb-0">You're all caught up! No pending followups scheduled.</p>
-                    </div>
+    </div>{{-- /.row --}}
+
+    @else
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="las la-calendar-check"
+                    style="font-size:3rem; opacity:.15; display:block; margin-bottom:10px;"></i>
+                    <h5 class="text-muted mb-1">You're all caught up!</h5>
+                    <p class="text-muted mb-0 small">No pending followups scheduled.</p>
                 </div>
             </div>
         </div>
-        @endif
+    </div>
+    @endif
 
     @endif
+    {{-- end followupData --}}
 
 </div>
 @endsection
@@ -1562,15 +2019,15 @@
 @section('extra-scripts')
 <script>
 // ── SECTION TOGGLE ──────────────────────────────────────────────────
-function toggleSection(sectionId, header) {
-    const section = document.getElementById(sectionId);
-    const icon    = header.querySelector('.toggle-icon');
-    if (!section) return;
-    if (section.style.display === 'none') {
-        section.style.display = 'block';
+function toggleFuPanel(panelId, header) {
+    const panel = document.getElementById(panelId);
+    const icon  = header.querySelector('.fu-toggle-icon');
+    if (!panel) return;
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
         icon.classList.remove('collapsed');
     } else {
-        section.style.display = 'none';
+        panel.style.display = 'none';
         icon.classList.add('collapsed');
     }
 }
