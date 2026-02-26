@@ -262,6 +262,438 @@
         box-shadow: 0 2px 2px -1px rgba(0,0,0,.1);
     }
 
+    /* ── Desktop table: visible on md+ ──────────────────────────── */
+    .leads-desktop-view { display: table-row; }
+    .leads-mobile-cards { display: none; }
+
+    @media (max-width: 767px) {
+        /* Hide desktop table rows */
+        .leads-desktop-view { display: none !important; }
+
+        /* Show mobile cards container */
+        .leads-mobile-cards { display: block; }
+
+        /* Hide thead on mobile */
+        #leadsTable thead { display: none; }
+
+        /* Remove table padding */
+        .table-container { padding: 0; }
+        #leadsTable { border: none; }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+    LEADS TABLE — MOBILE CARD VIEW
+    ══════════════════════════════════════════════════════════════ */
+    .leads-desktop-view  { display: table-row; }
+    .leads-mobile-cards  { display: none; }
+
+    @media (max-width: 767px) {
+        .leads-desktop-view          { display: none !important; }
+        .leads-mobile-cards          { display: table-row !important; }
+        #leadsTable thead            { display: none; }
+        .table-container             { overflow-x: unset; }
+        #leadsTable                  { border: none; background: transparent; }
+        #leadsTable > tbody > tr > td { border: none; }
+
+        /* Card wrapper */
+        .lm-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: .85rem;
+            display: flex;
+            flex-direction: column;
+            gap: .65rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+        }
+
+        /* Top row: name + status */
+        .lm-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .lm-name-block {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .lm-checkbox { flex-shrink: 0; }
+
+        .lm-name {
+            font-size: .9rem;
+            font-weight: 700;
+            color: #1e293b;
+            text-decoration: none;
+            display: block;
+            line-height: 1.2;
+        }
+        .lm-name:hover { color: #2563eb; }
+
+        .lm-code {
+            font-size: .68rem;
+            font-weight: 600;
+            color: #94a3b8;
+            background: #f1f5f9;
+            padding: 1px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 2px;
+        }
+
+        /* Info grid — 2 columns */
+        .lm-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .4rem .75rem;
+        }
+
+        .lm-field {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            min-width: 0;
+        }
+
+        .lm-field-label {
+            font-size: .62rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .lm-field-label i { font-size: .75rem; }
+
+        .lm-field-val {
+            font-size: .78rem;
+            font-weight: 500;
+            color: #334155;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .lm-field-val.fw-semibold { font-weight: 700; color: #1e293b; }
+
+        /* Followup badges */
+        .lm-followups {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding-top: .35rem;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        /* Action buttons */
+        .lm-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding-top: .35rem;
+            border-top: 1px solid #f1f5f9;
+        }
+        .lm-actions .btn { font-size: .75rem; padding: .28rem .65rem; }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+    MOBILE — Kill horizontal overflow
+    ══════════════════════════════════════════════════════════════ */
+    @media (max-width: 767px) {
+
+        body,
+        .container-fluid,
+        .container         { overflow-x: hidden; }
+
+        .table-container   { overflow-x: hidden !important; }
+
+        #leadsTable {
+            width: 100% !important;
+            table-layout: fixed;
+        }
+
+        .leads-desktop-view { display: none !important; }
+        .leads-mobile-cards { display: table-row !important; }
+        #leadsTable thead   { display: none; }
+
+        .leads-card,
+        .card-body.p-0     { overflow: hidden !important; }
+
+        .leads-mobile-cards td {
+            width: 100% !important;
+            max-width: 100vw !important;
+            padding: .5rem .6rem !important;
+        }
+
+        .lm-card {
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+            padding: .85rem;
+            gap: .65rem;
+        }
+
+        /* Info grid — 2 columns */
+        .lm-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .lm-name    { font-size: .88rem; }
+        .lm-actions .btn { font-size: .75rem; padding: .28rem .65rem; }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+    SMALL PHONES — 480px and below (e.g. iPhone SE, Galaxy A)
+    ══════════════════════════════════════════════════════════════ */
+    @media (max-width: 480px) {
+
+        .container-fluid,
+        .container { padding-left: 8px !important; padding-right: 8px !important; }
+
+        .leads-mobile-cards td { padding: .4rem .4rem !important; }
+
+        .lm-card { padding: .7rem; gap: .55rem; border-radius: 8px; }
+
+        /* Single column info grid on tiny screens */
+        .lm-grid { grid-template-columns: 1fr 1fr; gap: .35rem .5rem; }
+
+        .lm-name        { font-size: .82rem; }
+        .lm-code        { font-size: .64rem; }
+
+        .lm-field-label { font-size: .58rem; }
+        .lm-field-val   { font-size: .74rem; }
+
+        /* Badges smaller */
+        .lm-followups .badge { font-size: .65rem; padding: .18rem .45rem; }
+
+        /* Action buttons — icon only on very small */
+        .lm-actions .btn {
+            font-size: .7rem;
+            padding: .25rem .55rem;
+        }
+
+        /* Status badge in top row */
+        .fs-badge { font-size: .68rem !important; padding: .2rem .5rem !important; }
+
+        /* Filter card */
+        .filter-card-header { padding: .6rem .85rem; }
+        .filter-group-label { font-size: .72rem; }
+        .filter-label       { font-size: .72rem; }
+        .form-select-sm,
+        .form-control       { font-size: .78rem; }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+    VERY SMALL PHONES — 360px and below (e.g. older Androids)
+    ══════════════════════════════════════════════════════════════ */
+    @media (max-width: 360px) {
+
+        /* Status tabs — scroll horizontally */
+        .status-tabs {
+            overflow-x: auto;
+            flex-wrap: nowrap !important;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .status-tabs::-webkit-scrollbar { display: none; }
+        .status-tab { white-space: nowrap; flex-shrink: 0; }
+
+        /* Per page + count bar */
+        .per-page-wrap { font-size: .72rem; }
+        .card-header   { padding: .6rem .75rem; }
+    }
+
+    /* ── Mobile action buttons — icon only ───────────────────────── */
+    .lm-actions {
+        display: flex;
+        gap: 8px;
+        padding-top: .4rem;
+        border-top: 1px solid #f1f5f9;
+        flex-wrap: nowrap;
+    }
+
+    .lm-action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+        text-decoration: none;
+        transition: all .2s ease;
+        border: 1px solid transparent;
+    }
+
+    .lm-action-btn.btn-view   { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
+    .lm-action-btn.btn-edit   { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+    .lm-action-btn.btn-assign { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .lm-action-btn.btn-delete { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+
+    .lm-action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(0,0,0,.12);
+    }
+
+    .lm-action-btn.btn-view:hover   { background: #bae6fd; }
+    .lm-action-btn.btn-edit:hover   { background: #e2e8f0; }
+    .lm-action-btn.btn-assign:hover { background: #dbeafe; }
+    .lm-action-btn.btn-delete:hover { background: #fca5a5; }
+
+    /* ══════════════════════════════════════════════════════════════
+    FILTER CARD — MOBILE
+    ══════════════════════════════════════════════════════════════ */
+    @media (max-width: 767px) {
+
+        /* Filter card */
+        #filterCard {
+            border-radius: 0 !important;
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        .filter-card-header {
+            padding: .7rem 1rem;
+            flex-wrap: nowrap;
+            gap: 8px;
+        }
+
+        /* Hide Apply/Reset text labels — keep icons only */
+        #applyFiltersBtn .btn-text,
+        #resetBtn .btn-text { display: none; }
+
+        #applyFiltersBtn,
+        #resetBtn {
+            padding: .3rem .6rem !important;
+            font-size: .78rem;
+        }
+
+        /* Filter body */
+        #filterBody {
+            padding: .75rem .85rem !important;
+        }
+
+        /* All filter rows go single column */
+        #filterBody .row > [class*="col-"] {
+            width: 100% !important;
+            max-width: 100% !important;
+            flex: 0 0 100% !important;
+        }
+
+        .filter-group-label {
+            font-size: .72rem;
+            margin-bottom: .4rem;
+        }
+
+        .filter-label {
+            font-size: .72rem;
+            margin-bottom: 2px;
+        }
+
+        .form-select-sm,
+        .form-control {
+            font-size: .8rem;
+            padding: .35rem .6rem;
+        }
+
+        .filter-divider { margin: .6rem 0; }
+
+        /* Date range — side by side on mobile */
+        #dateFrom,
+        #dateTo {
+            font-size: .75rem;
+        }
+
+        /* Active filters bar */
+        #activeFiltersBar .filters-label { font-size: .72rem; }
+        #filterChipsContainer            { gap: 4px; }
+        .clear-all-btn                   { font-size: .72rem; padding: .2rem .6rem; }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+    FILTER CARD — SMALL PHONES (≤ 480px)
+    ══════════════════════════════════════════════════════════════ */
+    @media (max-width: 480px) {
+
+        .filter-card-header { padding: .6rem .75rem; gap: 6px; }
+
+        /* Header left side — tighter */
+        .filter-card-header .fw-semibold { font-size: .82rem; }
+        .filter-card-header .fs-18       { font-size: 1rem !important; }
+
+        /* Buttons icon only */
+        #applyFiltersBtn i,
+        #resetBtn i { margin: 0 !important; }
+
+        #applyFiltersBtn,
+        #resetBtn {
+            padding: .28rem .55rem !important;
+            min-width: 32px;
+        }
+
+        #filterBody { padding: .6rem .7rem !important; }
+
+        .form-select-sm,
+        .form-control    { font-size: .76rem; }
+
+        .filter-group-label { font-size: .68rem; }
+        .filter-label       { font-size: .68rem; }
+
+        /* Date range inputs stack */
+        .input-group #dateFrom,
+        .input-group #dateTo {
+            min-width: 0;
+            font-size: .72rem;
+        }
+
+        /* Active filter chips */
+        #activeFiltersBar {
+            padding: 0;
+        }
+        #activeFiltersBar > div {
+            padding: 6px 10px !important;
+            gap: 4px !important;
+        }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+    FILTER CARD — VERY SMALL PHONES (≤ 360px)
+    ══════════════════════════════════════════════════════════════ */
+    @media (max-width: 360px) {
+
+        .filter-card-header { padding: .5rem .6rem; }
+
+        /* Stack header into two rows */
+        .filter-card-header {
+            flex-wrap: wrap;
+        }
+
+        /* Filter body even tighter */
+        #filterBody { padding: .5rem .6rem !important; }
+
+        .form-select-sm,
+        .form-control { font-size: .72rem; padding: .28rem .5rem; }
+
+        /* Date range — stack from row to column */
+        #dateFrom ~ .input-group-text,
+        #dateTo {
+            font-size: .7rem;
+        }
+
+        /* Collapse pill */
+        .filter-collapse-pill {
+            padding: .2rem .4rem;
+        }
+    }
+
+
 </style>
 @endsection
 
@@ -307,11 +739,11 @@
             <div class="d-flex align-items-center gap-2">
                 <button type="button" class="btn btn-sm btn-primary px-3" id="applyFiltersBtn"
                         onclick="event.stopPropagation()">
-                    <i class="las la-check me-1"></i>Apply
+                    <i class="las la-check"></i><span class="btn-text ms-1">Apply</span>
                 </button>
                 <button type="button" class="btn btn-sm btn-outline-secondary px-3 text-dark" id="resetBtn"
                         onclick="event.stopPropagation()">
-                    <i class="las la-redo me-1"></i>Reset
+                    <i class="las la-redo"></i><span class="btn-text ms-1">Reset</span>
                 </button>
                 <div class="filter-collapse-pill" onclick="toggleFilters(); event.stopPropagation();">
                     <span class="filter-toggle-icon" id="filterToggleIcon">
@@ -400,9 +832,9 @@
                     </div>
 
                     <div class="col-xl-2 col-lg-3 col-md-4" id="schoolDeptWrap">
-                        <label class="filter-label">School Stream / Dept</label>
+                        <label class="filter-label">School Department</label>
                         <select class="form-select form-select-sm" id="filterSchoolDepartment">
-                            <option value="">All Streams</option>
+                            <option value="">All Departments</option>
                             @foreach(['Biology Science', 'Computer Science','Commerce','Arts & Journalism', 'Humanities','Vocational', 'Other'] as $s)
                                 <option value="{{ $s }}">{{ $s }}</option>
                             @endforeach
@@ -413,7 +845,24 @@
                         <label class="filter-label">College Department</label>
                         <select class="form-select form-select-sm" id="filterCollegeDepartment">
                             <option value="">All Departments</option>
-                            @foreach(['Engineering','Medical','Arts','Commerce','Science','Law','Management','Other'] as $d)
+                            @foreach([
+                                'BCA',
+                                'BBA',
+                                'B.Com',
+                                'B.Tech',
+                                'B.Sc',
+                                'B.A',
+                                'B.Ed',
+                                'MBA',
+                                'MCA',
+                                'M.Com',
+                                'M.Sc',
+                                'M.Tech',
+                                'LLB',
+                                'Pharmacy',
+                                'Nursing',
+                                'Other'
+                            ] as $d)
                                 <option value="{{ $d }}">{{ $d }}</option>
                             @endforeach
                         </select>
@@ -552,14 +1001,14 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2 flex-wrap align-items-center">
-                    <span class="badge bg-primary py-2 px-3">
+                    {{-- <span class="badge bg-primary py-2 px-3">
                         <i class="las la-school me-1"></i>Schools
                         <span id="ic-school">{{ $institutionCounts['school'] ?? 0 }}</span>
                     </span>
                     <span class="badge bg-success py-2 px-3">
                         <i class="las la-graduation-cap me-1"></i>Colleges
                         <span id="ic-college">{{ $institutionCounts['college'] ?? 0 }}</span>
-                    </span>
+                    </span> --}}
 
                     @if(auth()->user()->canAssignLeads())
                     <button type="button" class="btn btn-info d-none" id="bulkAssignBtn">

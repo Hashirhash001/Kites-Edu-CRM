@@ -1559,7 +1559,7 @@ hr.hr-dashed {
     border-right: 1px solid var(--bs-startbar-e-border-color);
     -webkit-transition: 0.3s;
     transition: 0.3s;
-    z-index: 1005;
+    z-index: 11005;
 }
 .startbar .brand {
     display: -webkit-box;

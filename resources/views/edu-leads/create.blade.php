@@ -77,6 +77,122 @@
     .select2-hidden-accessible.is-invalid ~ * .select2-selection {
         border-color:#dc3545 !important;
     }
+
+    /* ── Institution type btn group ──────────────────────────────── */
+    .inst-type-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .inst-type-group .btn {
+        border-radius: 8px !important; /* override btn-group sharp edges */
+        font-size: .85rem;
+        padding: .35rem .9rem;
+        flex: 0 0 auto;
+    }
+
+    /* Active state — keep border visible */
+    .inst-type-group .btn-check:checked + .btn {
+        box-shadow: 0 0 0 2px currentColor;
+    }
+
+    @media (max-width: 767px) {
+        .inst-type-group .btn {
+            font-size: .78rem;
+            padding: .3rem .7rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        /* 2 buttons per row on small phones */
+        .inst-type-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .inst-type-group .btn {
+            width: 100%;
+            text-align: center;
+            font-size: .76rem;
+            padding: .35rem .5rem;
+        }
+    }
+
+    /* ── Form action bar ─────────────────────────────────────────── */
+    .form-action-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .form-action-meta {
+        font-size: .78rem;
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .form-action-btns {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .form-action-btns .btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: .85rem;
+        padding: .45rem 1.1rem;
+    }
+
+    @media (max-width: 767px) {
+
+        .form-action-bar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+        }
+
+        .form-action-meta {
+            text-align: center;
+            justify-content: center;
+            font-size: .74rem;
+        }
+
+        .form-action-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .form-action-btns .btn {
+            justify-content: center;
+            width: 100%;
+            font-size: .82rem;
+            padding: .5rem .75rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+
+        .form-action-btns .btn { font-size: .78rem; padding: .45rem .6rem; }
+
+        /* Hide text labels — icon only on very small */
+        .form-action-btns .btn-label { display: none; }
+
+        .form-action-btns .btn i { margin: 0 !important; font-size: 1.1rem; }
+
+        /* But keep Update Lead visible since it's the primary action */
+        #submitBtn .btn-label { display: inline; }
+    }
+
 </style>
 @endsection
 
@@ -204,7 +320,7 @@
 
                         <div class="mb-3">
                             <label class="form-label">Institution Type</label>
-                            <div class="btn-group" role="group">
+                            <div class="inst-type-group" role="group">
                                 <input type="radio" class="btn-check" name="institution_type" id="inst_none" value="" checked>
                                 <label class="btn btn-outline-secondary" for="inst_none">Not Specified</label>
 
@@ -252,7 +368,24 @@
                                 <label for="college_department" class="form-label">Department</label>
                                 <select class="form-select" id="college_department" name="college_department">
                                     <option value="">Select Department</option>
-                                    @foreach(['Engineering','Medical','Arts','Commerce','Science','Law','Management','Other'] as $d)
+                                    @foreach([
+                                        'BCA',
+                                        'BBA',
+                                        'B.Com',
+                                        'B.Tech',
+                                        'B.Sc',
+                                        'B.A',
+                                        'B.Ed',
+                                        'MBA',
+                                        'MCA',
+                                        'M.Com',
+                                        'M.Sc',
+                                        'M.Tech',
+                                        'LLB',
+                                        'Pharmacy',
+                                        'Nursing',
+                                        'Other'
+                                    ] as $d)
                                         <option value="{{ $d }}">{{ $d }}</option>
                                     @endforeach
                                 </select>
@@ -445,10 +578,10 @@
                                     <div class="invalid-feedback"></div>
                                 </div>
 
-                                {{-- Final Lead Status --}}
+                                {{-- Final Candidate Status --}}
                                 <div class="col-md-6 mb-3">
                                     <label for="final_status" class="form-label">
-                                        <i class="las la-flag text-info me-1"></i> Final Lead Status
+                                        <i class="las la-flag text-info me-1"></i> Final Candidate Status
                                     </label>
                                     <select class="form-select" id="final_status" name="final_status">
                                         <option value="pending"        @selected(old('final_status', $eduLead->final_status ?? 'pending')        === 'pending')       >⏳ Pending</option>
@@ -513,12 +646,14 @@
                         <div class="row mt-4">
                             <div class="col-12">
                                 <hr>
-                                <div class="d-flex justify-content-end gap-2">
+                                <div class="form-action-btns justify-content-end">
                                     <a href="{{ route('edu-leads.index') }}" class="btn btn-secondary">
-                                        <i class="las la-times me-1"></i> Cancel
+                                        <i class="las la-times me-1"></i>
+                                        <span class="btn-label">Cancel</span>
                                     </a>
                                     <button type="submit" class="btn btn-primary" id="submitBtn">
-                                        <i class="las la-save me-1"></i> Create Lead
+                                        <i class="las la-save me-1"></i>
+                                        <span class="btn-label">Create Lead</span>
                                     </button>
                                 </div>
                             </div>

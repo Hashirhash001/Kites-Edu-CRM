@@ -364,13 +364,13 @@
         </div>
 
         <footer class="footer text-center text-sm-start d-print-none">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-12">
+            <div class="container-fluid" style="padding: 0 !important; margin: 0 !important;">
+                <div class="w-100" style="padding: 0 !important; margin: 0 !important;">
+                    <div class="w-100">
                         <div class="card mb-0 rounded-bottom-0">
                             <div class="card-body">
                                 <p class="text-muted mb-0">
-                                    © <span id="year"></span> Education CRM. All rights reserved.
+                                    {{-- © <span id="year"></span> Education CRM. All rights reserved. --}}
                                     <span class="text-muted d-none d-sm-inline-block float-end">
                                         Crafted with <i class="las la-heart text-danger"></i> for Education
                                     </span>

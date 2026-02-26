@@ -571,6 +571,722 @@
     }
     .followup-empty i { font-size: 3rem; opacity: .2; display: block; margin-bottom: .75rem; }
 
+    /* ── Card body ───────────────────────────────────────────────── */
+    .followup-card-body {
+        padding: .9rem 1.1rem;
+        display: flex;
+        flex-direction: column;
+        gap: .7rem;
+    }
+
+    /* ── People row ──────────────────────────────────────────────── */
+    .fu-people-row {
+        display: flex;
+        gap: 1.1rem;
+        flex-wrap: wrap;
+    }
+
+    .fu-person {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .fu-person-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
+        color: #fff;
+        font-size: .75rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 2px 6px rgba(99,102,241,.3);
+    }
+
+    .fu-person-avatar.avatar-grey {
+        background: linear-gradient(135deg, #94a3b8, #64748b);
+        box-shadow: 0 2px 6px rgba(100,116,139,.2);
+    }
+
+    .fu-person-info {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.25;
+    }
+
+    .fu-person-role {
+        font-size: .65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        color: #94a3b8;
+    }
+
+    .fu-person-name {
+        font-size: .8rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    /* ── Scheduled note strip ────────────────────────────────────── */
+    .fu-note-strip {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-left: 3px solid #94a3b8;
+        border-radius: 0 7px 7px 0;
+        padding: .5rem .8rem;
+        font-size: .8rem;
+        color: #334155;
+        font-weight: 500;
+        line-height: 1.55;
+    }
+    .fu-note-icon {
+        font-size: 1rem;
+        color: #94a3b8;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    /* ── Outcome wrapper ─────────────────────────────────────────── */
+    .fu-outcome-wrap {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    /* Outcome header */
+    .fu-outcome-head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: .45rem .85rem;
+        background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+        border-bottom: 1px solid #a7f3d0;
+        font-size: .72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: #065f46;
+    }
+    .fu-outcome-head i { font-size: .95rem; color: #10b981; }
+
+    /* Pills row */
+    .fu-outcome-pills {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0;
+        padding: .6rem .85rem;
+        border-bottom: 1px solid #f1f5f9;
+        background: #fafafa;
+    }
+
+    .fu-outcome-pill-group {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 3px;
+    }
+
+    .fu-pill-label {
+        font-size: .62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        color: #94a3b8;
+    }
+
+    .fu-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: .22rem .7rem;
+        border-radius: 20px;
+        font-size: .76rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .fu-pill-divider {
+        width: 1px;
+        height: 36px;
+        background: #e2e8f0;
+        margin: 0 .75rem;
+        flex-shrink: 0;
+    }
+
+    /* Outcome note */
+    .fu-outcome-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: .5rem .85rem;
+        background: #fffbeb;
+        border-bottom: 1px solid #fef3c7;
+        font-size: .8rem;
+        color: #78350f;
+        font-weight: 500;
+        line-height: 1.55;
+    }
+    .fu-outcome-note i {
+        font-size: 1rem;
+        color: #f59e0b;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    /* Next action */
+    .fu-next-action {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: .5rem .85rem;
+        background: #f5f3ff;
+        border-bottom: 1px solid #ede9fe;
+    }
+    .fu-next-action i {
+        font-size: 1.1rem;
+        color: #7c3aed;
+        flex-shrink: 0;
+    }
+    .fu-next-action > div {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+    .fu-next-label {
+        font-size: .62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        color: #a78bfa;
+    }
+    .fu-next-text {
+        font-size: .8rem;
+        font-weight: 600;
+        color: #4c1d95;
+    }
+
+    /* Completed stamp */
+    .fu-completed-stamp {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: .4rem .85rem;
+        background: #f0fdf4;
+        font-size: .76rem;
+        color: #166534;
+        font-weight: 500;
+    }
+    .fu-completed-stamp i       { font-size: .95rem; color: #16a34a; flex-shrink: 0; }
+    .fu-completed-stamp strong  { font-weight: 700; color: #15803d; }
+
+    /* Mobile */
+    @media (max-width: 575px) {
+        .followup-card-body   { padding: .75rem .85rem; gap: .55rem; }
+        .fu-outcome-pills     { gap: 0; padding: .5rem .75rem; }
+        .fu-pill-divider      { height: 28px; margin: 0 .5rem; }
+        .fu-person-avatar     { width: 28px; height: 28px; font-size: .7rem; }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+    FOLLOWUP TIMELINE — MOBILE (767px and below)
+    ══════════════════════════════════════════════════════════════ */
+    @media (max-width: 767px) {
+
+        /* Reduce outer padding */
+        .info-card > div[style*="padding"] {
+            padding: .75rem !important;
+        }
+
+        /* Info card header — wrap schedule button */
+        .info-card-header {
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: .7rem .85rem;
+        }
+        .info-card-header h5     { font-size: .88rem; }
+        .info-card-header .btn   { font-size: .75rem; padding: .28rem .65rem; }
+
+        /* Timeline vertical line — shift left for smaller badge */
+        .followup-timeline::before { left: 14px; }
+
+        /* Node — tighter gap */
+        .followup-node { gap: .65rem; padding-bottom: 1rem; }
+
+        /* Badge — smaller */
+        .followup-badge {
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
+            font-size: .72rem;
+        }
+
+        /* Card header — stack on small screens */
+        .followup-card-header {
+            padding: .55rem .75rem;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        .followup-card-header .fw-700 { font-size: .82rem !important; }
+
+        .followup-card-header .text-muted { font-size: .74rem !important; }
+
+        /* Status badge in header */
+        .followup-card-header .badge {
+            font-size: .68rem;
+            padding: .22rem .55rem !important;
+            align-self: flex-start;
+        }
+
+        /* Card body */
+        .followup-card-body { padding: .65rem .75rem; gap: .5rem; }
+
+        /* People row */
+        .fu-people-row        { gap: .75rem; }
+        .fu-person-avatar     { width: 28px; height: 28px; font-size: .7rem; }
+        .fu-person-role       { font-size: .6rem; }
+        .fu-person-name       { font-size: .76rem; }
+
+        /* Note strip */
+        .fu-note-strip        { font-size: .76rem; padding: .4rem .65rem; }
+        .fu-note-icon         { font-size: .88rem; }
+
+        /* Outcome wrap */
+        .fu-outcome-wrap      { border-radius: 7px; }
+        .fu-outcome-head      { padding: .35rem .7rem; font-size: .65rem; }
+
+        /* Pills row — wrap on mobile */
+        .fu-outcome-pills {
+            padding: .5rem .7rem;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        /* Remove vertical dividers on mobile — use gap instead */
+        .fu-pill-divider      { display: none; }
+
+        .fu-outcome-pill-group { gap: 2px; }
+        .fu-pill-label        { font-size: .58rem; }
+        .fu-pill              { font-size: .72rem; padding: .18rem .55rem; }
+
+        /* Outcome note / next action */
+        .fu-outcome-note,
+        .fu-next-action       { padding: .4rem .7rem; font-size: .76rem; }
+        .fu-outcome-note i,
+        .fu-next-action i     { font-size: .88rem; }
+        .fu-next-label        { font-size: .58rem; }
+        .fu-next-text         { font-size: .76rem; }
+
+        /* Completed stamp */
+        .fu-completed-stamp   { padding: .3rem .7rem; font-size: .7rem; }
+
+        /* Footer — wrap buttons */
+        .followup-card-footer {
+            padding: .45rem .75rem;
+            gap: 6px;
+        }
+
+        .followup-card-footer .btn {
+            font-size: .72rem;
+            padding: .25rem .6rem;
+            flex: 1 1 auto;
+            text-align: center;
+            justify-content: center;
+        }
+
+        /* Delete stays right */
+        .followup-card-footer .ms-auto {
+            margin-left: auto !important;
+            flex: 0 0 auto;
+        }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+    FOLLOWUP TIMELINE — SMALL PHONES (480px and below)
+    ══════════════════════════════════════════════════════════════ */
+    @media (max-width: 480px) {
+
+        .followup-timeline::before { left: 12px; }
+
+        .followup-node  { gap: .5rem; padding-bottom: .85rem; }
+
+        .followup-badge {
+            width: 26px;
+            height: 26px;
+            min-width: 26px;
+            font-size: .68rem;
+        }
+
+        .followup-card-header { padding: .5rem .65rem; }
+        .followup-card-body   { padding: .55rem .65rem; }
+        .followup-card-footer { padding: .4rem .65rem; }
+
+        /* Footer buttons — icon + short label */
+        .followup-card-footer .btn { font-size: .68rem; padding: .22rem .5rem; }
+
+        /* Outcome pills — single column */
+        .fu-outcome-pills {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            padding: .45rem .65rem;
+        }
+
+        .fu-outcome-pill-group {
+            flex-direction: row;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .fu-pill-label { min-width: 50px; }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+    TRACKING CARD
+    ══════════════════════════════════════════════════════════════ */
+
+    .tracking-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: .85rem 1.1rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-subtle);
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .tracking-card-header h5 {
+        font-size: .9rem;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-primary);
+    }
+
+    .tracking-edit-hint {
+        font-size: .7rem;
+        font-weight: 500;
+        color: #94a3b8;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: .15rem .65rem;
+        white-space: nowrap;
+    }
+
+    /* Section divider */
+    .tracking-section-divider {
+        font-size: .65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        color: #94a3b8;
+        padding: .4rem 1.1rem .25rem;
+        background: #f8fafc;
+        border-top: 1px solid #f1f5f9;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    /* Field row */
+    .tracking-field-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: .6rem 1.1rem;
+        border-bottom: 1px solid #f8fafc;
+        gap: 8px;
+        flex-wrap: wrap;   /* wraps on small screens */
+    }
+    .tracking-field-row:last-child { border-bottom: none; }
+
+    /* Label */
+    .tracking-label {
+        font-size: .78rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        min-width: 110px;
+    }
+    .tracking-label i { font-size: .9rem; }
+
+    /* Value wrap */
+    .tracking-value-wrap {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        flex: 1;
+        justify-content: flex-end;
+        min-width: 0;
+    }
+
+    /* Edit block — full width below the row */
+    .tracking-edit-block {
+        width: 100%;
+        padding: .5rem 0 .25rem;
+    }
+
+    /* Inline select */
+    .tracking-select {
+        display: none;
+        font-size: .8rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: .3rem .6rem;
+        background: #fff;
+        max-width: 100%;
+    }
+
+    /* Button group */
+    .tracking-btn-group {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* Edit pencil button */
+    .tracking-edit-btn {
+        background: none;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: .22rem .5rem;
+        font-size: .8rem;
+        color: #64748b;
+        cursor: pointer;
+        transition: all .2s;
+        flex-shrink: 0;
+    }
+    .tracking-edit-btn:hover {
+        background: #f0f4ff;
+        border-color: #c7d2fe;
+        color: #2563eb;
+    }
+
+    /* Save button */
+    .tracking-save-btn {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: .25rem .75rem;
+        font-size: .76rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        gap: 4px;
+        transition: all .2s;
+    }
+    .tracking-save-btn:hover { filter: brightness(1.07); }
+
+    /* Cancel button */
+    .tracking-cancel-btn {
+        background: #f1f5f9;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: .25rem .55rem;
+        font-size: .76rem;
+        cursor: pointer;
+        display: none;
+        transition: all .2s;
+    }
+    .tracking-cancel-btn:hover { background: #fee2e2; color: #b91c1c; }
+
+    /* Amount display */
+    .amount-display {
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+    .amount-display.has-value { color: #059669; font-weight: 700; }
+
+    /* ── Mobile ──────────────────────────────────────────────────── */
+    @media (max-width: 767px) {
+
+        .tracking-card-header  { padding: .7rem .85rem; }
+        .tracking-card-header h5 { font-size: .82rem; }
+
+        .tracking-section-divider { padding: .35rem .85rem .2rem; font-size: .62rem; }
+
+        .tracking-field-row {
+            padding: .5rem .85rem;
+            /* Stack label above value on very narrow */
+            align-items: flex-start;
+        }
+
+        .tracking-label {
+            min-width: 90px;
+            font-size: .74rem;
+        }
+
+        .tracking-value-wrap {
+            justify-content: flex-end;
+            font-size: .78rem;
+        }
+
+        /* Status pills smaller */
+        .status-pill { font-size: .72rem !important; padding: .2rem .55rem !important; }
+
+        .tracking-edit-hint { font-size: .65rem; padding: .12rem .5rem; }
+
+        /* Full width select in edit mode */
+        .tracking-select { width: 100%; }
+
+        /* Edit block inputs */
+        .tracking-edit-block .form-select,
+        .tracking-edit-block .form-control { font-size: .78rem; }
+
+        .amount-display { font-size: .8rem; }
+    }
+
+    @media (max-width: 480px) {
+
+        .tracking-field-row {
+            padding: .45rem .75rem;
+            /* Full stack — label on top, value below */
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+
+        .tracking-value-wrap {
+            justify-content: flex-start;
+            width: 100%;
+        }
+
+        .tracking-label { min-width: unset; }
+    }
+
+    /* ── Lead Header Card ───────────────────────────── */
+    .lead-header-name {
+        font-size: 1.5rem;
+        word-break: break-word;
+    }
+
+    /* Meta row — wraps naturally */
+    .lead-header-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 14px;
+        opacity: .9;
+        font-weight: 500;
+        font-size: .875rem;
+    }
+
+    .lead-meta-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+    }
+
+    .lead-meta-item i {
+        font-size: 1rem;
+    }
+
+    /* Action buttons row */
+    .lead-header-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+
+    .lead-header-actions .action-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+    }
+
+    /* ── ≤ 767px (tablets and below) ─────────────────── */
+    @media (max-width: 767px) {
+        .lead-header-actions {
+            justify-content: flex-start;
+        }
+    }
+
+    /* ── ≤ 480px (phones) ────────────────────────────── */
+    @media (max-width: 480px) {
+        .lead-header-name {
+            font-size: 1.2rem;
+        }
+
+        .lead-header-meta {
+            font-size: .8rem;
+            gap: 4px 10px;
+        }
+
+        .lead-header-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .lead-header-actions .action-button {
+            justify-content: center;
+            width: 100%;
+            padding: 6px 10px;
+            font-size: .8rem;
+        }
+    }
+
+    /* ── ≤ 360px (small phones) ──────────────────────── */
+    @media (max-width: 359px) {
+        .lead-header-name {
+            font-size: 1.05rem;
+        }
+
+        .lead-header-meta {
+            font-size: .75rem;
+        }
+
+        /* Stack all buttons full-width below 360px */
+        .lead-header-actions {
+            grid-template-columns: 1fr;
+        }
+
+        /* Hide text labels, icons only */
+        .lead-header-actions .btn-label {
+            display: none;
+        }
+
+        .lead-header-actions .action-button {
+            justify-content: center;
+            padding: 7px;
+        }
+
+        .lead-header-actions .action-button i {
+            font-size: 1.1rem;
+            margin: 0 !important;
+        }
+    }
+
+
 </style>
 @endsection
 
@@ -622,12 +1338,14 @@
             $canChangeStatus = $canEdit;
         @endphp
 
-        {{-- ── Lead Header (no final status here anymore) ──────────── --}}
+        {{-- ── Lead Header──────────── --}}
         <div class="lead-header-card">
             <div class="row align-items-center">
+
+                {{-- Left: Name + Badges + Meta --}}
                 <div class="col-md-8">
                     <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
-                        <h2 class="mb-0">{{ $eduLead->name }}</h2>
+                        <h2 class="mb-0 lead-header-name">{{ $eduLead->name }}</h2>
 
                         {{-- Institution type badge --}}
                         {!! $eduLead->institution_type_badge !!}
@@ -638,48 +1356,56 @@
                         @endif
                     </div>
 
-                    <p class="mb-0" style="opacity:.9; font-weight:500;">
-                        <i class="las la-tag me-1"></i>{{ $eduLead->lead_code }}
-                        <span class="ms-3">
-                            <i class="las la-calendar me-1"></i>{{ $eduLead->created_at->format('d M Y') }}
+                    <div class="lead-header-meta">
+                        <span class="lead-meta-item">
+                            <i class="las la-tag"></i>{{ $eduLead->lead_code }}
+                        </span>
+                        <span class="lead-meta-item">
+                            <i class="las la-calendar"></i>{{ $eduLead->created_at->format('d M Y') }}
                         </span>
                         @if($eduLead->branch)
-                        <span class="ms-3">
-                            <i class="las la-code-branch me-1"></i>{{ $eduLead->branch->name }}
+                        <span class="lead-meta-item">
+                            <i class="las la-code-branch"></i>{{ $eduLead->branch->name }}
                         </span>
                         @endif
                         @if($eduLead->assignedTo)
-                        <span class="ms-3">
-                            <i class="las la-user-check me-1"></i>{{ $eduLead->assignedTo->name }}
+                        <span class="lead-meta-item">
+                            <i class="las la-user-check"></i>{{ $eduLead->assignedTo->name }}
                         </span>
                         @endif
-                    </p>
+                    </div>
                 </div>
 
+                {{-- Right: Action Buttons --}}
                 <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                    <a href="{{ route('edu-leads.index') }}" class="btn btn-light action-button me-2">
-                        <i class="las la-arrow-left me-1"></i> Back
-                    </a>
+                    <div class="lead-header-actions">
+                        <a href="{{ route('edu-leads.index') }}" class="btn btn-light action-button">
+                            <i class="las la-arrow-left me-1"></i>
+                            <span class="btn-label">Back</span>
+                        </a>
 
-                    @if($canEdit)
-                    <a href="{{ route('edu-leads.edit', $eduLead->id) }}"
-                       class="btn btn-primary action-button me-2">
-                        <i class="las la-edit me-1"></i> Edit
-                    </a>
-                    @endif
+                        @if($canEdit)
+                        <a href="{{ route('edu-leads.edit', $eduLead->id) }}"
+                        class="btn btn-primary action-button">
+                            <i class="las la-edit me-1"></i>
+                            <span class="btn-label">Edit</span>
+                        </a>
+                        @endif
 
-                    @if($user->canDelete())
-                    <button type="button" class="btn btn-danger action-button"
-                            id="deleteLeadBtn"
-                            data-id="{{ $eduLead->id }}"
-                            data-name="{{ $eduLead->name }}">
-                        <i class="las la-trash me-1"></i> Delete
-                    </button>
-                    @endif
+                        @if($user->canDelete())
+                        <button type="button" class="btn btn-danger action-button"
+                                id="deleteLeadBtn"
+                                data-id="{{ $eduLead->id }}"
+                                data-name="{{ $eduLead->name }}">
+                            <i class="las la-trash me-1"></i>
+                            <span class="btn-label">Delete</span>
+                        </button>
+                        @endif
+                    </div>
                 </div>
+
             </div>
         </div>
-
 
         <div class="row">
 
@@ -696,19 +1422,18 @@
                             Application Tracking
                         </h5>
                         @if($canChangeStatus)
-                        <span class="badge bg-light text-muted border" style="font-size:0.72rem; font-weight:500;">
-                            <i class="las la-pen me-1"></i>Click ✎ to edit
+                        <span class="tracking-edit-hint">
+                            <i class="las la-pen me-1"></i>Tap ✎ to edit
                         </span>
                         @endif
                     </div>
 
-                    {{-- ── CRM STATUS ────────────────────────────────────── --}}
-                    <div class="tracking-section-divider">CRM Status</div>
+                    {{-- ── CANDIDATE LEAD STATUS ───────────────────────────── --}}
+                    <div class="tracking-section-divider">Candidate Lead Status</div>
 
-                    {{-- Final Status --}}
                     <div class="tracking-field-row" id="row-final_status">
                         <span class="tracking-label">
-                            <i class="las la-flag-checkered"></i>Final Status
+                            <i class="las la-flag-checkered"></i>Candidate Status
                         </span>
                         <div class="tracking-value-wrap">
                             <span class="tracking-display" id="display-final_status">
@@ -716,25 +1441,26 @@
                                     {{ $finalStatusLabels[$eduLead->final_status]['label'] ?? ucfirst($eduLead->final_status) }}
                                 </span>
                             </span>
-                            <select class="tracking-select" id="select-final_status"
-                                    data-field="final_status" data-lead="{{ $eduLead->id }}">
+                            <select class="tracking-select" id="select-final_status">
                                 @foreach($finalStatusLabels as $val => $meta)
                                     <option value="{{ $val }}" {{ $eduLead->final_status === $val ? 'selected' : '' }}>
                                         {{ $meta['label'] }}
                                     </option>
                                 @endforeach
                             </select>
-                            <button class="tracking-save-btn"   id="save-final_status">  <i class="las la-check"></i> Save   </button>
-                            <button class="tracking-cancel-btn" id="cancel-final_status"><i class="las la-times"></i></button>
+                            <div class="tracking-btn-group">
+                                <button class="tracking-save-btn"   id="save-final_status"><i class="las la-check"></i> Save</button>
+                                <button class="tracking-cancel-btn" id="cancel-final_status"><i class="las la-times"></i></button>
+                            </div>
                             @if($canChangeStatus)
-                            <button class="tracking-edit-btn" data-target="final_status" title="Edit Final Status">
+                            <button class="tracking-edit-btn" data-target="final_status" title="Edit">
                                 <i class="las la-pen"></i>
                             </button>
                             @endif
                         </div>
                     </div>
 
-                    {{-- ── NEXT ACTION STATUS ────────────────────────────── --}}
+                    {{-- ── NEXT ACTION STATUS ──────────────────────────────── --}}
                     <div class="tracking-section-divider">Next Action</div>
 
                     @php
@@ -747,36 +1473,30 @@
                         ];
                     @endphp
 
-                    <div class="tracking-field-row" id="row-status"
-                        style="flex-direction: column; align-items: flex-start; gap: 8px;">
-
-                        {{-- Top row: label + current pill + edit pencil --}}
-                        <div class="d-flex justify-content-between align-items-center w-100">
-                            <span class="tracking-label mb-0">
-                                <i class="las la-toggle-on"></i>Status
-                            </span>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="tracking-display" id="display-status">
-                                    @if($currentStatus && isset($statusLabels[$currentStatus]))
-                                        <span class="status-pill {{ $statusLabels[$currentStatus]['class'] }}">
-                                            {{ $statusLabels[$currentStatus]['label'] }}
-                                        </span>
-                                    @else
-                                        <span class="text-muted fw-normal" style="font-size:0.9rem;">—</span>
-                                    @endif
-                                </span>
-                                @if($canChangeStatus)
-                                <button class="tracking-edit-btn" data-target="status" title="Edit Status">
-                                    <i class="las la-pen"></i>
-                                </button>
+                    <div class="tracking-field-row" id="row-status">
+                        <span class="tracking-label">
+                            <i class="las la-toggle-on"></i>Status
+                        </span>
+                        <div class="tracking-value-wrap">
+                            <span class="tracking-display" id="display-status">
+                                @if($currentStatus && isset($statusLabels[$currentStatus]))
+                                    <span class="status-pill {{ $statusLabels[$currentStatus]['class'] }}">
+                                        {{ $statusLabels[$currentStatus]['label'] }}
+                                    </span>
+                                @else
+                                    <span class="text-muted fw-normal">—</span>
                                 @endif
-                            </div>
+                            </span>
+                            @if($canChangeStatus)
+                            <button class="tracking-edit-btn" data-target="status" title="Edit Status">
+                                <i class="las la-pen"></i>
+                            </button>
+                            @endif
                         </div>
 
-                        {{-- Bottom row: full-width dropdown + save/cancel buttons --}}
-                        <div class="w-100" id="status-edit-row" style="display: none;">
-                            <select class="form-select form-select-sm w-100"
-                                    id="select-status" data-field="status" data-lead="{{ $eduLead->id }}">
+                        {{-- Edit row — full width below --}}
+                        <div class="tracking-edit-block" id="status-edit-row" style="display:none;">
+                            <select class="form-select form-select-sm" id="select-status">
                                 <option value="">— Select Status —</option>
                                 @foreach($statusLabels as $val => $meta)
                                     <option value="{{ $val }}" {{ $currentStatus === $val ? 'selected' : '' }}>
@@ -784,7 +1504,7 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <div class="d-flex gap-2 mt-2">
+                            <div class="tracking-btn-group mt-2">
                                 <button class="btn btn-sm btn-success tracking-save-btn" id="save-status" type="button">
                                     <i class="las la-check"></i> Save
                                 </button>
@@ -793,14 +1513,12 @@
                                 </button>
                             </div>
                         </div>
-
                     </div>
 
-                    {{-- ── BOOKING DETAILS — shown only when status = booking ── --}}
+                    {{-- ── BOOKING DETAILS ─────────────────────────────────── --}}
                     @if($currentStatus === 'booking')
                     <div class="tracking-section-divider">Payment</div>
 
-                    {{-- Booking Payment (display only) --}}
                     <div class="tracking-field-row">
                         <span class="tracking-label">
                             <i class="las la-rupee-sign"></i>Booking Amt
@@ -816,7 +1534,6 @@
                         </div>
                     </div>
 
-                    {{-- Fees Collected (display only) --}}
                     <div class="tracking-field-row">
                         <span class="tracking-label">
                             <i class="las la-money-check-alt"></i>Fees Collected
@@ -833,7 +1550,7 @@
                     </div>
                     @endif
 
-                    {{-- ── APPLICATION NUMBER ────────────────────────────── --}}
+                    {{-- ── APPLICATION NUMBER ──────────────────────────────── --}}
                     <div class="tracking-section-divider">Application</div>
 
                     <div class="tracking-field-row">
@@ -843,51 +1560,52 @@
                         <div class="tracking-value-wrap">
                             @if($eduLead->application_number)
                                 <span class="badge bg-light text-dark border fw-semibold"
-                                    style="font-size:0.85rem; letter-spacing:0.3px;">
+                                    style="font-size:.85rem; letter-spacing:.3px;">
                                     {{ $eduLead->application_number }}
                                 </span>
                             @else
-                                <span class="text-muted fw-normal" style="font-size:0.9rem;">—</span>
+                                <span class="text-muted fw-normal">—</span>
                             @endif
                         </div>
                     </div>
 
-                    {{-- ── CANCELLATION REASON — shown only when status = cancelled ── --}}
+                    {{-- ── CANCELLATION REASON ─────────────────────────────── --}}
                     @if($currentStatus === 'cancelled' || $eduLead->cancellation_reason)
                     <div class="tracking-section-divider">Cancellation</div>
 
-                    <div class="tracking-field-row" id="row-cancellation_reason"
-                        style="flex-direction:column; align-items:flex-start; gap:6px;">
-                        <div class="d-flex justify-content-between w-100 align-items-center">
-                            <span class="tracking-label mb-0">
-                                <i class="las la-ban"></i>Cancel Reason
+                    <div class="tracking-field-row" id="row-cancellation_reason">
+                        <span class="tracking-label">
+                            <i class="las la-ban"></i>Cancel Reason
+                        </span>
+                        <div class="tracking-value-wrap">
+                            <span class="tracking-display text-muted small"
+                                id="display-cancellation_reason">
+                                {{ $eduLead->cancellation_reason ?? '—' }}
                             </span>
                             @if($canEdit)
-                            <button class="tracking-edit-btn" data-target="cancellation_reason"
-                                    data-type="input" title="Edit Cancellation Reason">
+                            <button class="tracking-edit-btn"
+                                    data-target="cancellation_reason"
+                                    data-type="input" title="Edit">
                                 <i class="las la-pen"></i>
                             </button>
                             @endif
                         </div>
-                        <span class="tracking-display text-muted small"
-                            id="display-cancellation_reason" style="width:100%;">
-                            {{ $eduLead->cancellation_reason ?? '—' }}
-                        </span>
-                        <input type="text" class="tracking-input w-100"
-                            id="input-cancellation_reason"
-                            data-field="cancellation_reason"
-                            data-lead="{{ $eduLead->id }}"
-                            value="{{ $eduLead->cancellation_reason ?? '' }}"
-                            placeholder="Reason for cancellation...">
-                        <div class="d-flex gap-2">
-                            <button class="tracking-save-btn"   id="save-cancellation_reason">  <i class="las la-check"></i> Save   </button>
-                            <button class="tracking-cancel-btn" id="cancel-cancellation_reason"><i class="las la-times"></i></button>
+
+                        <div class="tracking-edit-block" id="edit-block-cancellation_reason" style="display:none;">
+                            <input type="text"
+                                class="form-control form-control-sm"
+                                id="input-cancellation_reason"
+                                value="{{ $eduLead->cancellation_reason ?? '' }}"
+                                placeholder="Reason for cancellation...">
+                            <div class="tracking-btn-group mt-2">
+                                <button class="tracking-save-btn"   id="save-cancellation_reason"><i class="las la-check"></i> Save</button>
+                                <button class="tracking-cancel-btn" id="cancel-cancellation_reason"><i class="las la-times"></i></button>
+                            </div>
                         </div>
                     </div>
                     @endif
 
                 </div>
-
 
                 {{-- ── CURRENT INSTITUTION ────────────────────────────── --}}
                 <div class="info-card">
@@ -1298,7 +2016,7 @@
                         };
                     @endphp
 
-                    <div style="padding: 1.25rem;">
+                    <div class="followup-timeline-wrap">
                         @if($followups->isEmpty())
                             <div class="followup-empty">
                                 <i class="las la-calendar-times"></i>
@@ -1355,13 +2073,13 @@
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             @if($isCompleted)
-                                                <span class="badge bg-success">✅ Completed</span>
+                                                <span class="badge bg-success" style="padding: 8px 8px;">✅ Completed</span>
                                             @elseif($isOverdue)
-                                                <span class="badge bg-danger">⚠️ Overdue</span>
+                                                <span class="badge bg-danger" style="padding: 8px 8px;">⚠️ Overdue</span>
                                             @elseif($isToday)
-                                                <span class="badge bg-warning text-dark">🔔 Due Today</span>
+                                                <span class="badge bg-warning text-dark" style="padding: 8px 8px;">🔔 Due Today</span>
                                             @else
-                                                <span class="badge bg-info text-dark">🕐 Upcoming</span>
+                                                <span class="badge bg-info text-white" style="padding: 8px 8px;">🕐 Upcoming</span>
                                             @endif
                                         </div>
                                     </div>
@@ -1369,85 +2087,104 @@
                                     {{-- Body --}}
                                     <div class="followup-card-body">
 
-                                        @if($fu->notes)
-                                        <div class="mb-2 small text-muted">
-                                            <i class="las la-sticky-note me-1"></i>{{ $fu->notes }}
+                                        {{-- ── People row ─────────────────────────────────────────── --}}
+                                        @if($fu->createdBy)
+                                        <div class="fu-people-row">
+                                            <div class="fu-person">
+                                                <div class="fu-person-avatar avatar-grey">
+                                                    {{ strtoupper(substr($fu->createdBy->name, 0, 1)) }}
+                                                </div>
+                                                <div class="fu-person-info">
+                                                    <span class="fu-person-role">Logged by</span>
+                                                    <span class="fu-person-name">{{ $fu->createdBy->name }}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                         @endif
 
-                                        <div class="d-flex gap-3 flex-wrap" style="font-size:.8rem; color:#64748b;">
-                                            @if($fu->assignedToUser)
-                                            <span>
-                                                <i class="las la-user-check me-1"></i>{{ $fu->assignedToUser->name }}
-                                            </span>
-                                            @endif
-                                            @if($fu->createdBy)
-                                            <span>
-                                                <i class="las la-user-edit me-1"></i>Created by {{ $fu->createdBy->name }}
-                                            </span>
-                                            @endif
+                                        {{-- ── Scheduled note ──────────────────────────────────────── --}}
+                                        @if($fu->notes)
+                                        <div class="fu-note-strip">
+                                            <i class="las la-sticky-note fu-note-icon"></i>
+                                            <span>{{ $fu->notes }}</span>
                                         </div>
+                                        @endif
 
-                                        {{-- Outcome block --}}
+                                        {{-- ── Outcome (completed only) ────────────────────────────── --}}
                                         @if($isCompleted && $fu->outcome_final_status)
-                                        <div class="outcome-block mt-3">
-                                            <div class="outcome-block-header">
-                                                <i class="las la-check-circle me-1"></i>Outcome
+                                        <div class="fu-outcome-wrap">
+
+                                            {{-- Outcome header --}}
+                                            <div class="fu-outcome-head">
+                                                <i class="las la-clipboard-check"></i>
+                                                <span>Outcome Summary</span>
                                             </div>
 
-                                            <div class="status-progression">
-                                                <span class="small text-muted fw-semibold">Final Status:</span>
+                                            {{-- Status pills --}}
+                                            <div class="fu-outcome-pills">
                                                 @if($outcomeFinalMeta)
-                                                <span class="outcome-pill"
-                                                    style="background:{{ $outcomeFinalMeta['bg'] }};
-                                                            color:{{ $outcomeFinalMeta['color'] }};">
-                                                    {{ $outcomeFinalMeta['label'] }}
-                                                </span>
+                                                <div class="fu-outcome-pill-group">
+                                                    <span class="fu-pill-label">Status</span>
+                                                    <span class="fu-pill" style="background:{{ $outcomeFinalMeta['bg'] }}; color:{{ $outcomeFinalMeta['color'] }};">
+                                                        {{ $outcomeFinalMeta['label'] }}
+                                                    </span>
+                                                </div>
                                                 @endif
 
                                                 @if($fu->outcome_interest && $outcomeInterest)
-                                                <span class="progression-arrow">·</span>
-                                                <span class="outcome-pill"
-                                                    style="background:{{ $outcomeInterest['bg'] }};
-                                                            color:{{ $outcomeInterest['color'] }};">
-                                                    @if($fu->outcome_interest === 'hot') 🔥
-                                                    @elseif($fu->outcome_interest === 'warm') ☀️
-                                                    @else ❄️ @endif
-                                                    {{ ucfirst($fu->outcome_interest) }}
-                                                </span>
+                                                <div class="fu-pill-divider"></div>
+                                                <div class="fu-outcome-pill-group">
+                                                    <span class="fu-pill-label">Interest</span>
+                                                    <span class="fu-pill" style="background:{{ $outcomeInterest['bg'] }}; color:{{ $outcomeInterest['color'] }};">
+                                                        @if($fu->outcome_interest === 'hot') 🔥
+                                                        @elseif($fu->outcome_interest === 'warm') ☀️
+                                                        @else ❄️ @endif
+                                                        {{ ucfirst($fu->outcome_interest) }}
+                                                    </span>
+                                                </div>
                                                 @endif
 
                                                 @if($fu->outcome_status)
-                                                <span class="progression-arrow">·</span>
-                                                <span class="outcome-pill"
-                                                    style="background:#f0f9ff; color:#0369a1;">
-                                                    {{ $nextActionLabelsLocal[$fu->outcome_status] ?? $fu->outcome_status }}
-                                                </span>
+                                                <div class="fu-pill-divider"></div>
+                                                <div class="fu-outcome-pill-group">
+                                                    <span class="fu-pill-label">Next Step</span>
+                                                    <span class="fu-pill" style="background:#e0f2fe; color:#0369a1;">
+                                                        {{ $nextActionLabelsLocal[$fu->outcome_status] ?? $fu->outcome_status }}
+                                                    </span>
+                                                </div>
                                                 @endif
                                             </div>
 
+                                            {{-- Outcome notes --}}
                                             @if($fu->outcome_notes)
-                                            <div class="mt-2 small" style="color:#374151; line-height:1.5;">
-                                                <i class="las la-comment-alt me-1 text-muted"></i>{{ $fu->outcome_notes }}
+                                            <div class="fu-outcome-note">
+                                                <i class="las la-comment-dots"></i>
+                                                <span>{{ $fu->outcome_notes }}</span>
                                             </div>
                                             @endif
 
+                                            {{-- Next action --}}
                                             @if($fu->next_action)
-                                            <div class="mt-2 small" style="color:#6d28d9;">
-                                                <i class="las la-arrow-right me-1"></i>
-                                                <strong>Next:</strong> {{ $fu->next_action }}
+                                            <div class="fu-next-action">
+                                                <i class="las la-tasks"></i>
+                                                <div>
+                                                    <span class="fu-next-label">Next Action</span>
+                                                    <span class="fu-next-text">{{ $fu->next_action }}</span>
+                                                </div>
                                             </div>
                                             @endif
 
+                                            {{-- Completed stamp --}}
                                             @if($fu->completed_at)
-                                            <div class="mt-2" style="font-size:.72rem; color:#94a3b8;">
-                                                <i class="las la-check me-1"></i>
-                                                Completed {{ $fu->completed_at->format('d M Y, h:i A') }}
-                                                @if($fu->assignedToUser)
-                                                    by {{ $fu->assignedToUser->name }}
-                                                @endif
+                                            <div class="fu-completed-stamp">
+                                                <i class="las la-check-circle"></i>
+                                                <span>
+                                                    Completed on <strong>{{ $fu->completed_at->format('d M Y') }}</strong>
+                                                    at <strong>{{ $fu->completed_at->format('h:i A') }}</strong>
+                                                </span>
                                             </div>
                                             @endif
+
                                         </div>
                                         @endif
 
@@ -1804,16 +2541,16 @@
 
                 <div class="modal-body">
 
-                    {{-- Final Status --}}
+                    {{-- Candidate Status --}}
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
                             <i class="las la-flag-checkered me-1 text-primary"></i>
-                            Final Status <span class="text-danger">*</span>
+                            Candidate Status <span class="text-danger">*</span>
                             <small class="text-muted fw-normal ms-1">— what is the lead's status now?</small>
                         </label>
                         <select class="form-select" name="outcome_final_status"
                                 id="outcomeFinalStatus" required>
-                            <option value="">— Select final status —</option>
+                            <option value="">— Select Candidate status —</option>
                             <option value="pending">⏳ Pending</option>
                             <option value="not_attended">🚫 Not Attended</option>
                             <option value="contacted">📞 Contacted</option>
@@ -1979,7 +2716,7 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">
                                     <i class="las la-flag-checkered me-1 text-primary"></i>
-                                    Final Status
+                                    Candidate Status
                                 </label>
                                 <select class="form-select" name="outcome_final_status"
                                         id="editOutcomeFinalStatus">
