@@ -144,11 +144,17 @@
                         {{ \Carbon\Carbon::parse($latestFu->followup_time)->format('h:i A') }}
                     </span>
                 @endif
-                @if($latestFu->notes)
+                @php
+                    $fuNote = $isComplete && $latestFu->outcome_notes
+                        ? $latestFu->outcome_notes
+                        : $latestFu->notes;
+                @endphp
+                @if($fuNote)
                     <div class="text-muted mt-1" style="max-width:160px; white-space:normal; font-size:.72rem; line-height:1.3;">
-                        {{ Str::limit($latestFu->notes, 55) }}
+                        {{ Str::limit($fuNote, 55) }}
                     </div>
                 @endif
+
                 @if($isComplete)
                     <span style="font-size:.7rem; color:#16a34a;"><i class="las la-check-circle"></i> Done</span>
                 @elseif($isOverdue)
@@ -188,8 +194,6 @@
             <span class="small text-muted">{{ implode(', ', array_filter([$lead->state, $lead->district])) }}</span>
         @else <span class="text-muted">—</span> @endif
     </td>
-
-    {{-- ✂️ Preferred State column REMOVED --}}
 
     <td>
         @if($lead->course)

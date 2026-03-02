@@ -959,6 +959,7 @@ class EduLeadController extends Controller
                     'pending', 'contacted', 'follow_up', 'admitted',
                     'not_interested', 'dropped', 'not_attended',
                 ])],
+                'call_status' => ['nullable', Rule::in(['contacted', 'not_attended'])],
                 'outcome_status'   => ['nullable', Rule::in([
                     'whatsapp_link_submitted', 'application_form_submitted',
                     'booking', 'cancelled',
@@ -988,6 +989,10 @@ class EduLeadController extends Controller
 
             if (!empty($validated['outcome_status'])) {
                 $leadUpdates['status'] = $validated['outcome_status'];
+            }
+
+            if (!empty($validated['call_status'])) {
+                $leadUpdates['call_status'] = $validated['call_status'];
             }
 
             if (!empty($validated['outcome_interest'])) {
@@ -1081,6 +1086,7 @@ class EduLeadController extends Controller
                     'pending', 'contacted', 'follow_up', 'admitted',
                     'not_interested', 'dropped', 'not_attended',
                 ])],
+                'call_status' => ['nullable', Rule::in(['contacted', 'not_attended', ''])],
                 'outcome_status'       => ['nullable', Rule::in([
                     'whatsapp_link_submitted', 'application_form_submitted',
                     'booking', 'cancelled', '',
@@ -1096,7 +1102,7 @@ class EduLeadController extends Controller
             }
 
             // Treat empty strings as null for nullable fields
-            foreach (['outcome_status', 'outcome_interest'] as $field) {
+            foreach (['outcome_status', 'outcome_interest', 'call_status'] as $field) {
                 if (isset($validated[$field]) && $validated[$field] === '') {
                     $validated[$field] = null;
                 }
@@ -1111,6 +1117,10 @@ class EduLeadController extends Controller
             if (!empty($validated['outcome_final_status'])) {
                 $leadUpdates['final_status'] = $validated['outcome_final_status'];
             }
+            if (!empty($validated['call_status'])) {
+                $leadUpdates['call_status'] = $validated['call_status'];
+            }
+
             if (!empty($validated['outcome_status'])) {
                 $leadUpdates['status'] = $validated['outcome_status'];
             }

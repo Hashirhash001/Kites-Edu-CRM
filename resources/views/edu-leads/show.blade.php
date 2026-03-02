@@ -2096,6 +2096,13 @@
 
                                 $outcomeFinalMeta = $finalStatusLabelsLocal[$fu->outcome_final_status] ?? null;
                                 $outcomeInterest  = $interestColors[$fu->outcome_interest] ?? null;
+
+                                // ✅ ADD THIS — mirrors the same pattern as $outcomeFinalMeta
+                                $callStatusColors = [
+                                    'contacted'    => ['label' => '📞 Contacted',    'bg' => '#dcfce7', 'color' => '#15803d'],
+                                    'not_attended' => ['label' => '🚫 Not Attended', 'bg' => '#fef9c3', 'color' => '#854d0e'],
+                                ];
+                                $callStatusMeta = $callStatusColors[$eduLead->call_status] ?? null;
                             @endphp
 
                             <div class="followup-node" id="followup-node-{{ $fu->id }}">
@@ -2176,9 +2183,29 @@
                                             <div class="fu-outcome-pills">
                                                 @if($outcomeFinalMeta)
                                                 <div class="fu-outcome-pill-group">
-                                                    <span class="fu-pill-label">Status</span>
+                                                    <span class="fu-pill-label">Candidate Status</span>
                                                     <span class="fu-pill" style="background:{{ $outcomeFinalMeta['bg'] }}; color:{{ $outcomeFinalMeta['color'] }};">
                                                         {{ $outcomeFinalMeta['label'] }}
+                                                    </span>
+                                                </div>
+                                                @endif
+
+                                                @if($callStatusMeta)
+                                                <div class="fu-pill-divider"></div>
+                                                <div class="fu-outcome-pill-group">
+                                                    <span class="fu-pill-label">Call Status</span>
+                                                    <span class="fu-pill" style="background:{{ $callStatusMeta['bg'] }}; color:{{ $callStatusMeta['color'] }};">
+                                                        {{ $callStatusMeta['label'] }}
+                                                    </span>
+                                                </div>
+                                                @endif
+
+                                                @if($fu->outcome_status)
+                                                <div class="fu-pill-divider"></div>
+                                                <div class="fu-outcome-pill-group">
+                                                    <span class="fu-pill-label">Counseling Stage</span>
+                                                    <span class="fu-pill" style="background:#e0f2fe; color:#0369a1;">
+                                                        {{ $nextActionLabelsLocal[$fu->outcome_status] ?? $fu->outcome_status }}
                                                     </span>
                                                 </div>
                                                 @endif
@@ -2192,16 +2219,6 @@
                                                         @elseif($fu->outcome_interest === 'warm') ☀️
                                                         @else ❄️ @endif
                                                         {{ ucfirst($fu->outcome_interest) }}
-                                                    </span>
-                                                </div>
-                                                @endif
-
-                                                @if($fu->outcome_status)
-                                                <div class="fu-pill-divider"></div>
-                                                <div class="fu-outcome-pill-group">
-                                                    <span class="fu-pill-label">Counseling Stage</span>
-                                                    <span class="fu-pill" style="background:#e0f2fe; color:#0369a1;">
-                                                        {{ $nextActionLabelsLocal[$fu->outcome_status] ?? $fu->outcome_status }}
                                                     </span>
                                                 </div>
                                                 @endif
@@ -2254,6 +2271,7 @@
                                                 data-final-status="{{ $eduLead->final_status }}"
                                                 data-status="{{ $eduLead->status }}"
                                                 data-interest="{{ $eduLead->interest_level }}"
+                                                data-call-status="{{ $eduLead->call_status ?? '' }}"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#completeFollowupModal">
                                             <i class="las la-check me-1"></i>Mark {{ $displayOrdinal }} Complete
@@ -2269,6 +2287,7 @@
                                                 data-notes="{{ $fu->notes ?? '' }}"
                                                 data-priority="{{ $fu->priority ?? 'medium' }}"
                                                 data-outcome-final-status="{{ $fu->outcome_final_status ?? '' }}"
+                                                data-outcome-call-status="{{ $eduLead->call_status ?? '' }}"
                                                 data-outcome-status="{{ $fu->outcome_status ?? '' }}"
                                                 data-outcome-interest="{{ $fu->outcome_interest ?? '' }}"
                                                 data-outcome-notes="{{ $fu->outcome_notes ?? '' }}"
@@ -2611,6 +2630,19 @@
                         </select>
                     </div>
 
+                    {{-- Call Status --}}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="las la-phone me-1 text-success"></i> Call Status
+                            <small class="text-muted fw-normal ms-1"> how was the call?</small>
+                        </label>
+                        <select class="form-select" name="call_status" id="outcomeCallStatus">
+                            <option value="">— No Change —</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="not_attended">Not Attended</option>
+                        </select>
+                    </div>
+
                     {{-- Counseling Stage --}}
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
@@ -2776,6 +2808,17 @@
                                     <option value="admitted">✅ Admitted</option>
                                     <option value="not_interested">❌ Not Interested</option>
                                     <option value="dropped">🚫 Dropped</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="las la-phone me-1 text-success"></i> Call Status
+                                </label>
+                                <select class="form-select" name="call_status" id="editOutcomeCallStatus">
+                                    <option value="">— No Change —</option>
+                                    <option value="contacted">Contacted</option>
+                                    <option value="not_attended">Not Attended</option>
                                 </select>
                             </div>
 
@@ -3277,6 +3320,7 @@ $(document).ready(function () {
         const notes               = $(this).data('notes')               || '';
         const priority            = $(this).data('priority')            || 'medium';
         const outcomeFinalStatus  = $(this).data('outcome-final-status')|| '';
+        const callStatus    = $(this).data('outcome-call-status')  || '';
         const outcomeStatus       = $(this).data('outcome-status')      || '';
         const outcomeInterest     = $(this).data('outcome-interest')    || '';
         const outcomeNotes        = $(this).data('outcome-notes')       || '';
@@ -3293,6 +3337,7 @@ $(document).ready(function () {
 
         // Outcome fields
         $('#editOutcomeFinalStatus').val(outcomeFinalStatus);
+        $('#editOutcomeCallStatus').val(callStatus);
         $('#editOutcomeStatus').val(outcomeStatus);
         $('#editOutcomeNotes').val(outcomeNotes);
         $('#editNextAction').val(nextAction);
