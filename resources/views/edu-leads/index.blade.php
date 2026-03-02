@@ -1082,7 +1082,8 @@
                             <th class="sortable" data-column="lead_code">Lead Code</th>
                             <th class="sortable" data-column="name">Name</th>
                             <th class="sortable" data-column="phone">Phone</th>
-                            <th class="sortable" data-column="final_status">Status</th>
+                            <th class="sortable" data-column="final_status">Candidate Status</th>
+                            <th>Call Status</th>
                             <th>Followups</th>
                             <th>Latest Followup</th>
                             <th class="sortable" data-column="interest_level">Interest</th>

@@ -90,6 +90,15 @@
 
     <td><span class="fs-badge {{ $s['class'] }}">{{ $s['label'] }}</span></td>
 
+    {{-- ✨ Call Status --}}
+    <td>
+        @if($lead->call_status)
+            {!! $lead->call_status_badge !!}
+        @else
+            <span class="text-muted small">—</span>
+        @endif
+    </td>
+
     {{-- Followups count --}}
     <td>
         @if($totalFu > 0)
@@ -278,6 +287,14 @@
                             {{ $interestIcons[$lead->interest_level] }} {{ ucfirst($lead->interest_level) }}
                         </span>
                     </span>
+                </div>
+                @endif
+
+                {{-- ✨ Call Status --}}
+                @if($lead->call_status)
+                <div class="lm-field">
+                    <span class="lm-field-label"><i class="las la-phone-volume"></i> Call Status</span>
+                    <span class="lm-field-val">{!! $lead->call_status_badge !!}</span>
                 </div>
                 @endif
 
