@@ -3,13 +3,13 @@
     $authUser = auth()->user();
 
     $statusLabels = [
-        'pending'        => ['label' => '⏳ Pending',       'class' => 'fs-pending'],
-        'contacted'      => ['label' => '📞 Contacted',     'class' => 'fs-contacted'],
-        'not_attended'   => ['label' => '🚫 Not Attended',  'class' => 'fs-notattended'],
-        'follow_up'      => ['label' => '🔔 Follow Up',     'class' => 'fs-follow_up'],
-        'admitted'       => ['label' => '✅ Admitted',       'class' => 'fs-admitted'],
-        'not_interested' => ['label' => '❌ Not Interested', 'class' => 'fs-not_interested'],
-        'dropped'        => ['label' => '🚫 Dropped',        'class' => 'fs-dropped'],
+        'pending'        => ['label' => '⏳ Pending',        'class' => 'fs-pending'],
+        'contacted'      => ['label' => '📞 Contacted',      'class' => 'fs-contacted'],
+        'not_attended'   => ['label' => '🚫 Not Attended',   'class' => 'fs-notattended'],
+        'follow_up'      => ['label' => '🔔 Follow Up',      'class' => 'fs-followup'],
+        'admitted'       => ['label' => '✅ Admitted',        'class' => 'fs-admitted'],
+        'not_interested' => ['label' => '❌ Not Interested',  'class' => 'fs-notinterested'],
+        'dropped'        => ['label' => '🚫 Dropped',         'class' => 'fs-dropped'],
     ];
 
     $interestIcons = ['hot' => '🔥', 'warm' => '☀️', 'cold' => '❄️'];
@@ -19,10 +19,10 @@
 @php
     $s = $statusLabels[$lead->final_status] ?? [
         'label' => ucfirst(str_replace('_', ' ', $lead->final_status ?? '')),
-        'class' => 'fs-pending'
+        'class' => 'fs-pending',
     ];
 
-    $totalFu   = $lead->followups->count();
+    $totalFu   = $lead->followups_count;  // ✨ use withCount — no extra query
     $pendingFu = $lead->followups->where('status', 'pending')->count();
     $doneFu    = $lead->followups->where('status', 'completed')->count();
     $overdueFu = $lead->followups->filter(fn($f) =>
@@ -34,6 +34,9 @@
         \Carbon\Carbon::parse($f->followup_date)->isToday()
     )->count();
 
+    // ✨ Latest followup — first() because the relation is ordered latest first
+    $latestFu = $lead->latestFollowup;
+
     $dept = match($lead->institution_type) {
         'school'  => $lead->school_department,
         'college' => $lead->college_department,
@@ -42,7 +45,7 @@
 @endphp
 
 {{-- ════════════════════════════════════════════════════
-     DESKTOP ROW — unchanged, hidden on mobile via CSS
+     DESKTOP ROW
 ════════════════════════════════════════════════════ --}}
 <tr class="leads-desktop-view">
 
@@ -87,6 +90,7 @@
 
     <td><span class="fs-badge {{ $s['class'] }}">{{ $s['label'] }}</span></td>
 
+    {{-- Followups count --}}
     <td>
         @if($totalFu > 0)
         <div class="d-flex flex-column gap-1" style="min-width:80px;">
@@ -104,6 +108,46 @@
                 <span class="badge bg-success" style="font-size:10px;"><i class="las la-check"></i> {{ $doneFu }} done</span>
             @endif
         </div>
+        @else
+            <span class="text-muted small">—</span>
+        @endif
+    </td>
+
+    {{-- ✨ Latest Followup --}}
+    <td style="min-width:140px;">
+        @if($latestFu)
+            @php
+                $fuDate     = \Carbon\Carbon::parse($latestFu->followup_date);
+                $isOverdue  = $latestFu->status === 'pending' && $fuDate->isPast() && !$fuDate->isToday();
+                $isToday    = $latestFu->status === 'pending' && $fuDate->isToday();
+                $isComplete = $latestFu->status === 'completed';
+                $dateBadge  = $isOverdue  ? 'bg-danger'
+                            : ($isToday   ? 'bg-warning text-dark'
+                            : ($isComplete? 'bg-success'
+                                          : 'bg-info text-dark'));
+            @endphp
+            <div style="font-size:.78rem; line-height:1.5;">
+                <span class="badge {{ $dateBadge }}">
+                    <i class="las la-calendar me-1"></i>{{ $fuDate->format('d M Y') }}
+                </span>
+                @if($latestFu->followup_time)
+                    <span class="text-muted ms-1" style="font-size:.72rem;">
+                        {{ \Carbon\Carbon::parse($latestFu->followup_time)->format('h:i A') }}
+                    </span>
+                @endif
+                @if($latestFu->notes)
+                    <div class="text-muted mt-1" style="max-width:160px; white-space:normal; font-size:.72rem; line-height:1.3;">
+                        {{ Str::limit($latestFu->notes, 55) }}
+                    </div>
+                @endif
+                @if($isComplete)
+                    <span style="font-size:.7rem; color:#16a34a;"><i class="las la-check-circle"></i> Done</span>
+                @elseif($isOverdue)
+                    <span style="font-size:.7rem; color:#dc2626;"><i class="las la-exclamation-circle"></i> Overdue</span>
+                @elseif($isToday)
+                    <span style="font-size:.7rem; color:#d97706;"><i class="las la-bell"></i> Today</span>
+                @endif
+            </div>
         @else
             <span class="text-muted small">—</span>
         @endif
@@ -136,10 +180,7 @@
         @else <span class="text-muted">—</span> @endif
     </td>
 
-    <td>
-        @if($lead->preferred_state) <span class="small text-muted">{{ $lead->preferred_state }}</span>
-        @else <span class="text-muted">—</span> @endif
-    </td>
+    {{-- ✂️ Preferred State column REMOVED --}}
 
     <td>
         @if($lead->course)
@@ -192,13 +233,13 @@
 </tr>
 
 {{-- ════════════════════════════════════════════════════
-     MOBILE CARD ROW — hidden on desktop via CSS
+     MOBILE CARD ROW
 ════════════════════════════════════════════════════ --}}
 <tr class="leads-mobile-cards">
     <td colspan="18" style="padding: .5rem .75rem; border-bottom: 2px solid #e2e8f0;">
         <div class="lm-card">
 
-            {{-- ── Top row: name + status ───────────────────── --}}
+            {{-- Top row: name + status --}}
             <div class="lm-top">
                 <div class="lm-name-block">
                     @if($authUser->canAssignLeads())
@@ -209,19 +250,16 @@
                            data-branch-name="{{ $lead->branch?->name }}">
                     @endif
                     <div>
-                        <a href="{{ route('edu-leads.show', $lead->id) }}" class="lm-name">
-                            {{ $lead->name }}
-                        </a>
+                        <a href="{{ route('edu-leads.show', $lead->id) }}" class="lm-name">{{ $lead->name }}</a>
                         <span class="lm-code">{{ $lead->lead_code }}</span>
                     </div>
                 </div>
                 <span class="fs-badge {{ $s['class'] }}">{{ $s['label'] }}</span>
             </div>
 
-            {{-- ── Info grid ───────────────────────────────────── --}}
+            {{-- Info grid --}}
             <div class="lm-grid">
 
-                {{-- Phone --}}
                 <div class="lm-field">
                     <span class="lm-field-label"><i class="las la-phone"></i> Phone</span>
                     <span class="lm-field-val">
@@ -232,7 +270,6 @@
                     </span>
                 </div>
 
-                {{-- Interest --}}
                 @if($lead->interest_level)
                 <div class="lm-field">
                     <span class="lm-field-label"><i class="las la-fire"></i> Interest</span>
@@ -244,15 +281,13 @@
                 </div>
                 @endif
 
-                {{-- Institution --}}
-                @if($lead->institution_summary)
+                @if($lead->institution_summary !== 'N/A')
                 <div class="lm-field">
                     <span class="lm-field-label"><i class="las la-school"></i> Institution</span>
                     <span class="lm-field-val">{{ Str::limit($lead->institution_summary, 32) }}</span>
                 </div>
                 @endif
 
-                {{-- Department --}}
                 @if($dept)
                 <div class="lm-field">
                     <span class="lm-field-label"><i class="las la-layer-group"></i> Department</span>
@@ -260,7 +295,6 @@
                 </div>
                 @endif
 
-                {{-- Course --}}
                 @if($lead->course)
                 <div class="lm-field">
                     <span class="lm-field-label"><i class="las la-book"></i> Course</span>
@@ -268,7 +302,6 @@
                 </div>
                 @endif
 
-                {{-- Assigned To --}}
                 <div class="lm-field">
                     <span class="lm-field-label"><i class="las la-user-check"></i> Assigned</span>
                     <span class="lm-field-val">
@@ -280,7 +313,6 @@
                     </span>
                 </div>
 
-                {{-- Source --}}
                 @if($lead->leadSource)
                 <div class="lm-field">
                     <span class="lm-field-label"><i class="las la-bullhorn"></i> Source</span>
@@ -288,7 +320,6 @@
                 </div>
                 @endif
 
-                {{-- Location --}}
                 @if($lead->state || $lead->district)
                 <div class="lm-field">
                     <span class="lm-field-label"><i class="las la-map-pin"></i> Location</span>
@@ -296,7 +327,19 @@
                 </div>
                 @endif
 
-                {{-- Created --}}
+                {{-- ✨ Latest Followup on mobile --}}
+                @if($latestFu)
+                <div class="lm-field" style="grid-column: span 2;">
+                    <span class="lm-field-label"><i class="las la-history"></i> Latest Followup</span>
+                    <span class="lm-field-val">
+                        <span class="badge {{ $dateBadge }}">{{ $fuDate->format('d M Y') }}</span>
+                        @if($latestFu->notes)
+                            <span class="text-muted ms-1" style="font-size:.72rem;">{{ Str::limit($latestFu->notes, 40) }}</span>
+                        @endif
+                    </span>
+                </div>
+                @endif
+
                 <div class="lm-field">
                     <span class="lm-field-label"><i class="las la-calendar"></i> Created</span>
                     <span class="lm-field-val">{{ $lead->created_at->format('d M Y') }}</span>
@@ -304,7 +347,7 @@
 
             </div>
 
-            {{-- ── Followup badges ─────────────────────────── --}}
+            {{-- Followup badges --}}
             @if($totalFu > 0)
             <div class="lm-followups">
                 <span class="badge bg-secondary"><i class="las la-list"></i> {{ $totalFu }} followup{{ $totalFu > 1 ? 's' : '' }}</span>
@@ -314,40 +357,27 @@
             </div>
             @endif
 
-            {{-- ── Action buttons — icon only on mobile ──────────── --}}
+            {{-- Action buttons --}}
             <div class="lm-actions">
-                <a href="{{ route('edu-leads.show', $lead->id) }}"
-                class="lm-action-btn btn-view" title="View">
+                <a href="{{ route('edu-leads.show', $lead->id) }}" class="lm-action-btn btn-view" title="View">
                     <i class="las la-eye"></i>
                 </a>
-
                 @if($authUser->isSuperAdmin() || $authUser->isOperationHead() || ($authUser->isLeadManager() && $lead->branch_id === $authUser->branch_id) || ($authUser->isTelecaller() && $lead->assigned_to == $authUser->id))
-                <a href="{{ route('edu-leads.edit', $lead->id) }}"
-                class="lm-action-btn btn-edit" title="Edit">
+                <a href="{{ route('edu-leads.edit', $lead->id) }}" class="lm-action-btn btn-edit" title="Edit">
                     <i class="las la-pen"></i>
                 </a>
                 @endif
-
                 @if($authUser->canAssignLeads())
-                <a href="javascript:void(0)"
-                class="lm-action-btn btn-assign assignLeadBtn"
-                title="Assign"
-                data-id="{{ $lead->id }}"
-                data-code="{{ $lead->lead_code }}"
-                data-name="{{ $lead->name }}"
-                data-branch-id="{{ $lead->branch_id }}"
-                data-branch-name="{{ $lead->branch?->name }}"
-                data-assignee="{{ $lead->assignedTo?->name ?? '' }}">
+                <a href="javascript:void(0)" class="lm-action-btn btn-assign assignLeadBtn" title="Assign"
+                   data-id="{{ $lead->id }}" data-code="{{ $lead->lead_code }}" data-name="{{ $lead->name }}"
+                   data-branch-id="{{ $lead->branch_id }}" data-branch-name="{{ $lead->branch?->name }}"
+                   data-assignee="{{ $lead->assignedTo?->name ?? '' }}">
                     <i class="las la-user-plus"></i>
                 </a>
                 @endif
-
                 @if($authUser->canDelete())
-                <a href="javascript:void(0)"
-                class="lm-action-btn btn-delete deleteLeadBtn"
-                title="Delete"
-                data-id="{{ $lead->id }}"
-                data-name="{{ $lead->name }}">
+                <a href="javascript:void(0)" class="lm-action-btn btn-delete deleteLeadBtn" title="Delete"
+                   data-id="{{ $lead->id }}" data-name="{{ $lead->name }}">
                     <i class="las la-trash-alt"></i>
                 </a>
                 @endif

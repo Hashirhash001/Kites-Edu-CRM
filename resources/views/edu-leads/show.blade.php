@@ -421,7 +421,7 @@
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.8px;
-        color: var(--text-secondary);
+        /* color: var(--text-secondary); */
         opacity: 0.6;
         border-top: 1px dashed #e2e8f0;
     }
@@ -997,7 +997,7 @@
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: .6px;
-        color: #94a3b8;
+        /* color: #94a3b8; */
         padding: .4rem 1.1rem .25rem;
         background: #f8fafc;
         border-top: 1px solid #f1f5f9;
@@ -1460,8 +1460,60 @@
                         </div>
                     </div>
 
-                    {{-- ── NEXT ACTION STATUS ──────────────────────────────── --}}
-                    <div class="tracking-section-divider">Next Action</div>
+                    {{-- CALL STATUS --}}
+                    {{-- ═══════════════════════════════════════════════ --}}
+                    <div class="tracking-section-divider">Call Status</div>
+
+                    @php
+                        $callStatusLabels = [
+                            'contacted'    => ['label' => 'Contacted',    'class' => 'pill-contacted'],
+                            'not_attended' => ['label' => 'Not Attended', 'class' => 'pill-notattended'],
+                        ];
+                    @endphp
+
+                    <div class="tracking-field-row" id="row-call_status">
+                        <span class="tracking-label">
+                            <i class="las la-phone"></i> Call Status
+                        </span>
+                        <div class="tracking-value-wrap">
+                            <span class="tracking-display" id="display-call_status">
+                                @if($eduLead->call_status && isset($callStatusLabels[$eduLead->call_status]))
+                                    <span class="status-pill {{ $callStatusLabels[$eduLead->call_status]['class'] }}">
+                                        {{ $callStatusLabels[$eduLead->call_status]['label'] }}
+                                    </span>
+                                @else
+                                    <span class="text-muted fw-normal">—</span>
+                                @endif
+                            </span>
+
+                            <select class="tracking-select" id="select-call_status">
+                                <option value="">— Not Set —</option>
+                                @foreach($callStatusLabels as $val => $meta)
+                                    <option value="{{ $val }}" {{ $eduLead->call_status == $val ? 'selected' : '' }}>
+                                        {{ $meta['label'] }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            <div class="tracking-btn-group">
+                                <button class="tracking-save-btn"   id="save-call_status">
+                                    <i class="las la-check"></i> Save
+                                </button>
+                                <button class="tracking-cancel-btn" id="cancel-call_status">
+                                    <i class="las la-times"></i>
+                                </button>
+                            </div>
+
+                            @if($canChangeStatus)
+                                <button class="tracking-edit-btn" data-target="call_status" title="Edit">
+                                    <i class="las la-pen"></i>
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- ── Counseling Stage STATUS ──────────────────────────────── --}}
+                    <div class="tracking-section-divider">Counseling Stage</div>
 
                     @php
                         $currentStatus = $eduLead->status ?? null;
@@ -1897,7 +1949,7 @@
 
                     @if($eduLead->next_action)
                     <div class="info-row">
-                        <span class="info-label">Next Action</span>
+                        <span class="info-label">Counseling Stage</span>
                         <span class="info-value">{{ $eduLead->next_action }}</span>
                     </div>
                     @endif
@@ -2147,7 +2199,7 @@
                                                 @if($fu->outcome_status)
                                                 <div class="fu-pill-divider"></div>
                                                 <div class="fu-outcome-pill-group">
-                                                    <span class="fu-pill-label">Next Step</span>
+                                                    <span class="fu-pill-label">Counseling Stage</span>
                                                     <span class="fu-pill" style="background:#e0f2fe; color:#0369a1;">
                                                         {{ $nextActionLabelsLocal[$fu->outcome_status] ?? $fu->outcome_status }}
                                                     </span>
@@ -2164,7 +2216,7 @@
                                             @endif
 
                                             {{-- Next action --}}
-                                            @if($fu->next_action)
+                                            {{-- @if($fu->next_action)
                                             <div class="fu-next-action">
                                                 <i class="las la-tasks"></i>
                                                 <div>
@@ -2172,7 +2224,7 @@
                                                     <span class="fu-next-text">{{ $fu->next_action }}</span>
                                                 </div>
                                             </div>
-                                            @endif
+                                            @endif --}}
 
                                             {{-- Completed stamp --}}
                                             @if($fu->completed_at)
@@ -2552,8 +2604,6 @@
                                 id="outcomeFinalStatus" required>
                             <option value="">— Select Candidate status —</option>
                             <option value="pending">⏳ Pending</option>
-                            <option value="not_attended">🚫 Not Attended</option>
-                            <option value="contacted">📞 Contacted</option>
                             <option value="follow_up">🔔 Follow Up</option>
                             <option value="admitted">✅ Admitted</option>
                             <option value="not_interested">❌ Not Interested</option>
@@ -2561,11 +2611,11 @@
                         </select>
                     </div>
 
-                    {{-- Next Action Status --}}
+                    {{-- Counseling Stage --}}
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
                             <i class="las la-toggle-on me-1 text-info"></i>
-                            Next Action Status
+                            Counseling Stage
                             <small class="text-muted fw-normal ms-1">— optional pipeline step</small>
                         </label>
                         <select class="form-select" name="outcome_status" id="outcomeStatus">
@@ -2604,7 +2654,7 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
                             <i class="las la-comment-alt me-1 text-warning"></i>
-                            What happened?
+                            observation?
                             <small class="text-muted fw-normal ms-1">— summary of interaction</small>
                         </label>
                         <textarea class="form-control" name="outcome_notes" id="outcomeNotes"
@@ -2612,7 +2662,7 @@
                     </div>
 
                     {{-- Next Action --}}
-                    <div class="mb-1">
+                    <!-- <div class="mb-1">
                         <label class="form-label fw-semibold">
                             <i class="las la-arrow-right me-1 text-success"></i>
                             Next Action
@@ -2620,7 +2670,7 @@
                         </label>
                         <input type="text" class="form-control" name="next_action" id="outcomeNextAction"
                                placeholder="Send brochure, schedule campus visit...">
-                    </div>
+                    </div> -->
 
                 </div>
 
@@ -2722,8 +2772,6 @@
                                         id="editOutcomeFinalStatus">
                                     <option value="">— No change —</option>
                                     <option value="pending">⏳ Pending</option>
-                                    <option value="not_attended">🚫 Not Attended</option>
-                                    <option value="contacted">📞 Contacted</option>
                                     <option value="follow_up">🔔 Follow Up</option>
                                     <option value="admitted">✅ Admitted</option>
                                     <option value="not_interested">❌ Not Interested</option>
@@ -2731,11 +2779,11 @@
                                 </select>
                             </div>
 
-                            {{-- Next Action Status --}}
+                            {{-- Counseling Stage --}}
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">
                                     <i class="las la-toggle-on me-1 text-info"></i>
-                                    Next Action Status
+                                    Counseling Stage
                                 </label>
                                 <select class="form-select" name="outcome_status"
                                         id="editOutcomeStatus">
@@ -2782,19 +2830,19 @@
                                 </div>
                             </div>
 
-                            {{-- What happened --}}
+                            {{-- observation --}}
                             <div class="col-12">
                                 <label class="form-label fw-semibold">
                                     <i class="las la-comment-alt me-1 text-warning"></i>
-                                    What Happened?
+                                    Observation
                                 </label>
                                 <textarea class="form-control" name="outcome_notes"
                                           id="editOutcomeNotes" rows="3"
-                                          placeholder="Describe what happened during this interaction..."></textarea>
+                                          placeholder="Describe the observation during this interaction..."></textarea>
                             </div>
 
                             {{-- Next Action --}}
-                            <div class="col-12">
+                            {{-- <div class="col-12">
                                 <label class="form-label fw-semibold">
                                     <i class="las la-arrow-right me-1 text-success"></i>
                                     Next Action
@@ -2802,7 +2850,7 @@
                                 <input type="text" class="form-control"
                                        name="next_action" id="editNextAction"
                                        placeholder="Send brochure, schedule campus visit...">
-                            </div>
+                            </div> --}}
 
                         </div>
                     </div>
@@ -2879,6 +2927,11 @@ $(document).ready(function () {
             admitted       : { label: '✅ Admitted',        cls: 'pill-admitted' },
             not_interested : { label: '❌ Not Interested',  cls: 'pill-not_interested' },
             dropped        : { label: '🚫 Dropped',         cls: 'pill-dropped' },
+        },
+
+        call_status: {
+            contacted:    { label: 'Contacted',    cls: 'pill-contacted' },
+            not_attended: { label: 'Not Attended', cls: 'pill-notattended' },
         },
 
         status: {

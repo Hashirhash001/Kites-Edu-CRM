@@ -17,6 +17,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Color;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Font;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 
 class EduLeadController extends Controller
 {
@@ -38,11 +45,11 @@ class EduLeadController extends Controller
 
         $baseQuery = EduLead::with([
             'course.programme', 'leadSource', 'createdBy', 'assignedTo', 'branch',
-            'followups',
+            'followups', 'latestFollowup'
         ]);
         $baseQuery->visibleTo($user);
 
-        // ── Filters — all param names are snake_case to match JS getFilterParams() ──
+        // ── Filters ───────────────────────────────────────────────────────────────
         if ($request->filled('interest_level'))
             $baseQuery->where('interest_level', $request->interest_level);
 
@@ -55,18 +62,14 @@ class EduLeadController extends Controller
         if ($request->filled('programme_id'))
             $baseQuery->whereHas('course', fn($q) => $q->where('programme_id', $request->programme_id));
 
-        if ($request->filled('institution_type')) {
+        if ($request->filled('institution_type'))
             $baseQuery->where('institution_type', $request->institution_type);
-        }
 
         if ($request->filled('state'))
             $baseQuery->where('state', 'like', '%' . $request->state . '%');
 
         if ($request->filled('district'))
             $baseQuery->where('district', 'like', '%' . $request->district . '%');
-
-        if ($request->filled('preferred_state'))
-            $baseQuery->where('preferred_state', $request->preferred_state);
 
         if ($request->filled('branch_id') && ($user->isSuperAdmin() || $user->isOperationHead()))
             $baseQuery->where('branch_id', $request->branch_id);
@@ -95,6 +98,26 @@ class EduLeadController extends Controller
                 ->orWhere('referral_name', 'like', '%' . $request->agent_name . '%')
             );
 
+        // Call Status filter
+        if ($request->filled('call_status'))
+            $baseQuery->where('call_status', $request->call_status);
+
+        // Counseling Stage filter
+        if ($request->filled('counseling_stage'))
+            $baseQuery->where('status', $request->counseling_stage);
+
+        // Followup count filter
+        if ($request->filled('followup_count')) {
+            $count = (int) $request->followup_count;
+            match($request->followup_count) {
+                '0'    => $baseQuery->doesntHave('followups'),
+                '1'    => $baseQuery->has('followups', '=', 1),
+                '2'    => $baseQuery->has('followups', '=', 2),
+                '3'    => $baseQuery->has('followups', '>=', 3),
+                default => null,
+            };
+        }
+
         if ($request->filled('search')) {
             $s = '%' . $request->search . '%';
             $baseQuery->where(fn($q) => $q
@@ -111,7 +134,7 @@ class EduLeadController extends Controller
             );
         }
 
-        // ── Status counts (before applying final_status filter) ───────────────
+        // ── Status counts ─────────────────────────────────────────────────────────
         $statusCounts = [
             'all'            => (clone $baseQuery)->count(),
             'pending'        => (clone $baseQuery)->where('final_status', 'pending')->count(),
@@ -128,33 +151,32 @@ class EduLeadController extends Controller
             'college' => (clone $baseQuery)->where('institution_type', 'college')->count(),
         ];
 
-        // ── Apply status tab filter ───────────────────────────────────────────
+        // ── Apply status tab filter ───────────────────────────────────────────────
         $query = clone $baseQuery;
         if ($request->filled('final_status')) {
             $query->where('final_status', $request->final_status);
         }
 
-        // ── Sorting & pagination ──────────────────────────────────────────────
+        // ── Sorting & pagination ──────────────────────────────────────────────────
         $allowedSortColumns = [
             'lead_code', 'name', 'phone', 'final_status', 'course_id',
             'interest_level', 'lead_source_id', 'assigned_to', 'branch_id', 'created_at',
         ];
-        $sortColumn = in_array($request->get('sort_column'), $allowedSortColumns)
-            ? $request->get('sort_column') : 'created_at';
-        $sortDirection = in_array($request->get('sort_direction'), ['asc', 'desc'])
-            ? $request->get('sort_direction') : 'desc';
-        $perPage = in_array((int) $request->get('per_page', 15), [15, 30, 50, 100])
-            ? (int) $request->get('per_page', 15) : 15;
+        $sortColumn    = in_array($request->get('sort_column'), $allowedSortColumns) ? $request->get('sort_column') : 'created_at';
+        $sortDirection = in_array($request->get('sort_direction'), ['asc', 'desc']) ? $request->get('sort_direction') : 'desc';
+        $perPage       = in_array((int) $request->get('per_page', 15), [15, 30, 50, 100]) ? (int) $request->get('per_page', 15) : 15;
 
         $page  = (int) $request->get('page', 1);
-        $leads = $query->orderBy($sortColumn, $sortDirection)
-                       ->paginate($perPage, ['*'], 'page', $page);
 
-        // ── Counts for header badges ──────────────────────────────────────────
-        $hotLeadsCount = EduLead::where('interest_level', 'hot')
-            // ->where('final_status', 'pending')
-            ->visibleTo($user)
-            ->count();
+        // ✨ Eager-load latest followup for the table column
+        $leads = $query
+            ->with(['followups' => fn($q) => $q->latest('followup_date')->limit(1)])
+            ->withCount('followups')
+            ->orderBy($sortColumn, $sortDirection)
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        // ── Header badge counts ───────────────────────────────────────────────────
+        $hotLeadsCount = EduLead::where('interest_level', 'hot')->visibleTo($user)->count();
 
         $pendingFollowupsCount = EduLeadFollowup::where('status', 'pending')
             ->whereDate('followup_date', '<=', today())
@@ -162,7 +184,7 @@ class EduLeadController extends Controller
             ->when($user->isLeadManager(), fn($q) => $q->whereHas('eduLead', fn($lq) => $lq->where('branch_id', $user->branch_id)))
             ->count();
 
-        // ── View data ─────────────────────────────────────────────────────────
+        // ── View data ─────────────────────────────────────────────────────────────
         $courses         = Course::active()->with('programme')->orderBy('name')->get();
         $programmes      = Programme::active()->orderBy('name')->get();
         $leadSources     = EduLeadSource::where('is_active', true)->orderBy('name')->get();
@@ -181,7 +203,7 @@ class EduLeadController extends Controller
                 'total'              => $leads->total(),
                 'per_page'           => $leads->perPage(),
                 'current_page'       => $leads->currentPage(),
-                'last_page'          => $leads->lastPage(),      // ✅ important
+                'last_page'          => $leads->lastPage(),
                 'from'               => $leads->firstItem() ?? 0,
                 'to'                 => $leads->lastItem()  ?? 0,
                 'status_counts'      => $statusCounts,
@@ -195,6 +217,7 @@ class EduLeadController extends Controller
             'assignableUsers', 'statusCounts', 'institutionCounts', 'states', 'districtMap'
         ));
     }
+
 
     // =========================================================================
     // CREATE
@@ -1218,7 +1241,7 @@ class EduLeadController extends Controller
     }
 
     // =========================================================================
-    // EXPORT CSV
+    // EXPORT XLSX
     // =========================================================================
     public function export(Request $request)
     {
@@ -1226,13 +1249,12 @@ class EduLeadController extends Controller
             $user  = Auth::user();
             $query = EduLead::with([
                 'course.programme', 'leadSource', 'createdBy', 'assignedTo', 'branch',
-                'followups', // ✅ ADD — needed for followup counts
+                'followups', 'latestFollowup',
             ]);
 
-            // Visibility scope
             $query->visibleTo($user);
 
-            // Filters — mirrors index()
+            // ── Filters ───────────────────────────────────────────────────────
             if ($request->filled('interest_level'))     $query->where('interest_level',   $request->interest_level);
             if ($request->filled('final_status'))       $query->where('final_status',     $request->final_status);
             if ($request->filled('lead_source_id'))     $query->where('lead_source_id',   $request->lead_source_id);
@@ -1241,7 +1263,6 @@ class EduLeadController extends Controller
             if ($request->filled('institution_type'))   $query->where('institution_type', $request->institution_type);
             if ($request->filled('state'))              $query->where('state',            'like', '%' . $request->state    . '%');
             if ($request->filled('district'))           $query->where('district',         'like', '%' . $request->district . '%');
-            if ($request->filled('preferred_state'))    $query->where('preferred_state',  $request->preferred_state);
             if ($request->filled('branch_id') && ($user->isSuperAdmin() || $user->isOperationHead()))
                                                         $query->where('branch_id',        $request->branch_id);
             if ($request->filled('date_from'))          $query->whereDate('created_at',  '>=', $request->date_from);
@@ -1253,7 +1274,18 @@ class EduLeadController extends Controller
                     ? $query->whereNull('assigned_to')
                     : $query->where('assigned_to', $request->assigned_to);
             }
-            if ($request->filled('agent_name')) $query->where('agent_name', 'like', '%' . $request->agent_name . '%');
+            if ($request->filled('agent_name'))         $query->where('agent_name', 'like', '%' . $request->agent_name . '%');
+            if ($request->filled('call_status'))        $query->where('call_status', $request->call_status);
+            if ($request->filled('counseling_stage'))   $query->where('status',      $request->counseling_stage);
+            if ($request->filled('followup_count')) {
+                match($request->followup_count) {
+                    '0'     => $query->doesntHave('followups'),
+                    '1'     => $query->has('followups', '=', 1),
+                    '2'     => $query->has('followups', '=', 2),
+                    '3'     => $query->has('followups', '>=', 3),
+                    default => null,
+                };
+            }
             if ($request->filled('search')) {
                 $s = '%' . $request->search . '%';
                 $query->where(fn($q) => $q
@@ -1270,192 +1302,174 @@ class EduLeadController extends Controller
             }
 
             $leads    = $query->orderBy('created_at', 'desc')->get();
-            $filename = 'education_leads_' . date('Y-m-d_His') . '.csv';
+            $filename = 'education_leads_' . date('Y-m-d_His') . '.xlsx';
 
-            $whatsappStatusLabels = [
-                'not_sent'  => 'Not Sent',
-                'sent'      => 'Sent',
-                'delivered' => 'Delivered',
-                'read'      => 'Read',
+            // ── Build spreadsheet ─────────────────────────────────────────────
+            $spreadsheet = new Spreadsheet();
+            $sheet       = $spreadsheet->getActiveSheet();
+            $sheet->setTitle('Education Leads');
+
+            // ── Headers ───────────────────────────────────────────────────────
+            $headers = [
+                'A' => ['header' => 'Lead Code',              'width' => 16],
+                'B' => ['header' => 'Name',                   'width' => 24],
+                'C' => ['header' => 'Email',                  'width' => 28],
+                'D' => ['header' => 'Phone',                  'width' => 16],
+                'E' => ['header' => 'WhatsApp Number',        'width' => 18],
+                'F' => ['header' => 'State',                  'width' => 18],
+                'G' => ['header' => 'District',               'width' => 18],
+                'H' => ['header' => 'Branch',                 'width' => 20],
+                'I' => ['header' => 'Institution Type',       'width' => 18],
+                'J' => ['header' => 'School',                 'width' => 28],
+                'K' => ['header' => 'School Department',   'width' => 22],
+                'L' => ['header' => 'College',                'width' => 28],
+                'M' => ['header' => 'College Department',     'width' => 22],
+                'N' => ['header' => 'Programme',              'width' => 22],
+                'O' => ['header' => 'Course',                 'width' => 26],
+                'P' => ['header' => 'Addon Course',           'width' => 22],
+                'Q' => ['header' => 'Lead Source',            'width' => 18],
+                'R' => ['header' => 'Agent Name',             'width' => 20],
+                'S' => ['header' => 'Application Number',     'width' => 20],
+                'T' => ['header' => 'Booking Payment (₹)',    'width' => 20],
+                'U' => ['header' => 'Fees Collected (₹)',     'width' => 20],
+                'V' => ['header' => 'Cancellation Reason',    'width' => 28],
+                'W' => ['header' => 'Interest Level',         'width' => 16],
+                'X' => ['header' => 'Candidate Status',       'width' => 20],
+                'Y' => ['header' => 'Call Status',            'width' => 18],
+                'Z' => ['header' => 'Counseling Stage',       'width' => 26],
+                'AA'=> ['header' => 'Assigned To',            'width' => 20],
+                'AB'=> ['header' => 'Created By',             'width' => 20],
+                'AC'=> ['header' => 'Total Followups',        'width' => 16],
+                'AD'=> ['header' => 'Overdue Followups',      'width' => 16],
+                'AE'=> ['header' => 'Today Followups',        'width' => 16],
+                'AF'=> ['header' => 'Upcoming Followups',     'width' => 16],
+                'AG'=> ['header' => 'Completed Followups',    'width' => 18],
+                'AH'=> ['header' => 'Latest Followup Date',   'width' => 20],
+                'AI'=> ['header' => 'Latest Followup Time',   'width' => 18],
+                'AJ'=> ['header' => 'Latest Followup Status', 'width' => 18],
+                'AK'=> ['header' => 'Latest Followup Notes',  'width' => 36],
+                'AL'=> ['header' => 'Created At',             'width' => 20],
             ];
-            $appFormStatusLabels = [
-                'not_submitted' => 'Not Submitted',
-                'submitted'     => 'Submitted',
-                'under_review'  => 'Under Review',
-                'approved'      => 'Approved',
-                'rejected'      => 'Rejected',
-            ];
-            $bookingStatusLabels = [
-                'not_paid' => 'Not Paid',
-                'partial'  => 'Partial',
-                'paid'     => 'Paid',
-                'refunded' => 'Refunded',
-            ];
-            $finalStatusLabels = [
-                'pending'        => 'Pending',
-                'contacted'      => 'Contacted',
-                'follow_up'      => 'Follow Up',
-                'admitted'       => 'Admitted',
-                'not_interested' => 'Not Interested',
-                'dropped'        => 'Dropped',
-            ];
 
-            $callback = function () use (
-                $leads,
-                $whatsappStatusLabels,
-                $appFormStatusLabels,
-                $bookingStatusLabels,
-                $finalStatusLabels
-            ) {
-                $file = fopen('php://output', 'w');
-                fwrite($file, "\xEF\xBB\xBF"); // UTF-8 BOM for Excel
+            // Write headers + set column widths
+            foreach ($headers as $col => $meta) {
+                $sheet->setCellValue("{$col}1", $meta['header']);
+                $sheet->getColumnDimension($col)->setWidth($meta['width']);
+            }
 
-                // ── Header Row ────────────────────────────────────────────
-                fputcsv($file, [
-                    // Identity
-                    'Lead Code',
-                    'Name',
-                    'Email',
-                    'Phone',
-                    'WhatsApp Number',
+            // ── Header row styling ────────────────────────────────────────────
+            $lastCol   = array_key_last($headers); // 'AL'
+            $headerRange = "A1:{$lastCol}1";
 
-                    // Location
-                    'State',
-                    'District',
-                    'Preferred State',
+            $sheet->getStyle($headerRange)->applyFromArray([
+                'font' => [
+                    'bold'  => true,
+                    'color' => ['argb' => 'FFFFFFFF'],
+                    'size'  => 11,
+                ],
+                'fill' => [
+                    'fillType'   => Fill::FILL_SOLID,
+                    'startColor' => ['argb' => 'FF667EEA'], // your brand purple-blue
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical'   => Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                        'color'       => ['argb' => 'FF5A67D8'],
+                    ],
+                ],
+            ]);
 
-                    // Institution
-                    'Branch',
-                    'Institution Type',
-                    'School',
-                    'School Stream / Dept',
-                    'College',
-                    'College Department',
+            // Freeze the header row
+            $sheet->freezePane('A2');
 
-                    // Course
-                    'Programme',
-                    'Course',
-                    'Addon Course',
+            // Set header row height
+            $sheet->getRowDimension(1)->setRowHeight(22);
 
-                    // Source & Agent
-                    'Lead Source',
-                    'Agent Name',
+            // ── Data rows ─────────────────────────────────────────────────────
+            $row = 2;
+            $today = \Carbon\Carbon::today();
 
-                    // Application & Payment Tracking
-                    'Application Number',
-                    'WhatsApp Status',
-                    'Application Form Status',
-                    'Booking Status',
-                    'Booking Payment (₹)',
-                    'Fees Collected (₹)',
-                    'Cancellation Reason',
+            foreach ($leads as $lead) {
+                $totalFu   = $lead->followups->count();
+                $doneFu    = $lead->followups->where('status', 'completed')->count();
+                $overdueFu = $lead->followups->filter(fn($f) =>
+                    $f->status === 'pending' &&
+                    \Carbon\Carbon::parse($f->followup_date)->startOfDay()->lt($today)
+                )->count();
+                $todayFu   = $lead->followups->filter(fn($f) =>
+                    $f->status === 'pending' &&
+                    \Carbon\Carbon::parse($f->followup_date)->isToday()
+                )->count();
+                $pendingFu  = $lead->followups->where('status', 'pending')->count();
+                $upcomingFu = max(0, $pendingFu - $overdueFu - $todayFu);
 
-                    // CRM
-                    'Interest Level',
-                    'Final Status',
+                $lfu       = $lead->latestFollowup;
+                $lfuDate   = $lfu ? \Carbon\Carbon::parse($lfu->followup_date)->format('d-m-Y') : '';
+                $lfuTime   = $lfu && $lfu->followup_time ? \Carbon\Carbon::parse($lfu->followup_time)->format('h:i A') : '';
+                $lfuStatus = $lfu ? ucfirst($lfu->status ?? '') : '';
+                $lfuNotes  = $lfu ? ($lfu->notes ?? '') : '';
 
-                    // Assignment
-                    'Assigned To',
-                    'Created By',
+                $sheet->fromArray([
+                    $lead->lead_code,
+                    $lead->name,
+                    $lead->email             ?? '',
+                    $lead->phone,
+                    $lead->whatsapp_number   ?? '',
+                    $lead->state             ?? '',
+                    $lead->district          ?? '',
+                    $lead->branch?->name     ?? '',
+                    ucfirst($lead->institution_type ?? ''),
+                    $lead->school            ?? '',
+                    $lead->school_department ?? '',
+                    $lead->college           ?? '',
+                    $lead->college_department ?? '',
+                    $lead->course?->programme?->name ?? '',
+                    $lead->course?->name     ?? '',
+                    $lead->addon_course      ?? '',
+                    $lead->leadSource?->name ?? '',
+                    $lead->agent_name        ?? '',
+                    $lead->application_number  ?? '',
+                    $lead->booking_payment     ?? '',
+                    $lead->fees_collection     ?? '',
+                    $lead->cancellation_reason ?? '',
+                    ucfirst($lead->interest_level ?? ''),
+                    EduLead::FINAL_STATUSES[$lead->final_status] ?? ucfirst(str_replace('_', ' ', $lead->final_status ?? '')),
+                    EduLead::CALL_STATUSES[$lead->call_status]   ?? '',
+                    EduLead::COUNSELING_STAGES[$lead->status]    ?? '',
+                    $lead->assignedTo?->name ?? 'Unassigned',
+                    $lead->createdBy?->name  ?? '',
+                    $totalFu, $overdueFu, $todayFu, $upcomingFu, $doneFu,
+                    $lfuDate, $lfuTime, $lfuStatus, $lfuNotes,
+                    $lead->created_at->format('d-m-Y H:i'),
+                ], null, 'A' . $row);
 
-                    // ✅ Followup Counts
-                    'Total Followups',
-                    'Overdue Followups',
-                    'Today Followups',
-                    'Upcoming Followups',
-                    'Completed Followups',
-
-                    // Dates
-                    'Created At',
-                    'Last Followup Date',
-                    'Remarks',
-                ]);
-
-                // ── Data Rows ─────────────────────────────────────────────
-                foreach ($leads as $lead) {
-
-                    // ✅ Compute followup counts — same logic as table-rows.blade.php
-                    $today     = \Carbon\Carbon::today();
-                    $totalFu   = $lead->followups->count();
-                    $doneFu    = $lead->followups->where('status', 'completed')->count();
-                    $overdueFu = $lead->followups->filter(fn($f) =>
-                        $f->status === 'pending' &&
-                        \Carbon\Carbon::parse($f->followup_date)->startOfDay()->lt($today)
-                    )->count();
-                    $todayFu   = $lead->followups->filter(fn($f) =>
-                        $f->status === 'pending' &&
-                        \Carbon\Carbon::parse($f->followup_date)->isToday()
-                    )->count();
-                    $pendingFu    = $lead->followups->where('status', 'pending')->count();
-                    $upcomingFu   = max(0, $pendingFu - $overdueFu - $todayFu);
-
-                    fputcsv($file, [
-                        // Identity
-                        $lead->lead_code,
-                        $lead->name,
-                        $lead->email           ?? '',
-                        $lead->phone,
-                        $lead->whatsapp_number ?? '',
-
-                        // Location
-                        $lead->state           ?? '',
-                        $lead->district        ?? '',
-                        $lead->preferred_state ?? '',
-
-                        // Institution
-                        $lead->branch?->name                                                             ?? '',
-                        ucfirst($lead->institution_type                                                  ?? ''),
-                        $lead->school                                                                    ?? '',
-                        $lead->school_department                                                         ?? '',
-                        $lead->college                                                                   ?? '',
-                        $lead->college_department                                                        ?? '',
-
-                        // Course
-                        $lead->course?->programme?->name                                                 ?? '',
-                        $lead->course?->name                                                             ?? '',
-                        $lead->addon_course                                                              ?? '',
-
-                        // Source & Agent
-                        $lead->leadSource?->name                                                         ?? '',
-                        $lead->agent_name                                                                ?? '',
-
-                        // Application & Payment Tracking
-                        $lead->application_number                                                        ?? '',
-                        $whatsappStatusLabels[$lead->whatsapp_status]         ?? ucfirst(str_replace('_', ' ', $lead->whatsapp_status          ?? '')),
-                        $appFormStatusLabels[$lead->application_form_status]  ?? ucfirst(str_replace('_', ' ', $lead->application_form_status  ?? '')),
-                        $bookingStatusLabels[$lead->booking_status]           ?? ucfirst(str_replace('_', ' ', $lead->booking_status           ?? '')),
-                        $lead->booking_payment                                                           ?? '',
-                        $lead->fees_collection                                                           ?? '',
-                        $lead->cancellation_reason                                                       ?? '',
-
-                        // CRM
-                        ucfirst($lead->interest_level                                                    ?? ''),
-                        $finalStatusLabels[$lead->final_status]               ?? ucfirst(str_replace('_', ' ', $lead->final_status             ?? '')),
-
-                        // Assignment
-                        $lead->assignedTo?->name                                                         ?? 'Unassigned',
-                        $lead->createdBy?->name                                                          ?? '',
-
-                        // ✅ Followup Counts
-                        $totalFu,
-                        $overdueFu,
-                        $todayFu,
-                        $upcomingFu,
-                        $doneFu,
-
-                        // Dates
-                        $lead->created_at->format('d-m-Y H:i'),
-                        $lead->followup_date?->format('d-m-Y') ?? '',
-                        $lead->remarks                         ?? '',
-                    ]);
+                // Alternate row shading for readability
+                if ($row % 2 === 0) {
+                    $sheet->getStyle("A{$row}:{$lastCol}{$row}")
+                        ->getFill()
+                        ->setFillType(Fill::FILL_SOLID)
+                        ->getStartColor()->setARGB('FFF8FAFC');
                 }
 
-                fclose($file);
-            };
+                $row++;
+            }
 
-            return response()->stream($callback, 200, [
-                'Content-Type'        => 'text/csv; charset=UTF-8',
+            // ── Auto-filter on header row ─────────────────────────────────────
+            $sheet->setAutoFilter("A1:{$lastCol}1");
+
+            // ── Stream response ───────────────────────────────────────────────
+            $writer = new Xlsx($spreadsheet);
+
+            return response()->streamDownload(function () use ($writer) {
+                $writer->save('php://output');
+            }, $filename, [
+                'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control'       => 'max-age=0',
             ]);
 
         } catch (\Exception $e) {
@@ -1618,6 +1632,7 @@ class EduLeadController extends Controller
             'booking_payment'           => 'nullable|numeric|min:0',
             'fees_collection'           => 'nullable|numeric|min:0',
             'cancellation_reason'       => 'nullable|string|max:1000',
+            'call_status'              => 'nullable|in:contacted,not_attended',
             'final_status'              => 'nullable|in:pending,contacted,follow_up,admitted,not_interested,not_attended,dropped',
         ];
     }
@@ -1647,6 +1662,7 @@ class EduLeadController extends Controller
         $allowedFields = [
             'final_status'        => ['nullable', Rule::in(['pending','contacted','follow_up','admitted', 'not_interested','dropped','not_attended'])],
             'status'              => ['nullable', Rule::in(['whatsapp_link_submitted','application_form_submitted','booking','cancelled'])],
+            'call_status'         => ['nullable', Rule::in(['contacted','not_attended'])],
             'booking_payment'     => ['nullable', 'numeric', 'min:0'],
             'fees_collection'     => ['nullable', 'numeric', 'min:0'],
             'application_number'  => ['nullable', 'string', 'max:100'],

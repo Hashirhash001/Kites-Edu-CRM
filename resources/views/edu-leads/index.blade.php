@@ -889,19 +889,46 @@
 
                 <hr class="filter-divider">
 
-                {{-- ── GROUP 3: Preferred Destination & Course ──────── --}}
-                <div class="filter-group-label"><i class="las la-globe"></i> Preferred Destination &amp; Course</div>
+                {{-- GROUP 3: Status Filters --}}
+                <div class="filter-group-label"><i class="las la-tasks"></i> Status & Activity</div>
                 <div class="row g-3 mb-1">
-                    <div class="col-xl-5 col-lg-3 col-md-4 col-6">
-                        <label class="filter-label"><i class="las la-star text-warning"></i> Preferred State</label>
-                        <select class="form-select form-select-sm" id="filterPreferredState">
-                            <option value=""></option>
-                            @foreach($states as $stateOption)
-                                <option value="{{ $stateOption }}">{{ $stateOption }}</option>
-                            @endforeach
+
+                    {{-- Call Status ✨ --}}
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+                        <label class="filter-label"><i class="las la-phone text-success"></i> Call Status</label>
+                        <select class="form-select form-select-sm" id="filterCallStatus">
+                            <option value="">All</option>
+                            <option value="contacted">✉️ Contacted</option>
+                            <option value="not_attended">🚫 Not Attended</option>
                         </select>
                     </div>
+
+                    {{-- Counseling Stage ✨ --}}
                     <div class="col-xl-3 col-lg-3 col-md-4 col-6">
+                        <label class="filter-label"><i class="las la-toggle-on text-primary"></i> Counseling Stage</label>
+                        <select class="form-select form-select-sm" id="filterCounselingStage">
+                            <option value="">All</option>
+                            <option value="whatsapp_link_submitted">WhatsApp Link Submitted</option>
+                            <option value="application_form_submitted">Application Form Submitted</option>
+                            <option value="booking">Booking</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+
+                    {{-- Followup Count ✨ --}}
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+                        <label class="filter-label"><i class="las la-history text-warning"></i> Followups</label>
+                        <select class="form-select form-select-sm" id="filterFollowupCount">
+                            <option value="">Any</option>
+                            <option value="0">None (0)</option>
+                            <option value="1">Exactly 1</option>
+                            <option value="2">Exactly 2</option>
+                            <option value="3">3 or more</option>
+                        </select>
+                    </div>
+
+                    {{-- Programme (moved here from removed group) --}}
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-6">
                         <label class="filter-label">Programme</label>
                         <select class="form-select form-select-sm" id="filterProgramme">
                             <option value="">All Programmes</option>
@@ -910,21 +937,21 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-xl-4 col-lg-4 col-md-5">
+
+                    {{-- Specific Course --}}
+                    <div class="col-xl-3 col-lg-4 col-md-5">
                         <label class="filter-label">
-                            Specific Course
-                            <small class="text-muted fw-normal ms-1">(filtered by programme)</small>
+                            Specific Course <small class="text-muted fw-normal ms-1">filtered by programme</small>
                         </label>
                         <select class="form-select form-select-sm" id="filterCourse">
                             <option value="">All Courses</option>
                             @foreach($courses as $course)
-                                <option value="{{ $course->id }}"
-                                        data-programme="{{ $course->programme_id }}">{{ $course->name }}</option>
+                                <option value="{{ $course->id }}" data-programme="{{ $course->programme_id }}">{{ $course->name }}</option>
                             @endforeach
                         </select>
                     </div>
-                </div>
 
+                </div>
                 <hr class="filter-divider">
 
                 {{-- ── GROUP 4: Assignment ──────────────────────────── --}}
@@ -1034,10 +1061,6 @@
         <div class="status-tabs" id="statusTabs">
             <span class="status-tab active" data-status="">All <span class="tab-count" id="tc-all">{{ $statusCounts['all'] ?? $leads->total() }}</span></span>
             <span class="status-tab" data-status="pending">Pending <span class="tab-count" id="tc-pending">{{ $statusCounts['pending'] ?? 0 }}</span></span>
-            <span class="status-tab" data-status="not_attended">
-                Not Attended <span class="tab-count" id="tc-not_attended">{{ $statusCounts['not_attended'] ?? 0 }}</span>
-            </span>
-            <span class="status-tab" data-status="contacted">Contacted <span class="tab-count" id="tc-contacted">{{ $statusCounts['contacted'] ?? 0 }}</span></span>
             <span class="status-tab" data-status="follow_up">Follow Up <span class="tab-count" id="tc-follow_up">{{ $statusCounts['follow_up'] ?? 0 }}</span></span>
             <span class="status-tab" data-status="admitted">Admitted <span class="tab-count" id="tc-admitted">{{ $statusCounts['admitted'] ?? 0 }}</span></span>
             <span class="status-tab" data-status="not_interested">Not Interested <span class="tab-count" id="tc-not_interested">{{ $statusCounts['not_interested'] ?? 0 }}</span></span>
@@ -1061,12 +1084,12 @@
                             <th class="sortable" data-column="phone">Phone</th>
                             <th class="sortable" data-column="final_status">Status</th>
                             <th>Followups</th>
+                            <th>Latest Followup</th>
                             <th class="sortable" data-column="interest_level">Interest</th>
                             <th>Agent/Referral</th>
                             <th>Institution</th>
                             <th>Department</th>
                             <th>State / District</th>
-                            <th>Preferred State</th>
                             <th class="sortable" data-column="course_id">Course</th>
                             <th class="sortable" data-column="lead_source_id">Source</th>
                             <th class="sortable" data-column="assigned_to">Assigned To</th>
@@ -1346,6 +1369,11 @@ $(document).ready(function () {
         if (initialized) loadLeads(1);
     });
 
+    $('#filterCallStatus, #filterCounselingStage, #filterFollowupCount').on('change', function () {
+        updateActiveFilterCount();
+        if (initialized) loadLeads(1);
+    });
+
     // ── PROGRAMME → COURSE CASCADE ───────────────────────────────────
     function cascadeCourses() {
         const programmeId = $('#filterProgramme').val();
@@ -1494,6 +1522,10 @@ $(document).ready(function () {
             label: 'Assigned To',
             clear: () => $('#filterAssignedTo').val(null).trigger('change')
         },
+        { id: 'filterCallStatus',      label: 'Call Status',      clear: () => $('#filterCallStatus').val('').trigger('change') },
+        { id: 'filterCounselingStage', label: 'Counseling Stage', clear: () => $('#filterCounselingStage').val('').trigger('change') },
+        { id: 'filterFollowupCount',   label: 'Followups',        clear: () => $('#filterFollowupCount').val('').trigger('change') },
+
     ];
 
     /**
@@ -1611,7 +1643,7 @@ $(document).ready(function () {
 
             search:             $('#searchInput').val()             || '',
             interest_level:     $('#filterInterestLevel').val()    || '',
-            institution_type: $('#filterInstitutionType').val() || '',                      // ✅ always has value
+            institution_type: $('#filterInstitutionType').val() || '',
             school_department:  $('#filterSchoolDepartment').val() || '',
             college_department: $('#filterCollegeDepartment').val()|| '',
             programme_id:       $('#filterProgramme').val()        || '',
@@ -1625,6 +1657,9 @@ $(document).ready(function () {
             branch_id:          $('#filterBranch').val()           || '',
             date_from:          $('#dateFrom').val()               || '',
             date_to:            $('#dateTo').val()                 || '',
+            call_status:      $('#filterCallStatus').val(),
+            counseling_stage: $('#filterCounselingStage').val(),
+            followup_count:   $('#filterFollowupCount').val(),
 
             final_status:       activeStatus,
             sort_column:        currentSort.column,

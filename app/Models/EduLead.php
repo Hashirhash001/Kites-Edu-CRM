@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class EduLead extends Model
@@ -200,6 +201,12 @@ class EduLead extends Model
         return $this->hasMany(EduLeadStatusHistory::class, 'edu_lead_id');
     }
 
+    public function latestFollowup(): HasOne
+    {
+        return $this->hasOne(EduLeadFollowup::class, 'edu_lead_id')
+                    ->latestOfMany('followup_date');
+    }
+
     // ── Scopes ────────────────────────────────────────────────────────
 
     public function scopeHot($query)           { return $query->where('interest_level', 'hot'); }
@@ -293,4 +300,42 @@ class EduLead extends Model
             default   => '<span class="badge bg-secondary">N/A</span>',
         };
     }
+
+    // ── Constants ─────────────────────────────────────────────────────────
+
+    public const CALL_STATUSES = [
+        'contacted'     => 'Contacted',
+        'not_attended'  => 'Not Attended',
+    ];
+
+    public const FINAL_STATUSES = [
+        'pending'        => 'Pending',
+        'follow_up'      => 'Follow Up',
+        'admitted'       => 'Admitted',
+        'not_interested' => 'Not Interested',
+        'dropped'        => 'Dropped',
+    ];
+
+    public const COUNSELING_STAGES = [
+        'whatsapp_link_submitted'    => 'WhatsApp Link Submitted',
+        'application_form_submitted' => 'Application Form Submitted',
+        'booking'                    => 'Booking',
+        'cancelled'                  => 'Cancelled',
+    ];
+
+    // ── Accessors ─────────────────────────────────────────────────────────
+
+    public function getCallStatusBadgeAttribute(): string
+    {
+        $badges = [
+            'connected'     => '<span class="badge bg-success">📞 Connected</span>',
+            'not_connected' => '<span class="badge bg-secondary">📵 Not Connected</span>',
+            'contacted'     => '<span class="badge bg-info text-dark">✉️ Contacted</span>',
+            'not_attended'  => '<span class="badge bg-warning text-dark">🚫 Not Attended</span>',
+        ];
+
+        return $badges[$this->call_status] ?? '<span class="badge bg-secondary">N/A</span>';
+    }
+
+
 }

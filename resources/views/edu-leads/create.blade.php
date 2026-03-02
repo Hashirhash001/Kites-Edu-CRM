@@ -402,7 +402,7 @@
 
                         <div class="row">
                             {{-- Preferred State --}}
-                            <div class="col-md-4 mb-3">
+                            {{-- <div class="col-md-4 mb-3">
                                 <label for="preferred_state" class="form-label">Preferred State</label>
                                 <select class="form-select" id="preferred_state" name="preferred_state">
                                     <option value=""></option>
@@ -412,7 +412,7 @@
                                 </select>
                                 <div class="invalid-feedback"></div>
                                 <small class="help-text">State the student prefers to study in</small>
-                            </div>
+                            </div> --}}
 
                             {{-- Programme filter (UI only) --}}
                             <div class="col-md-4 mb-3">
@@ -440,11 +440,9 @@
                                 </select>
                                 <div class="invalid-feedback"></div>
                             </div>
-                        </div>
 
-                        <div class="row">
                             {{-- Addon Course --}}
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label for="addon_course" class="form-label">
                                     Addon Course <small class="text-muted fw-normal">(secondary interest)</small>
                                 </label>
@@ -554,19 +552,47 @@
                         </div> --}}
 
                         {{-- ═══════════════════════════════════════
-                            6. NEXT ACTION
+                            6. Status
                         ═══════════════════════════════════════ --}}
                         <div class="section-title mt-4">
-                            <i class="las la-tasks me-2"></i> Next Action
+                            <i class="las la-tasks me-2"></i> Status
                         </div>
                         <div class="tracking-card">
 
                             <div class="row">
 
+                                {{-- Candidate Status --}}
+                                <div class="col-md-4 mb-3">
+                                    <label for="final_status" class="form-label">
+                                        <i class="las la-flag text-info me-1"></i> Candidate Status
+                                    </label>
+                                    <select class="form-select" id="final_status" name="final_status">
+                                        <option value="pending"        @selected(old('final_status', $eduLead->final_status ?? 'pending')        === 'pending')       >⏳ Pending</option>
+                                        <option value="follow_up"      @selected(old('final_status', $eduLead->final_status ?? '')               === 'follow_up')      >🔔 Follow Up</option>
+                                        <option value="admitted"       @selected(old('final_status', $eduLead->final_status ?? '')               === 'admitted')       >✅ Admitted</option>
+                                        <option value="not_interested" @selected(old('final_status', $eduLead->final_status ?? '')               === 'not_interested') >❌ Not Interested</option>
+                                        <option value="dropped"        @selected(old('final_status', $eduLead->final_status ?? '')               === 'dropped')        >🚫 Dropped</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                                {{-- Call Status --}}
+                                <div class="col-md-4 mb-3">
+                                    <label for="call_status" class="form-label">
+                                        <i class="las la-phone text-success me-1"></i> Call Status
+                                    </label>
+                                    <select class="form-select" id="call_status" name="call_status">
+                                        <option value="">-- Not Set --</option>
+                                        <option value="contacted"     {{ old('call_status', $eduLead->call_status ?? '') == 'contacted'     ? 'selected' : '' }}>✉️ Contacted</option>
+                                        <option value="not_attended"  {{ old('call_status', $eduLead->call_status ?? '') == 'not_attended'  ? 'selected' : '' }}>🚫 Not Attended</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
                                 {{-- Status --}}
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label for="status" class="form-label">
-                                        <i class="las la-toggle-on text-primary me-1"></i> Status
+                                        <i class="las la-toggle-on text-primary me-1"></i> Counseling Stage
                                     </label>
                                     <select class="form-select" id="status" name="status">
                                         <option value="" @selected(old('status', $eduLead->status ?? '') === '')>— Select Status —</option>
@@ -574,25 +600,6 @@
                                         <option value="application_form_submitted" @selected(old('status', $eduLead->status ?? '') === 'application_form_submitted')>📋 Application Form Submitted</option>
                                         <option value="booking"                    @selected(old('status', $eduLead->status ?? '') === 'booking')>💳 Booking</option>
                                         <option value="cancelled"                  @selected(old('status', $eduLead->status ?? '') === 'cancelled')>🚫 Cancelled</option>
-                                    </select>
-                                    <div class="invalid-feedback"></div>
-                                </div>
-
-                                {{-- Final Candidate Status --}}
-                                <div class="col-md-6 mb-3">
-                                    <label for="final_status" class="form-label">
-                                        <i class="las la-flag text-info me-1"></i> Final Candidate Status
-                                    </label>
-                                    <select class="form-select" id="final_status" name="final_status">
-                                        <option value="pending"        @selected(old('final_status', $eduLead->final_status ?? 'pending')        === 'pending')       >⏳ Pending</option>
-                                        <option value="not_attended" {{ old('final_status', $eduLead->final_status ?? '') === 'not_attended' ? 'selected' : '' }}>
-                                            🚫 Not Attended
-                                        </option>
-                                        <option value="contacted"      @selected(old('final_status', $eduLead->final_status ?? '')               === 'contacted')      >📞 Contacted</option>
-                                        <option value="follow_up"      @selected(old('final_status', $eduLead->final_status ?? '')               === 'follow_up')      >🔔 Follow Up</option>
-                                        <option value="admitted"       @selected(old('final_status', $eduLead->final_status ?? '')               === 'admitted')       >✅ Admitted</option>
-                                        <option value="not_interested" @selected(old('final_status', $eduLead->final_status ?? '')               === 'not_interested') >❌ Not Interested</option>
-                                        <option value="dropped"        @selected(old('final_status', $eduLead->final_status ?? '')               === 'dropped')        >🚫 Dropped</option>
                                     </select>
                                     <div class="invalid-feedback"></div>
                                 </div>
