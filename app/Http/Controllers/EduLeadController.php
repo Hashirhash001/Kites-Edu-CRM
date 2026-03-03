@@ -98,17 +98,13 @@ class EduLeadController extends Controller
                 ->orWhere('referral_name', 'like', '%' . $request->agent_name . '%')
             );
 
-        // Call Status filter
         if ($request->filled('call_status'))
             $baseQuery->where('call_status', $request->call_status);
 
-        // Counseling Stage filter
         if ($request->filled('counseling_stage'))
             $baseQuery->where('status', $request->counseling_stage);
 
-        // Followup count filter
         if ($request->filled('followup_count')) {
-            $count = (int) $request->followup_count;
             match($request->followup_count) {
                 '0'    => $baseQuery->doesntHave('followups'),
                 '1'    => $baseQuery->has('followups', '=', 1),
@@ -165,15 +161,32 @@ class EduLeadController extends Controller
         $sortColumn    = in_array($request->get('sort_column'), $allowedSortColumns) ? $request->get('sort_column') : 'created_at';
         $sortDirection = in_array($request->get('sort_direction'), ['asc', 'desc']) ? $request->get('sort_direction') : 'desc';
         $perPage       = in_array((int) $request->get('per_page', 15), [15, 30, 50, 100]) ? (int) $request->get('per_page', 15) : 15;
+        $page          = (int) $request->get('page', 1);
 
-        $page  = (int) $request->get('page', 1);
+        // ── Followup number to display in column ─────────────────────────────────
+        $followupNumber = $request->filled('followup_number')
+            ? (int) $request->get('followup_number')
+            : null;
 
-        // ✨ Eager-load latest followup for the table column
+        // ── Eager-load followups for the table column ─────────────────────────────
+        // Always load all followups (needed for counts + picking by number).
+        // latestFollowup is used as fallback when no followup_number filter is set.
         $leads = $query
-            ->with(['followups' => fn($q) => $q->latest('followup_date')->limit(1)])
+            ->with([
+                'followups',
+                'latestFollowup',
+            ])
             ->withCount('followups')
             ->orderBy($sortColumn, $sortDirection)
             ->paginate($perPage, ['*'], 'page', $page);
+
+        // ── Max followup number for the filter dropdown ───────────────────────
+        $maxFollowupNumber = \App\Models\EduLeadFollowup::selectRaw('COUNT(*) as cnt')
+            ->whereIn('edu_lead_id', (clone $query)->pluck('id'))
+            ->groupBy('edu_lead_id')
+            ->orderByDesc('cnt')
+            ->value('cnt') ?? 5;
+        $maxFollowupNumber = max($maxFollowupNumber, 5); // always show at least 5 options
 
         // ── Header badge counts ───────────────────────────────────────────────────
         $hotLeadsCount = EduLead::where('interest_level', 'hot')->visibleTo($user)->count();
@@ -198,7 +211,7 @@ class EduLeadController extends Controller
         if ($isJson) {
             return response()->json([
                 'success'            => true,
-                'html'               => view('edu-leads.partials.table-rows', compact('leads'))->render(),
+                'html'               => view('edu-leads.partials.table-rows', compact('leads', 'followupNumber'))->render(),
                 'pagination'         => $leads->links('pagination::bootstrap-5')->render(),
                 'total'              => $leads->total(),
                 'per_page'           => $leads->perPage(),
@@ -208,16 +221,17 @@ class EduLeadController extends Controller
                 'to'                 => $leads->lastItem()  ?? 0,
                 'status_counts'      => $statusCounts,
                 'institution_counts' => $institutionCounts,
+                'max_followup_number' => $maxFollowupNumber,
             ]);
         }
 
         return view('edu-leads.index', compact(
             'leads', 'hotLeadsCount', 'pendingFollowupsCount',
             'courses', 'programmes', 'leadSources', 'branches',
-            'assignableUsers', 'statusCounts', 'institutionCounts', 'states', 'districtMap'
+            'assignableUsers', 'statusCounts', 'institutionCounts',
+            'states', 'districtMap', 'followupNumber', 'maxFollowupNumber'
         ));
     }
-
 
     // =========================================================================
     // CREATE
@@ -1257,9 +1271,11 @@ class EduLeadController extends Controller
     {
         try {
             $user  = Auth::user();
+            $followupNumber = $request->filled('followup_number') ? (int) $request->followup_number : null;
+
             $query = EduLead::with([
                 'course.programme', 'leadSource', 'createdBy', 'assignedTo', 'branch',
-                'followups', 'latestFollowup',
+                'followups' => fn($q) => $q->orderBy('followup_number'),
             ]);
 
             $query->visibleTo($user);
@@ -1314,63 +1330,96 @@ class EduLeadController extends Controller
             $leads    = $query->orderBy('created_at', 'desc')->get();
             $filename = 'education_leads_' . date('Y-m-d_His') . '.xlsx';
 
+            // ── Ordinal helper ────────────────────────────────────────────────
+            $ordinal = function(int $n): string {
+                $suffix = match(true) {
+                    $n % 100 >= 11 && $n % 100 <= 13 => 'th',
+                    $n % 10 === 1 => 'st',
+                    $n % 10 === 2 => 'nd',
+                    $n % 10 === 3 => 'rd',
+                    default       => 'th',
+                };
+                return $n . $suffix;
+            };
+
             // ── Build spreadsheet ─────────────────────────────────────────────
             $spreadsheet = new Spreadsheet();
             $sheet       = $spreadsheet->getActiveSheet();
             $sheet->setTitle('Education Leads');
 
-            // ── Headers ───────────────────────────────────────────────────────
-            $headers = [
-                'A' => ['header' => 'Lead Code',              'width' => 16],
-                'B' => ['header' => 'Name',                   'width' => 24],
-                'C' => ['header' => 'Email',                  'width' => 28],
-                'D' => ['header' => 'Phone',                  'width' => 16],
-                'E' => ['header' => 'WhatsApp Number',        'width' => 18],
-                'F' => ['header' => 'State',                  'width' => 18],
-                'G' => ['header' => 'District',               'width' => 18],
-                'H' => ['header' => 'Branch',                 'width' => 20],
-                'I' => ['header' => 'Institution Type',       'width' => 18],
-                'J' => ['header' => 'School',                 'width' => 28],
-                'K' => ['header' => 'School Department',   'width' => 22],
-                'L' => ['header' => 'College',                'width' => 28],
-                'M' => ['header' => 'College Department',     'width' => 22],
-                'N' => ['header' => 'Programme',              'width' => 22],
-                'O' => ['header' => 'Course',                 'width' => 26],
-                'P' => ['header' => 'Addon Course',           'width' => 22],
-                'Q' => ['header' => 'Lead Source',            'width' => 18],
-                'R' => ['header' => 'Agent Name',             'width' => 20],
-                'S' => ['header' => 'Application Number',     'width' => 20],
-                'T' => ['header' => 'Booking Payment (₹)',    'width' => 20],
-                'U' => ['header' => 'Fees Collected (₹)',     'width' => 20],
-                'V' => ['header' => 'Cancellation Reason',    'width' => 28],
-                'W' => ['header' => 'Interest Level',         'width' => 16],
-                'X' => ['header' => 'Candidate Status',       'width' => 20],
-                'Y' => ['header' => 'Call Status',            'width' => 18],
-                'Z' => ['header' => 'Counseling Stage',       'width' => 26],
-                'AA'=> ['header' => 'Assigned To',            'width' => 20],
-                'AB'=> ['header' => 'Created By',             'width' => 20],
-                'AC'=> ['header' => 'Total Followups',        'width' => 16],
-                'AD'=> ['header' => 'Overdue Followups',      'width' => 16],
-                'AE'=> ['header' => 'Today Followups',        'width' => 16],
-                'AF'=> ['header' => 'Upcoming Followups',     'width' => 16],
-                'AG'=> ['header' => 'Completed Followups',    'width' => 18],
-                'AH'=> ['header' => 'Latest Followup Date',   'width' => 20],
-                'AI'=> ['header' => 'Latest Followup Time',   'width' => 18],
-                'AJ'=> ['header' => 'Latest Followup Status', 'width' => 18],
-                'AK'=> ['header' => 'Latest Followup Notes',  'width' => 36],
-                'AL'=> ['header' => 'Created At',             'width' => 20],
+            // ── Determine max followup count for dynamic columns ──────────────
+            $maxFuCount = $followupNumber
+                ? 1
+                : $leads->map(fn($l) => $l->followups->count())->max();
+            $maxFuCount = max((int) $maxFuCount, 1);
+
+            // ── Static headers ────────────────────────────────────────────────
+            $staticHeaders = [
+                ['header' => 'Lead Code',           'width' => 16],
+                ['header' => 'Name',                'width' => 24],
+                ['header' => 'Email',               'width' => 28],
+                ['header' => 'Phone',               'width' => 16],
+                ['header' => 'WhatsApp Number',     'width' => 18],
+                ['header' => 'State',               'width' => 18],
+                ['header' => 'District',            'width' => 18],
+                ['header' => 'Branch',              'width' => 20],
+                ['header' => 'Institution Type',    'width' => 18],
+                ['header' => 'School',              'width' => 28],
+                ['header' => 'School Department',   'width' => 22],
+                ['header' => 'College',             'width' => 28],
+                ['header' => 'College Department',  'width' => 22],
+                ['header' => 'Programme',           'width' => 22],
+                ['header' => 'Course',              'width' => 26],
+                ['header' => 'Addon Course',        'width' => 22],
+                ['header' => 'Lead Source',         'width' => 18],
+                ['header' => 'Reference Name',      'width' => 22], // ✅ merged agent+referral
+                ['header' => 'Application Number',  'width' => 20],
+                ['header' => 'Booking Payment (₹)', 'width' => 20],
+                ['header' => 'Fees Collected (₹)',  'width' => 20],
+                ['header' => 'Cancellation Reason', 'width' => 28],
+                ['header' => 'Interest Level',      'width' => 16],
+                ['header' => 'Candidate Status',    'width' => 20],
+                ['header' => 'Call Status',         'width' => 18],
+                ['header' => 'Counseling Stage',    'width' => 26],
+                ['header' => 'Assigned To',         'width' => 20],
+                ['header' => 'Created By',          'width' => 20],
+                ['header' => 'Total Followups',     'width' => 16],
+                ['header' => 'Created At',          'width' => 20],
             ];
 
-            // Write headers + set column widths
-            foreach ($headers as $col => $meta) {
-                $sheet->setCellValue("{$col}1", $meta['header']);
-                $sheet->getColumnDimension($col)->setWidth($meta['width']);
+            // ── Dynamic followup headers ──────────────────────────────────────
+            $followupHeaders = [];
+            if ($followupNumber) {
+                // Specific followup selected — single set of columns
+                $label = $ordinal($followupNumber) . ' Followup';
+                $followupHeaders[] = ['header' => $label . ' Date',   'width' => 20];
+                $followupHeaders[] = ['header' => $label . ' Notes',  'width' => 40];
+            } else {
+                // Latest (all) — one set of columns per followup position
+                for ($i = 1; $i <= $maxFuCount; $i++) {
+                    $label = $ordinal($i) . ' Followup';
+                    $followupHeaders[] = ['header' => $label . ' Date',   'width' => 20];
+                    $followupHeaders[] = ['header' => $label . ' Notes',  'width' => 40];
+                }
             }
 
-            // ── Header row styling ────────────────────────────────────────────
-            $lastCol   = array_key_last($headers); // 'AL'
+            $allHeaders = array_merge($staticHeaders, $followupHeaders);
+
+            // ── Write headers ─────────────────────────────────────────────────
+            $colIndex = 1;
+            $colMap   = []; // maps index -> column letter
+            foreach ($allHeaders as $meta) {
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+                $colMap[]  = $colLetter;
+                $sheet->setCellValue("{$colLetter}1", $meta['header']);
+                $sheet->getColumnDimension($colLetter)->setWidth($meta['width']);
+                $colIndex++;
+            }
+
+            $lastCol     = end($colMap);
             $headerRange = "A1:{$lastCol}1";
 
+            // ── Header styling ────────────────────────────────────────────────
             $sheet->getStyle($headerRange)->applyFromArray([
                 'font' => [
                     'bold'  => true,
@@ -1379,7 +1428,7 @@ class EduLeadController extends Controller
                 ],
                 'fill' => [
                     'fillType'   => Fill::FILL_SOLID,
-                    'startColor' => ['argb' => 'FF667EEA'], // your brand purple-blue
+                    'startColor' => ['argb' => 'FF667EEA'],
                 ],
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -1393,55 +1442,53 @@ class EduLeadController extends Controller
                 ],
             ]);
 
-            // Freeze the header row
             $sheet->freezePane('A2');
-
-            // Set header row height
             $sheet->getRowDimension(1)->setRowHeight(22);
 
             // ── Data rows ─────────────────────────────────────────────────────
-            $row = 2;
+            $row   = 2;
             $today = \Carbon\Carbon::today();
 
             foreach ($leads as $lead) {
-                $totalFu   = $lead->followups->count();
-                $doneFu    = $lead->followups->where('status', 'completed')->count();
-                $overdueFu = $lead->followups->filter(fn($f) =>
+                // Ordered followups (soft deleted excluded automatically)
+                $orderedFollowups = $lead->followups->sortBy('followup_number')->values();
+
+                $totalFu    = $orderedFollowups->count();
+                $overdueFu  = $orderedFollowups->filter(fn($f) =>
                     $f->status === 'pending' &&
                     \Carbon\Carbon::parse($f->followup_date)->startOfDay()->lt($today)
                 )->count();
-                $todayFu   = $lead->followups->filter(fn($f) =>
+                $todayFu    = $orderedFollowups->filter(fn($f) =>
                     $f->status === 'pending' &&
                     \Carbon\Carbon::parse($f->followup_date)->isToday()
                 )->count();
-                $pendingFu  = $lead->followups->where('status', 'pending')->count();
+                $pendingFu  = $orderedFollowups->where('status', 'pending')->count();
                 $upcomingFu = max(0, $pendingFu - $overdueFu - $todayFu);
+                $doneFu     = $orderedFollowups->where('status', 'completed')->count();
 
-                $lfu       = $lead->latestFollowup;
-                $lfuDate   = $lfu ? \Carbon\Carbon::parse($lfu->followup_date)->format('d-m-Y') : '';
-                $lfuTime   = $lfu && $lfu->followup_time ? \Carbon\Carbon::parse($lfu->followup_time)->format('h:i A') : '';
-                $lfuStatus = $lfu ? ucfirst($lfu->status ?? '') : '';
-                $lfuNotes  = $lfu ? ($lfu->notes ?? '') : '';
+                // ✅ Reference Name: agent_name takes priority over referral_name
+                $referenceName = $lead->agent_name ?? $lead->referral_name ?? '';
 
-                $sheet->fromArray([
+                // ── Static row data ───────────────────────────────────────────
+                $rowData = [
                     $lead->lead_code,
                     $lead->name,
-                    $lead->email             ?? '',
+                    $lead->email              ?? '',
                     $lead->phone,
-                    $lead->whatsapp_number   ?? '',
-                    $lead->state             ?? '',
-                    $lead->district          ?? '',
-                    $lead->branch?->name     ?? '',
+                    $lead->whatsapp_number    ?? '',
+                    $lead->state              ?? '',
+                    $lead->district           ?? '',
+                    $lead->branch?->name      ?? '',
                     ucfirst($lead->institution_type ?? ''),
-                    $lead->school            ?? '',
-                    $lead->school_department ?? '',
-                    $lead->college           ?? '',
+                    $lead->school             ?? '',
+                    $lead->school_department  ?? '',
+                    $lead->college            ?? '',
                     $lead->college_department ?? '',
                     $lead->course?->programme?->name ?? '',
-                    $lead->course?->name     ?? '',
-                    $lead->addon_course      ?? '',
-                    $lead->leadSource?->name ?? '',
-                    $lead->agent_name        ?? '',
+                    $lead->course?->name      ?? '',
+                    $lead->addon_course       ?? '',
+                    $lead->leadSource?->name  ?? '',
+                    $referenceName,                   // ✅ Reference Name
                     $lead->application_number  ?? '',
                     $lead->booking_payment     ?? '',
                     $lead->fees_collection     ?? '',
@@ -1452,12 +1499,29 @@ class EduLeadController extends Controller
                     EduLead::COUNSELING_STAGES[$lead->status]    ?? '',
                     $lead->assignedTo?->name ?? 'Unassigned',
                     $lead->createdBy?->name  ?? '',
-                    $totalFu, $overdueFu, $todayFu, $upcomingFu, $doneFu,
-                    $lfuDate, $lfuTime, $lfuStatus, $lfuNotes,
+                    $totalFu,
                     $lead->created_at->format('d-m-Y H:i'),
-                ], null, 'A' . $row);
+                ];
 
-                // Alternate row shading for readability
+                // ── Dynamic followup columns ──────────────────────────────────
+                if ($followupNumber) {
+                    // Specific position — pick nth item (0-indexed)
+                    $fu       = $orderedFollowups->get($followupNumber - 1);
+                    $fuNote   = $fu ? ($fu->status === 'completed' && $fu->outcome_notes ? $fu->outcome_notes : $fu->notes ?? '') : '';
+                    $rowData[] = $fu ? \Carbon\Carbon::parse($fu->followup_date)->format('d-m-Y') : '';
+                    $rowData[] = $fuNote;
+                } else {
+                    // All followups — pad to $maxFuCount
+                    for ($i = 0; $i < $maxFuCount; $i++) {
+                        $fu        = $orderedFollowups->get($i);
+                        $fuNote    = $fu ? ($fu->status === 'completed' && $fu->outcome_notes ? $fu->outcome_notes : $fu->notes ?? '') : '';
+                        $rowData[] = $fu ? \Carbon\Carbon::parse($fu->followup_date)->format('d-m-Y') : '';
+                        $rowData[] = $fuNote;
+                    }
+                }
+
+                $sheet->fromArray($rowData, null, 'A' . $row);
+
                 if ($row % 2 === 0) {
                     $sheet->getStyle("A{$row}:{$lastCol}{$row}")
                         ->getFill()
@@ -1468,10 +1532,10 @@ class EduLeadController extends Controller
                 $row++;
             }
 
-            // ── Auto-filter on header row ─────────────────────────────────────
+            // ── Auto-filter ───────────────────────────────────────────────────
             $sheet->setAutoFilter("A1:{$lastCol}1");
 
-            // ── Stream response ───────────────────────────────────────────────
+            // ── Stream ────────────────────────────────────────────────────────
             $writer = new Xlsx($spreadsheet);
 
             return response()->streamDownload(function () use ($writer) {

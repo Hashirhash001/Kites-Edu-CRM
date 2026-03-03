@@ -915,15 +915,22 @@
                         </select>
                     </div>
 
-                    {{-- Followup Count ✨ --}}
+                    {{-- Followup Number to Display --}}
                     <div class="col-xl-2 col-lg-3 col-md-4 col-6">
-                        <label class="filter-label"><i class="las la-history text-warning"></i> Followups</label>
-                        <select class="form-select form-select-sm" id="filterFollowupCount">
-                            <option value="">Any</option>
-                            <option value="0">None (0)</option>
-                            <option value="1">Exactly 1</option>
-                            <option value="2">Exactly 2</option>
-                            <option value="3">3 or more</option>
+                        <label class="filter-label"><i class="las la-list-ol text-primary"></i> Show Followup #</label>
+                        <select class="form-select form-select-sm" id="filterFollowupNumber">
+                            <option value="">Latest Completed</option>
+                            @for($i = 1; $i <= $maxFollowupNumber; $i++)
+                                @php
+                                    $sfx = match($i % 10) {
+                                        1 => $i % 100 === 11 ? 'th' : 'st',
+                                        2 => $i % 100 === 12 ? 'th' : 'nd',
+                                        3 => $i % 100 === 13 ? 'th' : 'rd',
+                                        default => 'th',
+                                    };
+                                @endphp
+                                <option value="{{ $i }}">{{ $i }}{{ $sfx }} Followup</option>
+                            @endfor
                         </select>
                     </div>
 
@@ -1085,7 +1092,23 @@
                             <th class="sortable" data-column="final_status">Candidate Status</th>
                             <th>Call Status</th>
                             <th>Followups</th>
-                            <th>Latest Followup</th>
+                            <th id="thFollowupColumn">
+                                @php
+                                    $fn = request('followup_number');
+                                    if ($fn) {
+                                        $n = (int) $fn;
+                                        $sfx = match($n % 10) {
+                                            1 => $n % 100 === 11 ? 'th' : 'st',
+                                            2 => $n % 100 === 12 ? 'th' : 'nd',
+                                            3 => $n % 100 === 13 ? 'th' : 'rd',
+                                            default => 'th',
+                                        };
+                                        echo $n . $sfx . ' Followup';
+                                    } else {
+                                        echo 'Latest Followup';
+                                    }
+                                @endphp
+                            </th>
                             <th class="sortable" data-column="interest_level">Interest</th>
                             <th>Agent/Referral</th>
                             <th>Institution</th>
@@ -1370,6 +1393,15 @@ $(document).ready(function () {
         if (initialized) loadLeads(1);
     });
 
+    // ── Utility ───────────────────────────────────────────────
+    function getOrdinalSuffix(n) {
+        const mod10 = n % 10, mod100 = n % 100;
+        if (mod10 === 1 && mod100 !== 11) return n + 'st';
+        if (mod10 === 2 && mod100 !== 12) return n + 'nd';
+        if (mod10 === 3 && mod100 !== 13) return n + 'rd';
+        return n + 'th';
+    }
+
     $('#filterCallStatus, #filterCounselingStage, #filterFollowupCount').on('change', function () {
         updateActiveFilterCount();
         if (initialized) loadLeads(1);
@@ -1526,6 +1558,7 @@ $(document).ready(function () {
         { id: 'filterCallStatus',      label: 'Call Status',      clear: () => $('#filterCallStatus').val('').trigger('change') },
         { id: 'filterCounselingStage', label: 'Counseling Stage', clear: () => $('#filterCounselingStage').val('').trigger('change') },
         { id: 'filterFollowupCount',   label: 'Followups',        clear: () => $('#filterFollowupCount').val('').trigger('change') },
+        { id: 'filterFollowupNumber', label: 'Show Followup #', clear: () => $('#filterFollowupNumber').val('').trigger('change') },
 
     ];
 
@@ -1661,6 +1694,7 @@ $(document).ready(function () {
             call_status:      $('#filterCallStatus').val(),
             counseling_stage: $('#filterCounselingStage').val(),
             followup_count:   $('#filterFollowupCount').val(),
+            followup_number:   $('#filterFollowupNumber').val(),
 
             final_status:       activeStatus,
             sort_column:        currentSort.column,
@@ -1681,6 +1715,11 @@ $(document).ready(function () {
         // ✅ Use prop approach to set without triggering change
         $('#perPageSelect')[0].value = String(pp);
     }
+
+    $('#filterFollowupNumber').on('change', function () {
+        updateActiveFilterCount();
+        if (initialized) loadLeads(1);
+    });
 
     // ── PRE-POPULATE FILTERS FROM URL ────────────────────────────────
     function prePopulateFilters() {
@@ -1783,6 +1822,25 @@ $(document).ready(function () {
                 $('#leadsTableBody').html(res.html || '');
                 $('#paginationContainer').html(res.pagination || '');
 
+                // Update followup number dropdown range
+                if (res.max_followup_number) {
+                    const current = $('#filterFollowupNumber').val();
+                    const max = res.max_followup_number;
+                    let opts = '<option value="">Latest Completed</option>';
+                    for (let i = 1; i <= max; i++) {
+                        const sfx = i % 10 === 1 && i % 100 !== 11 ? 'st'
+                                : i % 10 === 2 && i % 100 !== 12 ? 'nd'
+                                : i % 10 === 3 && i % 100 !== 13 ? 'rd' : 'th';
+                        opts += `<option value="${i}" ${String(i) === String(current) ? 'selected' : ''}>${i}${sfx} Followup</option>`;
+                    }
+                    $('#filterFollowupNumber').html(opts);
+                }
+
+                const fuNum = parseInt($('#filterFollowupNumber').val());
+                $('#thFollowupColumn').text(
+                    fuNum ? getOrdinalSuffix(fuNum) + ' Followup' : 'Latest Followup'
+                );
+
                 const total = parseInt(res.total, 10) || 0;
                 const from  = parseInt(res.from, 10)  || 0;
                 const to    = parseInt(res.to, 10)    || 0;
@@ -1836,6 +1894,7 @@ $(document).ready(function () {
 
         $('#filterForm')[0].reset();
         $('#filterInstitutionType').val('');
+        $('#filterFollowupNumber').val('');
 
         // reset select2 fields
         $('#filterState, #filterPreferredState, #filterProgramme, #filterSource, #filterAssignedTo, #filterBranch')

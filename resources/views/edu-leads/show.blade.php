@@ -1300,8 +1300,6 @@
 
             $finalStatusLabels = [
                 'pending'        => ['label' => '⏳ Pending',        'class' => 'pill-pending'],
-                'not_attended'   => ['label' => '🚫 Not Attended',      'class' => 'pill-notattended'],
-                'contacted'      => ['label' => '📞 Contacted',      'class' => 'pill-contacted'],
                 'follow_up'      => ['label' => '🔔 Follow Up',      'class' => 'pill-follow_up'],
                 'admitted'       => ['label' => '✅ Admitted',        'class' => 'pill-admitted'],
                 'not_interested' => ['label' => '❌ Not Interested',  'class' => 'pill-not_interested'],
@@ -2035,8 +2033,6 @@
 
                         $finalStatusLabelsLocal = [
                             'pending'        => ['label' => '⏳ Pending',        'bg' => '#fef9c3', 'color' => '#854d0e'],
-                            'not_attended'   => ['label' => '🚫 Not Attended',   'bg' => '#ede9fe', 'color' => '#6d28d9'],
-                            'contacted'      => ['label' => '📞 Contacted',      'bg' => '#dbeafe', 'color' => '#1d4ed8'],
                             'follow_up'      => ['label' => '🔔 Follow Up',      'bg' => '#ffedd5', 'color' => '#c2410c'],
                             'admitted'       => ['label' => '✅ Admitted',        'bg' => '#dcfce7', 'color' => '#15803d'],
                             'not_interested' => ['label' => '❌ Not Interested',  'bg' => '#fee2e2', 'color' => '#b91c1c'],
@@ -2964,8 +2960,6 @@ $(document).ready(function () {
 
         final_status: {
             pending        : { label: '⏳ Pending',        cls: 'pill-pending' },
-            contacted      : { label: '📞 Contacted',      cls: 'pill-contacted' },
-            not_attended   : { label: '🚫 Not Attended',     cls: 'pill-notattended' },
             follow_up      : { label: '🔔 Follow Up',      cls: 'pill-follow_up' },
             admitted       : { label: '✅ Admitted',        cls: 'pill-admitted' },
             not_interested : { label: '❌ Not Interested',  cls: 'pill-not_interested' },

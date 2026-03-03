@@ -2,6 +2,8 @@
     /** @var \App\Models\User $authUser */
     $authUser = auth()->user();
 
+    $followupNumber = $followupNumber ?? null;
+
     $statusLabels = [
         'pending'        => ['label' => '⏳ Pending',        'class' => 'fs-pending'],
         'contacted'      => ['label' => '📞 Contacted',      'class' => 'fs-contacted'],
@@ -13,6 +15,21 @@
     ];
 
     $interestIcons = ['hot' => '🔥', 'warm' => '☀️', 'cold' => '❄️'];
+
+    // Ordinal suffix helper
+    $ordinalSuffix = function(int $n): string {
+        $suffix = match($n % 10) {
+            1 => $n % 100 === 11 ? 'th' : 'st',
+            2 => $n % 100 === 12 ? 'th' : 'nd',
+            3 => $n % 100 === 13 ? 'th' : 'rd',
+            default => 'th',
+        };
+        return $n . $suffix;
+    };
+
+    $fuColumnLabel = $followupNumber
+        ? $ordinalSuffix($followupNumber) . ' Followup'
+        : 'Latest Followup';
 @endphp
 
 @forelse($leads as $lead)
@@ -22,7 +39,7 @@
         'class' => 'fs-pending',
     ];
 
-    $totalFu   = $lead->followups_count;  // ✨ use withCount — no extra query
+    $totalFu   = $lead->followups_count;
     $pendingFu = $lead->followups->where('status', 'pending')->count();
     $doneFu    = $lead->followups->where('status', 'completed')->count();
     $overdueFu = $lead->followups->filter(fn($f) =>
@@ -34,8 +51,48 @@
         \Carbon\Carbon::parse($f->followup_date)->isToday()
     )->count();
 
-    // ✨ Latest followup — first() because the relation is ordered latest first
-    $latestFu = $lead->latestFollowup;
+    // ── Pick the followup to display ────────────────────────────────────────
+    if ($followupNumber) {
+        // Cast both sides to int to avoid string vs int mismatch
+        $displayFu = $lead->followups
+            ->sortBy('followup_number')
+            ->values()
+            ->get((int)$followupNumber - 1); // 0-indexed
+    } else {
+        // Default: latest completed followup, fallback to latest overall
+        $displayFu = $lead->followups
+            ->where('status', 'completed')
+            ->sortByDesc('followup_number')
+            ->first()
+            ?? $lead->latestFollowup;
+    }
+
+
+    // ── Pre-compute display vars (used in both desktop & mobile) ────────────
+    $fuDate    = null;
+    $dateBadge = 'bg-info text-dark';
+    $isComplete = false;
+    $isOverdue  = false;
+    $isToday    = false;
+    $fuNote     = null;
+
+    if ($displayFu) {
+        $displayFuPosition = $lead->followups
+        ->sortBy('followup_number')
+        ->values()
+        ->search(fn($f) => $f->id === $displayFu->id) + 1;
+        $fuDate     = \Carbon\Carbon::parse($displayFu->followup_date);
+        $isOverdue  = $displayFu->status === 'pending' && $fuDate->isPast() && !$fuDate->isToday();
+        $isToday    = $displayFu->status === 'pending' && $fuDate->isToday();
+        $isComplete = $displayFu->status === 'completed';
+        $dateBadge  = $isOverdue  ? 'bg-danger'
+                    : ($isToday   ? 'bg-warning text-dark'
+                    : ($isComplete ? 'bg-success'
+                                   : 'bg-info text-dark'));
+        $fuNote = $isComplete && $displayFu->outcome_notes
+            ? $displayFu->outcome_notes
+            : $displayFu->notes;
+    }
 
     $dept = match($lead->institution_type) {
         'school'  => $lead->school_department,
@@ -90,7 +147,7 @@
 
     <td><span class="fs-badge {{ $s['class'] }}">{{ $s['label'] }}</span></td>
 
-    {{-- ✨ Call Status --}}
+    {{-- Call Status --}}
     <td>
         @if($lead->call_status)
             {!! $lead->call_status_badge !!}
@@ -122,39 +179,23 @@
         @endif
     </td>
 
-    {{-- ✨ Latest Followup --}}
+    {{-- Followup column (latest completed OR specific number) --}}
     <td style="min-width:140px;">
-        @if($latestFu)
-            @php
-                $fuDate     = \Carbon\Carbon::parse($latestFu->followup_date);
-                $isOverdue  = $latestFu->status === 'pending' && $fuDate->isPast() && !$fuDate->isToday();
-                $isToday    = $latestFu->status === 'pending' && $fuDate->isToday();
-                $isComplete = $latestFu->status === 'completed';
-                $dateBadge  = $isOverdue  ? 'bg-danger'
-                            : ($isToday   ? 'bg-warning text-dark'
-                            : ($isComplete? 'bg-success'
-                                          : 'bg-info text-dark'));
-            @endphp
+        @if($displayFu)
             <div style="font-size:.78rem; line-height:1.5;">
                 <span class="badge {{ $dateBadge }}">
                     <i class="las la-calendar me-1"></i>{{ $fuDate->format('d M Y') }}
                 </span>
-                @if($latestFu->followup_time)
+                @if($displayFu->followup_time)
                     <span class="text-muted ms-1" style="font-size:.72rem;">
-                        {{ \Carbon\Carbon::parse($latestFu->followup_time)->format('h:i A') }}
+                        {{ \Carbon\Carbon::parse($displayFu->followup_time)->format('h:i A') }}
                     </span>
                 @endif
-                @php
-                    $fuNote = $isComplete && $latestFu->outcome_notes
-                        ? $latestFu->outcome_notes
-                        : $latestFu->notes;
-                @endphp
                 @if($fuNote)
                     <div class="text-muted mt-1" style="max-width:160px; white-space:normal; font-size:.72rem; line-height:1.3;">
                         {{ Str::limit($fuNote, 55) }}
                     </div>
                 @endif
-
                 @if($isComplete)
                     <span style="font-size:.7rem; color:#16a34a;"><i class="las la-check-circle"></i> Done</span>
                 @elseif($isOverdue)
@@ -162,6 +203,9 @@
                 @elseif($isToday)
                     <span style="font-size:.7rem; color:#d97706;"><i class="las la-bell"></i> Today</span>
                 @endif
+                <div class="text-muted" style="font-size:.68rem; margin-top:2px;">
+                    #{{ $displayFuPosition }}
+                </div>
             </div>
         @else
             <span class="text-muted small">—</span>
@@ -294,7 +338,6 @@
                 </div>
                 @endif
 
-                {{-- ✨ Call Status --}}
                 @if($lead->call_status)
                 <div class="lm-field">
                     <span class="lm-field-label"><i class="las la-phone-volume"></i> Call Status</span>
@@ -348,14 +391,17 @@
                 </div>
                 @endif
 
-                {{-- ✨ Latest Followup on mobile --}}
-                @if($latestFu)
+                {{-- Followup column (latest completed OR specific number) --}}
+                @if($displayFu)
                 <div class="lm-field" style="grid-column: span 2;">
-                    <span class="lm-field-label"><i class="las la-history"></i> Latest Followup</span>
+                    <span class="lm-field-label">
+                        <i class="las la-history"></i> {{ $fuColumnLabel }}
+                        <span class="text-muted" style="font-size:.6rem;">#{{ $displayFuPosition }}</span>
+                    </span>
                     <span class="lm-field-val">
                         <span class="badge {{ $dateBadge }}">{{ $fuDate->format('d M Y') }}</span>
-                        @if($latestFu->notes)
-                            <span class="text-muted ms-1" style="font-size:.72rem;">{{ Str::limit($latestFu->notes, 40) }}</span>
+                        @if($fuNote)
+                            <span class="text-muted ms-1" style="font-size:.72rem;">{{ Str::limit($fuNote, 40) }}</span>
                         @endif
                     </span>
                 </div>

@@ -45,11 +45,8 @@ class EduLeadFollowup extends Model
 
         static::creating(function (EduLeadFollowup $followup) {
             if (empty($followup->followup_number)) {
-                // Always assign the next sequential display number
-                // regardless of deleted records
-                $followup->followup_number = static::withTrashed()
-                    ->where('edu_lead_id', $followup->edu_lead_id)
-                    ->max('followup_number') + 1 ?? 1;
+                $followup->followup_number = (static::where('edu_lead_id', $followup->edu_lead_id)
+                    ->max('followup_number') ?? 0) + 1;
             }
         });
     }
@@ -101,9 +98,8 @@ class EduLeadFollowup extends Model
         $n = (int) ($this->followup_number ?? 0);
 
         if ($n === 0) {
-            // Fallback: derive position from sorted collection on the fly
-            $n = static::withTrashed()
-                    ->where('edu_lead_id', $this->edu_lead_id)
+            // Fallback: exclude soft deleted when counting position
+            $n = static::where('edu_lead_id', $this->edu_lead_id)
                     ->where('id', '<=', $this->id)
                     ->count();
         }
