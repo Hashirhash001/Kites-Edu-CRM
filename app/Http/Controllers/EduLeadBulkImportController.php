@@ -30,10 +30,26 @@ class EduLeadBulkImportController extends Controller
     // =========================================================================
     public function bulkImport()
     {
-        $recentImports = EduLeadImport::where('user_id', auth()->id())
+        $recentImports = EduLeadImport::when(auth()->user()->role !== 'super_admin', function ($query) {
+                $query->where('user_id', auth()->id());
+            })
+            ->select([
+                'id',
+                'user_id',
+                'filename',
+                'total_rows',
+                'successful_rows',
+                'failed_rows',
+                'failed_rows_data',
+                'status',
+                'created_at',
+            ])
             ->orderBy('created_at', 'desc')
             ->limit(10)
+            ->with('user:id,name')
             ->get();
+
+
 
         return view('edu-leads.bulk-import', compact('recentImports'));
     }
@@ -383,8 +399,8 @@ class EduLeadBulkImportController extends Controller
                     $highestRow = $ws->getHighestRow();
                     $highestCol = $ws->getHighestColumn();
 
-                    if ($highestRow > 3001) {
-                        $skipped[] = ['name' => $sheetName, 'reason' => 'Exceeds 3000 rows limit'];
+                    if ($highestRow > 1501) {
+                        $skipped[] = ['name' => $sheetName, 'reason' => 'Exceeds 1500 rows limit'];
                         continue;
                     }
 

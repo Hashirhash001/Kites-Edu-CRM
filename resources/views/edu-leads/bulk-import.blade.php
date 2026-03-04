@@ -140,7 +140,7 @@
             <div class="page-title-box d-flex justify-content-between align-items-center">
                 <div>
                     <h4 class="page-title mb-1">Bulk Import Leads</h4>
-                    <p class="text-muted mb-0">Import multiple leads at once using Excel file (Max: 3000 rows)</p>
+                    <p class="text-muted mb-0">Import multiple leads at once using Excel file (Max: 1500 rows)</p>
                 </div>
                 <div>
                     <button onclick="location.reload()" class="btn btn-light me-2" title="Refresh to see latest imports">
@@ -171,7 +171,7 @@
                             <li>Download the Excel template file below</li>
                             <li>Fill in your lead data following the format</li>
                             <li>Remove the example row before uploading</li>
-                            <li>Maximum 3000 rows per import</li>
+                            <li>Maximum 1500 rows per import</li>
                             <li>Wait for the import to complete (may take 3-5 minutes for large files)</li>
                         </ol>
                     </div>
@@ -194,7 +194,7 @@
                             <button type="button" class="btn btn-primary" onclick="document.getElementById('csvFile').click()">
                                 <i class="las la-folder-open me-2"></i>Browse Files
                             </button>
-                            <p class="text-muted mt-3 mb-0">Supported: Excel (.xlsx, .xls) or CSV (.csv) | Max: 10MB | Max Rows: 3000</p>
+                            <p class="text-muted mt-3 mb-0">Supported: Excel (.xlsx, .xls) or CSV (.csv) | Max: 10MB | Max Rows: 1500</p>
                         </div>
 
                         <div id="selectedFile" class="mt-3" style="display: none;">
@@ -293,6 +293,11 @@
                                         <i class="las la-file-excel me-1"></i>
                                         {{ basename($import->filename) }}
                                     </h6>
+                                    @if(auth()->user()->role === 'super_admin')
+                                        <small class="text-info">
+                                            <i class="las la-user me-1"></i>{{ $import->user->name ?? 'Unknown' }}
+                                        </small><br>
+                                    @endif
                                     <small class="text-muted">
                                         <i class="las la-clock me-1"></i>
                                         {{ $import->created_at->diffForHumans() }}
