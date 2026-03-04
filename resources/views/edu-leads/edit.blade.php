@@ -395,7 +395,7 @@
                                 <label for="school_department" class="form-label">Stream / Department</label>
                                 <select class="form-select" id="school_department" name="school_department">
                                     <option value="">Select Stream</option>
-                                    @foreach(['Computer Science', 'Biology Science','Commerce','Arts & Journalism', 'Humanities','Vocational','Other'] as $s)
+                                    @foreach(['Computer Science', 'Biology Science','Commerce','Arts & Journalism', 'Humanities','Vocational','Mix','Other'] as $s)
                                         <option value="{{ $s }}"
                                             {{ old('school_department', $eduLead->school_department) === $s ? 'selected' : '' }}>
                                             {{ $s }}

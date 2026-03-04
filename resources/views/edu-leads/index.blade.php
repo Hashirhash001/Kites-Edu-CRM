@@ -835,7 +835,7 @@
                         <label class="filter-label">School Department</label>
                         <select class="form-select form-select-sm" id="filterSchoolDepartment">
                             <option value="">All Departments</option>
-                            @foreach(['Biology Science', 'Computer Science','Commerce','Arts & Journalism', 'Humanities','Vocational', 'Other'] as $s)
+                            @foreach(['Biology Science', 'Computer Science','Commerce','Arts & Journalism', 'Humanities','Vocational', 'Mix', 'Other'] as $s)
                                 <option value="{{ $s }}">{{ $s }}</option>
                             @endforeach
                         </select>

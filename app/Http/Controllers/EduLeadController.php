@@ -114,6 +114,10 @@ class EduLeadController extends Controller
             };
         }
 
+        if ($request->filled('followup_number')) {
+            $baseQuery->has('followups', '>=', (int) $request->followup_number);
+        }
+
         if ($request->filled('search')) {
             $s = '%' . $request->search . '%';
             $baseQuery->where(fn($q) => $q
@@ -1312,6 +1316,10 @@ class EduLeadController extends Controller
                     default => null,
                 };
             }
+            if ($request->filled('followup_number')) {
+                $query->has('followups', '>=', (int) $request->followup_number);
+            }
+
             if ($request->filled('search')) {
                 $s = '%' . $request->search . '%';
                 $query->where(fn($q) => $q
