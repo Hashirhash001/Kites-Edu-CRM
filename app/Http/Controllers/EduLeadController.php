@@ -650,20 +650,21 @@ class EduLeadController extends Controller
 
             $assignee = User::findOrFail($validated['assigned_to']);
 
-            // ✅ Assignee must be a telecaller
-            if (!$assignee->isTelecaller()) {
+            if ($assignee->role === 'super_admin') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Leads can only be assigned to telecallers.',
+                    'message' => 'Leads cannot be assigned to Super Admin.',
                 ], 422);
             }
 
-            // ✅ Universal: assignee branch must match the lead's branch — applies to ALL roles
-            if ($assignee->branch_id !== $eduLead->branch_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'The selected telecaller does not belong to the same branch as this lead.',
-                ], 422);
+            // Telecallers and Lead Managers must be in the same branch as the lead
+            if (in_array($assignee->role, ['telecaller', 'lead_manager'])) {
+                if ($assignee->branch_id !== $eduLead->branch_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $assignee->name . ' belongs to a different branch. Telecallers and Lead Managers can only be assigned leads from their own branch.',
+                    ], 422);
+                }
             }
 
             $eduLead->update(['assigned_to' => $validated['assigned_to']]);
@@ -680,6 +681,7 @@ class EduLeadController extends Controller
                 'success'         => true,
                 'message'         => 'Lead assigned to ' . $assignee->name . ' successfully!',
                 'telecaller_name' => $assignee->name,
+                'branch_name'     => $assignee->branch?->name ?? 'No Branch',
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -715,20 +717,11 @@ class EduLeadController extends Controller
 
             $assignee = User::findOrFail($validated['assigned_to']);
 
-            // ✅ Assignee must be a telecaller
-            if (!$assignee->isTelecaller()) {
+            if ($assignee->role === 'super_admin') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Leads can only be assigned to telecallers.',
+                    'message' => 'Leads cannot be assigned to Super Admin.',
                 ], 422);
-            }
-
-            // ✅ LeadManager: assignee must be in their own branch
-            if ($user->isLeadManager() && $assignee->branch_id !== $user->branch_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You can only assign to telecallers in your branch.',
-                ], 403);
             }
 
             $count   = 0;
@@ -738,14 +731,16 @@ class EduLeadController extends Controller
                 $lead = EduLead::find($leadId);
                 if (!$lead) { $skipped++; continue; }
 
-                // ✅ LeadManager: skip leads outside their branch
+                // LeadManager (assigner) can only assign leads from their own branch
                 if ($user->isLeadManager() && $lead->branch_id !== $user->branch_id) {
                     $skipped++; continue;
                 }
 
-                // ✅ All roles: assignee must belong to the same branch as the lead
-                if ($assignee->branch_id !== $lead->branch_id) {
-                    $skipped++; continue;
+                // Telecallers and Lead Managers can only receive leads from their own branch
+                if (in_array($assignee->role, ['telecaller', 'lead_manager'])) {
+                    if ($assignee->branch_id !== $lead->branch_id) {
+                        $skipped++; continue;
+                    }
                 }
 
                 $lead->update(['assigned_to' => $validated['assigned_to']]);
@@ -772,6 +767,7 @@ class EduLeadController extends Controller
                 'count'           => $count,
                 'skipped'         => $skipped,
                 'telecaller_name' => $assignee->name,
+                'branch_name'     => $assignee->branch?->name ?? 'No Branch',
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -1274,7 +1270,7 @@ class EduLeadController extends Controller
     public function export(Request $request)
     {
         try {
-            $user  = Auth::user();
+            $user           = Auth::user();
             $followupNumber = $request->filled('followup_number') ? (int) $request->followup_number : null;
 
             $query = EduLead::with([
@@ -1304,9 +1300,9 @@ class EduLeadController extends Controller
                     ? $query->whereNull('assigned_to')
                     : $query->where('assigned_to', $request->assigned_to);
             }
-            if ($request->filled('agent_name'))         $query->where('agent_name', 'like', '%' . $request->agent_name . '%');
-            if ($request->filled('call_status'))        $query->where('call_status', $request->call_status);
-            if ($request->filled('counseling_stage'))   $query->where('status',      $request->counseling_stage);
+            if ($request->filled('agent_name'))       $query->where('agent_name',  'like', '%' . $request->agent_name . '%');
+            if ($request->filled('call_status'))      $query->where('call_status', $request->call_status);
+            if ($request->filled('counseling_stage')) $query->where('status',      $request->counseling_stage);
             if ($request->filled('followup_count')) {
                 match($request->followup_count) {
                     '0'     => $query->doesntHave('followups'),
@@ -1319,7 +1315,6 @@ class EduLeadController extends Controller
             if ($request->filled('followup_number')) {
                 $query->has('followups', '>=', (int) $request->followup_number);
             }
-
             if ($request->filled('search')) {
                 $s = '%' . $request->search . '%';
                 $query->where(fn($q) => $q
@@ -1348,6 +1343,13 @@ class EduLeadController extends Controller
                     default       => 'th',
                 };
                 return $n . $suffix;
+            };
+
+            // ── Followup outcome_status label helper ──────────────────────────
+            $fuCounselingStage = function(?EduLeadFollowup $fu): string {
+                if (!$fu || empty($fu->outcome_status)) return '';
+                return EduLead::COUNSELING_STAGES[$fu->outcome_status]
+                    ?? ucfirst(str_replace('_', ' ', $fu->outcome_status));
             };
 
             // ── Build spreadsheet ─────────────────────────────────────────────
@@ -1380,7 +1382,7 @@ class EduLeadController extends Controller
                 ['header' => 'Course',              'width' => 26],
                 ['header' => 'Addon Course',        'width' => 22],
                 ['header' => 'Lead Source',         'width' => 18],
-                ['header' => 'Reference Name',      'width' => 22], // ✅ merged agent+referral
+                ['header' => 'Reference Name',      'width' => 22],
                 ['header' => 'Application Number',  'width' => 20],
                 ['header' => 'Booking Payment (₹)', 'width' => 20],
                 ['header' => 'Fees Collected (₹)',  'width' => 20],
@@ -1398,16 +1400,16 @@ class EduLeadController extends Controller
             // ── Dynamic followup headers ──────────────────────────────────────
             $followupHeaders = [];
             if ($followupNumber) {
-                // Specific followup selected — single set of columns
                 $label = $ordinal($followupNumber) . ' Followup';
-                $followupHeaders[] = ['header' => $label . ' Date',   'width' => 20];
-                $followupHeaders[] = ['header' => $label . ' Notes',  'width' => 40];
+                $followupHeaders[] = ['header' => $label . ' Date',             'width' => 20];
+                $followupHeaders[] = ['header' => $label . ' Counseling Stage', 'width' => 26];
+                $followupHeaders[] = ['header' => $label . ' Notes',            'width' => 40];
             } else {
-                // Latest (all) — one set of columns per followup position
                 for ($i = 1; $i <= $maxFuCount; $i++) {
                     $label = $ordinal($i) . ' Followup';
-                    $followupHeaders[] = ['header' => $label . ' Date',   'width' => 20];
-                    $followupHeaders[] = ['header' => $label . ' Notes',  'width' => 40];
+                    $followupHeaders[] = ['header' => $label . ' Date',             'width' => 20];
+                    $followupHeaders[] = ['header' => $label . ' Counseling Stage', 'width' => 26];
+                    $followupHeaders[] = ['header' => $label . ' Notes',            'width' => 40];
                 }
             }
 
@@ -1415,7 +1417,7 @@ class EduLeadController extends Controller
 
             // ── Write headers ─────────────────────────────────────────────────
             $colIndex = 1;
-            $colMap   = []; // maps index -> column letter
+            $colMap   = [];
             foreach ($allHeaders as $meta) {
                 $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
                 $colMap[]  = $colLetter;
@@ -1458,7 +1460,6 @@ class EduLeadController extends Controller
             $today = \Carbon\Carbon::today();
 
             foreach ($leads as $lead) {
-                // Ordered followups (soft deleted excluded automatically)
                 $orderedFollowups = $lead->followups->sortBy('followup_number')->values();
 
                 $totalFu    = $orderedFollowups->count();
@@ -1474,7 +1475,6 @@ class EduLeadController extends Controller
                 $upcomingFu = max(0, $pendingFu - $overdueFu - $todayFu);
                 $doneFu     = $orderedFollowups->where('status', 'completed')->count();
 
-                // ✅ Reference Name: agent_name takes priority over referral_name
                 $referenceName = $lead->agent_name ?? $lead->referral_name ?? '';
 
                 // ── Static row data ───────────────────────────────────────────
@@ -1496,15 +1496,15 @@ class EduLeadController extends Controller
                     $lead->course?->name      ?? '',
                     $lead->addon_course       ?? '',
                     $lead->leadSource?->name  ?? '',
-                    $referenceName,                   // ✅ Reference Name
+                    $referenceName,
                     $lead->application_number  ?? '',
                     $lead->booking_payment     ?? '',
                     $lead->fees_collection     ?? '',
                     $lead->cancellation_reason ?? '',
                     ucfirst($lead->interest_level ?? ''),
-                    EduLead::FINAL_STATUSES[$lead->final_status] ?? ucfirst(str_replace('_', ' ', $lead->final_status ?? '')),
-                    EduLead::CALL_STATUSES[$lead->call_status]   ?? '',
-                    EduLead::COUNSELING_STAGES[$lead->status]    ?? '',
+                    EduLead::FINAL_STATUSES[$lead->final_status]   ?? ucfirst(str_replace('_', ' ', $lead->final_status ?? '')),
+                    EduLead::CALL_STATUSES[$lead->call_status]     ?? '',
+                    EduLead::COUNSELING_STAGES[$lead->status]      ?? '',
                     $lead->assignedTo?->name ?? 'Unassigned',
                     $lead->createdBy?->name  ?? '',
                     $totalFu,
@@ -1513,17 +1513,25 @@ class EduLeadController extends Controller
 
                 // ── Dynamic followup columns ──────────────────────────────────
                 if ($followupNumber) {
-                    // Specific position — pick nth item (0-indexed)
-                    $fu       = $orderedFollowups->get($followupNumber - 1);
-                    $fuNote   = $fu ? ($fu->status === 'completed' && $fu->outcome_notes ? $fu->outcome_notes : $fu->notes ?? '') : '';
+                    $fu      = $orderedFollowups->get($followupNumber - 1);
+                    $fuNote  = $fu
+                        ? ($fu->status === 'completed' && $fu->outcome_notes
+                            ? $fu->outcome_notes
+                            : $fu->notes ?? '')
+                        : '';
                     $rowData[] = $fu ? \Carbon\Carbon::parse($fu->followup_date)->format('d-m-Y') : '';
+                    $rowData[] = $fuCounselingStage($fu);
                     $rowData[] = $fuNote;
                 } else {
-                    // All followups — pad to $maxFuCount
                     for ($i = 0; $i < $maxFuCount; $i++) {
-                        $fu        = $orderedFollowups->get($i);
-                        $fuNote    = $fu ? ($fu->status === 'completed' && $fu->outcome_notes ? $fu->outcome_notes : $fu->notes ?? '') : '';
+                        $fu     = $orderedFollowups->get($i);
+                        $fuNote = $fu
+                            ? ($fu->status === 'completed' && $fu->outcome_notes
+                                ? $fu->outcome_notes
+                                : $fu->notes ?? '')
+                            : '';
                         $rowData[] = $fu ? \Carbon\Carbon::parse($fu->followup_date)->format('d-m-Y') : '';
+                        $rowData[] = $fuCounselingStage($fu);
                         $rowData[] = $fuNote;
                     }
                 }
@@ -1650,20 +1658,28 @@ class EduLeadController extends Controller
     // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
-    private function getAssignableUsers(User $user): \Illuminate\Support\Collection
+    private function getAssignableUsers(User $user)
     {
         if ($user->isSuperAdmin() || $user->isOperationHead()) {
-            return User::telecallers()->active()
+            return User::where('role', '!=', 'super_admin')
+                ->where('is_active', true)
                 ->with('branch:id,name')
-                ->select('id', 'name', 'branch_id')
+                ->select('id', 'name', 'branch_id', 'role')
+                ->orderBy('branch_id')
                 ->orderBy('name')
                 ->get();
         }
 
         if ($user->isLeadManager()) {
-            return User::telecallers()->active()
-                ->where('branch_id', $user->branch_id)
-                ->select('id', 'name', 'branch_id')
+            return User::where('role', '!=', 'super_admin')
+                ->where('is_active', true)
+                ->where(function ($q) use ($user) {
+                    $q->where('branch_id', $user->branch_id)
+                    ->orWhere('role', 'operation_head');
+                })
+                ->with('branch:id,name')
+                ->select('id', 'name', 'branch_id', 'role')
+                ->orderBy('branch_id')
                 ->orderBy('name')
                 ->get();
         }
@@ -1815,5 +1831,62 @@ class EduLeadController extends Controller
             'value'   => $value,
         ]);
     }
+
+    // =========================================================================
+    // BULK DELETE
+    // =========================================================================
+    public function bulkDelete(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            if (!$user->canDelete()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Only Super Admin can delete leads.',
+                ], 403);
+            }
+
+            $validated = $request->validate([
+                'lead_ids'   => 'required|array|min:1',
+                'lead_ids.*' => 'exists:edu_leads,id',
+            ]);
+
+            $leads   = EduLead::whereIn('id', $validated['lead_ids'])->get();
+            $count   = 0;
+            $skipped = 0;
+
+            foreach ($leads as $lead) {
+                $lead->delete();
+                Log::info('Bulk delete: lead deleted', [
+                    'lead_id'    => $lead->id,
+                    'lead_code'  => $lead->lead_code,
+                    'deleted_by' => $user->id,
+                ]);
+                $count++;
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$count} lead(s) deleted successfully.",
+                'count'   => $count,
+                'skipped' => $skipped,
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error.',
+                'errors'  => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Bulk delete error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting leads.',
+            ], 500);
+        }
+    }
+
 
 }

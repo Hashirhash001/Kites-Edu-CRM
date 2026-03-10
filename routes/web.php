@@ -84,6 +84,9 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::post('/edu-leads/bulk-assign', [EduLeadController::class, 'bulkAssign'])
         ->name('edu-leads.bulk-assign');
 
+    Route::delete('/edu-leads/bulk-delete', [EduLeadController::class, 'bulkDelete'])
+    ->name('edu-leads.bulk-delete');
+
     Route::post('/edu-leads/{eduLead}/calls', [EduLeadController::class, 'addCall'])
         ->name('edu-leads.addCall');
 

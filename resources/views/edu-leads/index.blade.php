@@ -982,10 +982,15 @@
                             <option value="">All</option>
                             <option value="unassigned">Unassigned</option>
                             @foreach($assignableUsers as $u)
-                                <option value="{{ $u->id }}">
-                                    {{ $u->name }}{{ $u->branch ? ' — '.$u->branch->name : '' }}
+                                <option value="{{ $u->id }}"
+                                        data-branch="{{ $u->branch_id }}"
+                                        data-branch-name="{{ $u->branch?->name }}">
+                                    {{ $u->name }}
+                                    ({{ ucfirst(str_replace('_', ' ', $u->role)) }})
+                                    {{ $u->branch ? '· ' . $u->branch->name : '' }}
                                 </option>
                             @endforeach
+
                         </select>
                     </div>
                     @endif
@@ -1035,14 +1040,13 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2 flex-wrap align-items-center">
-                    {{-- <span class="badge bg-primary py-2 px-3">
-                        <i class="las la-school me-1"></i>Schools
-                        <span id="ic-school">{{ $institutionCounts['school'] ?? 0 }}</span>
-                    </span>
-                    <span class="badge bg-success py-2 px-3">
-                        <i class="las la-graduation-cap me-1"></i>Colleges
-                        <span id="ic-college">{{ $institutionCounts['college'] ?? 0 }}</span>
-                    </span> --}}
+
+                    @if(auth()->user()->canDelete())
+                    <button type="button" class="btn btn-danger d-none" id="bulkDeleteBtn">
+                        <i class="las la-trash me-1"></i>Delete Selected
+                        <span id="bulkDeleteCount" class="badge bg-white text-danger ms-1">0</span>
+                    </button>
+                    @endif
 
                     @if(auth()->user()->canAssignLeads())
                     <button type="button" class="btn btn-info d-none" id="bulkAssignBtn">
@@ -1153,6 +1157,7 @@
                 <input type="hidden" id="assignLeadBranch" name="lead_branch_id">
                 <div class="modal-body">
 
+                    {{-- Lead info --}}
                     <div class="alert alert-light border mb-3 py-2 px-3">
                         <div class="d-flex gap-3 flex-wrap">
                             <div>
@@ -1172,32 +1177,34 @@
                         </div>
                     </div>
 
+                    {{-- Current assignee --}}
                     <div class="mb-3" id="currentAssignmentBlock" style="display:none">
                         <small class="text-muted">Currently assigned to</small>
                         <span class="badge bg-secondary ms-2" id="currentAssigneeLabel"></span>
                     </div>
 
+                    {{-- Updated info alert --}}
                     <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3">
-                        <i class="las la-info-circle mt-1" style="font-size:1.1rem;flex-shrink:0;"></i>
+                        <i class="las la-info-circle mt-1" style="font-size:1.1rem;flex-shrink:0"></i>
                         <div class="small">
-                            Only telecallers assigned to <strong id="assignBranchNotice">this lead's branch</strong>
-                            are shown below. Assigning across branches is not allowed.
+                            <strong>Telecallers and Lead Managers</strong> can only be assigned leads
+                            from their own branch. <strong>Operation Heads</strong> can receive leads
+                            from any branch. Cross-branch options are
+                            <span class="text-muted fst-italic">disabled</span>.
                         </div>
                     </div>
 
+                    {{-- Assign To select — populated dynamically by JS --}}
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
-                            <i class="las la-user-tie me-1"></i>Assign To Telecaller
+                            <i class="las la-user-tie me-1"></i>Assign To
                             <span class="text-danger">*</span>
                         </label>
                         <select class="form-select" id="assignTelecaller" name="assigned_to" required>
-                            <option value="">Choose telecaller...</option>
+                            <option value=""></option>
                         </select>
-                        <div id="assignTelecallerEmpty" class="text-danger small mt-1" style="display:none;">
-                            <i class="las la-exclamation-triangle me-1"></i>
-                            No telecallers are available in this branch.
-                            Please add a telecaller to <strong id="assignBranchEmptyName"></strong> first.
-                        </div>
+                        {{-- Live branch match feedback --}}
+                        <div id="assignBranchMatchInfo" class="small mt-2" style="display:none"></div>
                     </div>
 
                     <div class="mb-1">
@@ -1232,6 +1239,7 @@
                 @csrf
                 <div class="modal-body">
 
+                    {{-- Selected count --}}
                     <div class="alert mb-3 py-3 px-4"
                          style="background:linear-gradient(135deg,#fff3cd,#ffe69c);border-left:4px solid #ffc107;">
                         <div class="d-flex align-items-center gap-3">
@@ -1243,25 +1251,17 @@
                         </div>
                     </div>
 
-                    <div class="alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mb-3"
-                         id="bulkBranchWarning" style="display:none !important;">
-                        <i class="las la-exclamation-triangle mt-1" style="font-size:1.1rem;flex-shrink:0;"></i>
-                        <div class="small">
-                            <strong>Mixed branches detected.</strong>
-                            Leads from different branches are selected. Only leads matching the
-                            selected telecaller's branch will be assigned — others will be skipped automatically.
-                        </div>
-                    </div>
-
-                    <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3"
-                         id="bulkBranchInfo">
+                    {{-- Branch rule info (always visible) --}}
+                    <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3">
                         <i class="las la-info-circle mt-1" style="font-size:1.1rem;flex-shrink:0;"></i>
                         <div class="small">
-                            The selected telecaller must belong to the <strong>same branch</strong> as the leads.
-                            Leads from a different branch will be <strong>skipped</strong> automatically.
+                            <strong>Telecallers and Lead Managers</strong> can only receive leads from
+                            their own branch — mismatched leads will be skipped automatically.
+                            <strong>Operation Heads</strong> can be assigned leads from any branch.
                         </div>
                     </div>
 
+                    {{-- Selected leads list --}}
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-muted small mb-1">
                             <i class="las la-list me-1"></i>Selected Leads
@@ -1272,23 +1272,33 @@
                         </div>
                     </div>
 
+                    {{-- Assign To select — populated dynamically by JS --}}
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
-                            <i class="las la-user-tie me-1"></i>Assign To Telecaller
+                            <i class="las la-user-tie me-1"></i>Assign To
                             <span class="text-danger">*</span>
                         </label>
                         <select class="form-select" id="bulkTelecaller" name="assigned_to" required>
-                            <option value="">Choose telecaller...</option>
-                            @foreach($assignableUsers as $u)
-                                <option value="{{ $u->id }}"
-                                        data-branch="{{ $u->branch_id }}"
-                                        data-branch-name="{{ $u->branch?->name }}">
-                                    {{ $u->name }}
-                                    @if($u->branch) — {{ $u->branch->name }} @endif
-                                </option>
+                            <option value="">Choose user...</option>
+                            @php
+                                $grouped = $assignableUsers->groupBy(fn($u) => $u->branch?->name ?? 'No Branch');
+                            @endphp
+                            @foreach($grouped as $branchName => $users)
+                                <optgroup label="{{ $branchName }}">
+                                    @foreach($users as $u)
+                                        <option value="{{ $u->id }}"
+                                                data-branch="{{ $u->branch_id }}"
+                                                data-branch-name="{{ $u->branch?->name ?? 'No Branch' }}"
+                                                data-role="{{ $u->role }}">
+                                            {{ $u->name }}
+                                            ({{ ucfirst(str_replace('_', ' ', $u->role)) }})
+                                        </option>
+                                    @endforeach
+                                </optgroup>
                             @endforeach
                         </select>
-                        <div id="bulkBranchMatchInfo" class="small mt-2" style="display:none;"></div>
+                        {{-- Live branch match feedback --}}
+                        <div id="bulkBranchMatchInfo" class="small mt-2" style="display:none"></div>
                     </div>
 
                     <div class="mb-1">
@@ -1304,11 +1314,86 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="las la-times me-1"></i>Cancel
                     </button>
-                    <button type="submit" class="btn btn-info text-white">
+                    <button type="submit" class="btn btn-info text-white" id="bulkAssignSubmitBtn">
                         <i class="las la-check-double me-1"></i>Assign All Selected
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+@endif
+
+@if(auth()->user()->canDelete())
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="las la-exclamation-triangle me-2"></i>Confirm Bulk Delete
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                {{-- Warning banner --}}
+                <div class="alert alert-danger d-flex align-items-start gap-3 mb-4">
+                    <i class="las la-exclamation-circle" style="font-size:2rem;flex-shrink:0;"></i>
+                    <div>
+                        <strong class="d-block mb-1">This action is permanent and cannot be undone.</strong>
+                        <span class="small">All selected leads, their followups, call logs, and notes
+                        will be permanently deleted.</span>
+                    </div>
+                </div>
+
+                {{-- Count summary --}}
+                <div class="text-center mb-4">
+                    <div style="font-size:3rem;font-weight:700;color:#dc3545;" id="bulkDeleteModalCount">0</div>
+                    <div class="text-muted fw-semibold">lead(s) will be permanently deleted</div>
+                </div>
+
+                {{-- ✅ Advanced stage warning — shown dynamically --}}
+                <div id="bulkDeleteAdvancedWarning"
+                    class="alert mb-3 py-3 px-3"
+                    style="display:none;background:#fff8e1;border-left:4px solid #ffc107;border-radius:6px;">
+                </div>
+
+                {{-- Leads list --}}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-muted small mb-2">
+                        <i class="las la-list me-1"></i>Leads to be deleted:
+                    </label>
+                    <div id="bulkDeleteLeadsList"
+                         style="max-height:250px;overflow-y:auto;border:1px solid #f5c2c7;
+                                border-radius:8px;background:#fff5f5;padding:8px;">
+                    </div>
+                </div>
+
+                {{-- Type confirmation --}}
+                <div class="mb-2">
+                    <label class="form-label fw-semibold">
+                        Type <code class="text-danger">DELETE</code> to confirm:
+                    </label>
+                    <input type="text"
+                           id="bulkDeleteConfirmInput"
+                           class="form-control border-danger"
+                           placeholder='Type "DELETE" here...'
+                           autocomplete="off">
+                    <div class="invalid-feedback" id="bulkDeleteConfirmError">
+                        You must type DELETE to proceed.
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="las la-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="bulkDeleteConfirmBtn" disabled>
+                    <i class="las la-trash me-1"></i>Yes, Delete Permanently
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -1819,6 +1904,8 @@ $(document).ready(function () {
                     return loadLeads(lastPage);
                 }
 
+                $('#selectAll').prop('checked', false);
+                $('.lead-checkbox').prop('checked', false);
                 $('#leadsTableBody').html(res.html || '');
                 $('#paginationContainer').html(res.pagination || '');
 
@@ -1860,7 +1947,6 @@ $(document).ready(function () {
                 }
 
                 $('#leadsTable').removeClass('table-loading');
-                $('#selectAll').prop('checked', false);
                 updateBulkBtn();
             },
             error: function (xhr, status) {
@@ -1938,7 +2024,10 @@ $(document).ready(function () {
     $('#dateFrom, #dateTo').on('change', function () { updateActiveFilterCount(); if (initialized) loadLeads(1); });
 
     // per_page -> page 1
-    $('#perPageSelect').on('change', function () { if (initialized) loadLeads(1); });
+    $('#perPageSelect').on('change', function () {
+        $('#selectAll').prop('checked', false);
+        if (initialized) loadLeads(1);
+    });
 
     // ── PAGINATION ───────────────────────────────────────────────────
     $(document).on('click', '#paginationContainer .pagination a', function (e) {
@@ -1985,38 +2074,60 @@ $(document).ready(function () {
     });
 
     $(document).on('change', '.lead-checkbox', function () {
+        // Sync the paired checkbox (desktop ↔ mobile) for the same lead
+        const val     = $(this).val();
+        const checked = $(this).is(':checked');
+        $(`.lead-checkbox[value="${val}"]`).prop('checked', checked);
+
         updateBulkBtn();
-        const total   = $('.lead-checkbox').length;
-        const checked = $('.lead-checkbox:checked').length;
-        $selectAll.prop('checked', total > 0 && total === checked);
+
+        // Update selectAll state
+        const totalUnique   = new Set($('.lead-checkbox').map(function () { return $(this).val(); }).get()).size;
+        const checkedUnique = getSelectedIds().length;
+        $selectAll.prop('checked', totalUnique > 0 && totalUnique === checkedUnique);
     });
 
+    // ✅ Single definitive definition — no duplicates anywhere
     function updateBulkBtn() {
-        const n = $('.lead-checkbox:checked').length;
+        const n = getSelectedIds().length;  // unique IDs only
         $('#bulkcount').text(n);
+        $('#bulkDeleteCount').text(n);
         $('#bulkAssignBtn').toggleClass('d-none', n === 0);
+        @if(auth()->user()->canDelete())
+        $('#bulkDeleteBtn').toggleClass('d-none', n === 0);
+        @endif
     }
 
     function getSelectedIds() {
-        return $('.lead-checkbox:checked').map(function () { return $(this).val(); }).get();
+        const ids = new Set();
+        $('.lead-checkbox:checked').each(function () {
+            ids.add($(this).val());
+        });
+        return Array.from(ids);
     }
 
     @if(auth()->user()->canAssignLeads())
 
-    // ── Telecaller pool — keyed by branch_id ────────────────────────
-    const telecallersByBranch = {};
-    @foreach($assignableUsers as $u)
-        (telecallersByBranch['{{ $u->branch_id }}'] ??= []).push({
-            id:     {{ $u->id }},
-            name:   '{{ addslashes($u->name) }}',
-            branch: '{{ addslashes($u->branch?->name ?? '') }}',
-        });
-    @endforeach
+    // ── All assignable users (flat list) ────────────────────────────
+    const allAssignableUsers = [
+        @foreach($assignableUsers as $u)
+        {
+            id:       {{ $u->id }},
+            name:     '{{ addslashes($u->name) }}',
+            branch:   '{{ addslashes($u->branch?->name ?? 'No Branch') }}',
+            branchId: '{{ $u->branch_id ?? '' }}',
+            role:     '{{ $u->role }}',
+        },
+        @endforeach
+    ];
+
+    // Branch-scoped roles — cannot receive cross-branch leads
+    const branchScopedRoles = ['telecaller', 'lead_manager'];
 
     // ── SINGLE ASSIGN ────────────────────────────────────────────────
     $(document).on('click', '.assignLeadBtn', function () {
         const btn        = $(this);
-        const branchId   = btn.data('branch-id');
+        const branchId   = String(btn.data('branch-id') || '');
         const branchName = btn.data('branch-name') || 'this branch';
 
         $('#assignLeadId').val(btn.data('id'));
@@ -2027,35 +2138,105 @@ $(document).ready(function () {
         $('#assignBranchNotice').text(branchName);
         $('#assignBranchEmptyName').text(branchName);
         $('#assignNotes').val('');
+        $('#assignBranchMatchInfo').hide();
+        $('#assignSubmitBtn').prop('disabled', false);
 
         const $select = $('#assignTelecaller');
-        const options = telecallersByBranch[branchId] || [];
-
         if ($select.hasClass('select2-hidden-accessible')) $select.select2('destroy');
-        $select.empty().append('<option value="">Choose telecaller...</option>');
+        $select.empty().append('<option value=""></option>');
 
-        if (options.length === 0) {
-            $('#assignTelecallerEmpty').show();
-            $('#assignSubmitBtn').prop('disabled', true);
-        } else {
-            $('#assignTelecallerEmpty').hide();
-            $('#assignSubmitBtn').prop('disabled', false);
-            options.forEach(function (u) {
-                $select.append(new Option(`${u.name} — ${u.branch}`, u.id));
+        // Group users by branch name
+        const grouped = {};
+        allAssignableUsers.forEach(function (u) {
+            const key = u.branch || 'No Branch';
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(u);
+        });
+
+        // Same-branch label first, then alphabetical
+        const sameBranchUser  = allAssignableUsers.find(u => u.branchId === branchId);
+        const sameBranchLabel = sameBranchUser ? sameBranchUser.branch : null;
+
+        const orderedKeys = Object.keys(grouped).sort((a, b) => {
+            if (a === sameBranchLabel) return -1;
+            if (b === sameBranchLabel) return 1;
+            return a.localeCompare(b);
+        });
+
+        orderedKeys.forEach(function (branchLabel) {
+            const $group = $(`<optgroup label="${branchLabel}"></optgroup>`);
+            grouped[branchLabel].forEach(function (u) {
+                const isSameBranch   = u.branchId === branchId;
+                const isBranchScoped = branchScopedRoles.includes(u.role);
+                const isBlocked      = isBranchScoped && !isSameBranch;
+                const roleLabel      = u.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+                let label = `${u.name} (${roleLabel})`;
+                if (isBlocked)                    label += ' — Different Branch';
+                if (!isBranchScoped && !isSameBranch) label += ' ⚠ Cross-branch';
+
+                const $opt = $(new Option(label, u.id));
+                $opt.attr('data-branch',      u.branchId);
+                $opt.attr('data-branch-name', u.branch);
+                $opt.attr('data-role',        u.role);
+                $opt.attr('data-blocked',     isBlocked ? '1' : '0');
+                if (isBlocked) $opt.prop('disabled', true);
+
+                $group.append($opt);
             });
-        }
+            $select.append($group);
+        });
 
         $select.select2({
-            theme: 'bootstrap-5',
-            placeholder: 'Choose telecaller...',
-            allowClear: true,
-            width: '100%',
+            theme:          'bootstrap-5',
+            placeholder:    'Choose user...',
+            allowClear:     true,
+            width:          '100%',
             dropdownParent: $('#assignLeadModal')
         });
 
+        // Live branch info on selection change
+        $select.off('change.branchinfo').on('change.branchinfo', function () {
+            const $info      = $('#assignBranchMatchInfo');
+            const opt        = $(this).find(':selected');
+            const selBranch  = String(opt.attr('data-branch') || '');
+            const selBranchN = opt.attr('data-branch-name') || 'No Branch';
+            const isBlocked  = opt.attr('data-blocked') === '1';
+
+            if (!$(this).val()) {
+                $info.hide();
+                $('#assignSubmitBtn').prop('disabled', false);
+                return;
+            }
+
+            if (isBlocked) {
+                $info.html(`<span class="text-danger">
+                    <i class="las la-times-circle me-1"></i>
+                    This user is in a different branch and cannot be assigned leads from
+                    <strong>${branchName}</strong>.
+                </span>`).show();
+                $('#assignSubmitBtn').prop('disabled', true);
+            } else if (selBranch === branchId) {
+                $info.html(`<span class="text-success">
+                    <i class="las la-check-circle me-1"></i>
+                    Same branch as lead (<strong>${selBranchN}</strong>). Ready to assign.
+                </span>`).show();
+                $('#assignSubmitBtn').prop('disabled', false);
+            } else {
+                $info.html(`<span class="text-info">
+                    <i class="las la-info-circle me-1"></i>
+                    Cross-branch assignment — user is in <strong>${selBranchN}</strong>.
+                    Allowed for this role.
+                </span>`).show();
+                $('#assignSubmitBtn').prop('disabled', false);
+            }
+        });
+
+        // Show current assignee
         const assignee = btn.data('assignee');
         $('#currentAssigneeLabel').text(assignee);
         $('#currentAssignmentBlock').toggle(!!assignee);
+        $('#assignTelecallerEmpty').hide();
 
         $('#assignLeadModal').modal('show');
     });
@@ -2065,25 +2246,30 @@ $(document).ready(function () {
 
         const telecaller = $('#assignTelecaller').val();
         if (!telecaller) {
-            Swal.fire({ icon: 'warning', title: 'Select Telecaller', text: 'Please choose a telecaller.' });
+            Swal.fire({ icon: 'warning', title: 'Select User', text: 'Please choose a user to assign.' });
             return;
         }
 
-        const $btn  = $(this).find('[type=submit]');
-        const orig  = $btn.html();
+        const $btn = $(this).find('[type=submit]');
+        const orig = $btn.html();
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Assigning...');
 
         $.ajax({
             url:  `/edu-leads/${$('#assignLeadId').val()}/assign`,
             type: 'POST',
-            data: { assigned_to: telecaller, notes: $('#assignNotes').val() },
+            data: {
+                assigned_to: telecaller,
+                notes:       $('#assignNotes').val(),
+            },
             success: function (res) {
+                $btn.prop('disabled', false).html(orig);
                 $('#assignLeadModal').modal('hide');
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Assigned!',
-                    html: `Lead assigned to <strong>${res.telecaller_name}</strong>`,
-                    timer: 2500,
+                    icon:              'success',
+                    title:             'Assigned!',
+                    html:              `Lead assigned to <strong>${res.telecaller_name}</strong>` +
+                                    (res.branch_name ? ` <span class="text-muted small">(${res.branch_name})</span>` : ''),
+                    timer:             2500,
                     showConfirmButton: false,
                 }).then(() => loadLeads(currentPage));
             },
@@ -2094,6 +2280,13 @@ $(document).ready(function () {
         });
     });
 
+    // Safety net — reset button if modal closed any other way
+    $('#assignLeadModal').on('hidden.bs.modal', function () {
+        const $btn = $('#assignLeadForm').find('[type=submit]');
+        $btn.prop('disabled', false).html('<i class="las la-check me-1"></i>Assign Lead');
+        $('#assignBranchMatchInfo').hide();
+    });
+
     // ── BULK ASSIGN ───────────────────────────────────────────────────
     $('#bulkAssignBtn').on('click', function () {
         const selected = getSelectedIds();
@@ -2102,6 +2295,7 @@ $(document).ready(function () {
         $('#bulkTelecaller').val('').trigger('change');
         $('#bulkNotes').val('');
         $('#bulkBranchMatchInfo').hide();
+        $('#bulkBranchWarning').hide();
 
         const list     = $('#selectedLeadsList').empty();
         const branches = new Set();
@@ -2124,44 +2318,65 @@ $(document).ready(function () {
                         <span class="badge bg-secondary">${code}</span>
                         <span class="fw-semibold">${name}</span>
                         ${branchName ? `<span class="badge bg-soft-primary text-primary border border-primary ms-1">${branchName}</span>` : ''}
-                        ${assignee  ? `<span class="text-muted small ms-auto">${assignee}</span>` : ''}
+                        ${assignee   ? `<span class="text-muted small ms-auto">${assignee}</span>` : ''}
                     </div>
                 `);
             });
         }
 
-        if (branches.size > 1) $('#bulkBranchWarning').show();
-        else                   $('#bulkBranchWarning').hide();
-
         $('#bulkAssignModal').modal('show');
     });
 
-    // Live branch match preview
+    // Live branch match preview for bulk
     $('#bulkTelecaller').on('change', function () {
         const selected         = getSelectedIds();
-        const telecallerBranch = String($(this).find(':selected').data('branch') || '');
-        const branchName       = $(this).find(':selected').data('branch-name') || '';
+        const telecallerBranch = String($(this).find(':selected').attr('data-branch') || '');
+        const branchName       = $(this).find(':selected').attr('data-branch-name') || 'selected branch';
+        const assigneeRole     = $(this).find(':selected').attr('data-role') || '';
+        const isBranchScoped   = branchScopedRoles.includes(assigneeRole);
         const $info            = $('#bulkBranchMatchInfo');
 
         if (!$(this).val() || !selected.length) { $info.hide(); return; }
 
-        let match = 0, skip = 0;
+        let same = 0, cross = 0, blocked = 0;
+
         selected.forEach(function (id) {
             const row        = $(`input.lead-checkbox[value="${id}"]`).closest('tr');
             const leadBranch = String(row.find('input.lead-checkbox').data('branch-id') || '');
-            (leadBranch === telecallerBranch) ? match++ : skip++;
+
+            if (leadBranch === telecallerBranch) {
+                same++;
+            } else if (isBranchScoped) {
+                blocked++;
+            } else {
+                cross++;
+            }
         });
 
-        if (skip === 0) {
-            $info.html(`<span class="text-success"><i class="las la-check-circle me-1"></i>
-                All <strong>${match}</strong> selected leads are in <strong>${branchName}</strong>. Ready to assign.</span>`).show();
-        } else if (match === 0) {
-            $info.html(`<span class="text-danger"><i class="las la-times-circle me-1"></i>
-                None of the selected leads belong to <strong>${branchName}</strong>. All will be skipped.</span>`).show();
+        if (isBranchScoped && blocked > 0 && same === 0) {
+            $info.html(`<span class="text-danger">
+                <i class="las la-times-circle me-1"></i>
+                All <strong>${blocked}</strong> lead(s) are from a different branch.
+                None can be assigned to this ${assigneeRole.replace('_', ' ')}.
+            </span>`).show();
+        } else if (isBranchScoped && blocked > 0) {
+            $info.html(`<span class="text-warning">
+                <i class="las la-exclamation-triangle me-1"></i>
+                <strong>${same}</strong> will be assigned, <strong>${blocked}</strong> will be skipped
+                (different branch — not allowed for telecaller / lead manager).
+            </span>`).show();
+        } else if (cross === 0) {
+            $info.html(`<span class="text-success">
+                <i class="las la-check-circle me-1"></i>
+                All <strong>${same}</strong> lead(s) match the branch. Ready to assign.
+            </span>`).show();
         } else {
-            $info.html(`<span class="text-warning"><i class="las la-exclamation-triangle me-1"></i>
-                <strong>${match}</strong> lead(s) will be assigned, <strong>${skip}</strong> will be skipped
-                (not in <strong>${branchName}</strong>).</span>`).show();
+            $info.html(`<span class="text-info">
+                <i class="las la-info-circle me-1"></i>
+                <strong>${same}</strong> same-branch and <strong>${cross}</strong> cross-branch —
+                all <strong>${same + cross}</strong> will be assigned to
+                <strong>${branchName}</strong>.
+            </span>`).show();
         }
     });
 
@@ -2171,8 +2386,18 @@ $(document).ready(function () {
         const selected   = getSelectedIds();
         const telecaller = $('#bulkTelecaller').val();
 
-        if (!selected.length) { Swal.fire({ icon: 'warning', title: 'Nothing Selected', text: 'Select at least one lead.' }); return; }
-        if (!telecaller)      { Swal.fire({ icon: 'warning', title: 'Select Telecaller', text: 'Please choose a telecaller.' }); return; }
+        if (!selected.length) {
+            Swal.fire({ icon: 'warning', title: 'Nothing Selected', text: 'Select at least one lead.' });
+            return;
+        }
+        if (!telecaller) {
+            Swal.fire({ icon: 'warning', title: 'Select User', text: 'Please choose a user to assign.' });
+            return;
+        }
+
+        const $btn = $('#bulkAssignForm').find('[type=submit]');
+        const orig = $btn.html();
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Assigning...');
 
         $('#bulkAssignModal').modal('hide');
 
@@ -2181,8 +2406,10 @@ $(document).ready(function () {
             type: 'POST',
             data: { lead_ids: selected, assigned_to: telecaller, notes: $('#bulkNotes').val() },
             success: function (res) {
-                let html = `<strong>${res.count}</strong> lead(s) assigned to <strong>${res.telecaller_name}</strong>.`;
-                if (res.skipped > 0) html += `<br><small class="text-muted">${res.skipped} skipped (branch mismatch).</small>`;
+                $btn.prop('disabled', false).html(orig);
+                let html = `<strong>${res.count}</strong> lead(s) assigned to <strong>${res.telecaller_name}</strong>`;
+                if (res.branch_name) html += ` <span class="text-muted small">(${res.branch_name})</span>`;
+                if (res.skipped > 0) html += `<br><small class="text-muted">${res.skipped} skipped (branch mismatch or not found).</small>`;
 
                 Swal.fire({ icon: 'success', title: 'Done!', html, timer: 3500 })
                     .then(function () {
@@ -2192,9 +2419,16 @@ $(document).ready(function () {
                     });
             },
             error: function (xhr) {
+                $btn.prop('disabled', false).html(orig);
                 Swal.fire({ icon: 'error', title: 'Error', text: xhr.responseJSON?.message || 'Bulk assign failed.' });
             }
         });
+    });
+
+    // Safety net — reset bulk button if modal closed any other way
+    $('#bulkAssignModal').on('hidden.bs.modal', function () {
+        const $btn = $('#bulkAssignForm').find('[type=submit]');
+        $btn.prop('disabled', false).html('<i class="las la-check-double me-1"></i>Assign All Selected');
     });
 
     @endif
@@ -2235,6 +2469,196 @@ $(document).ready(function () {
             });
         });
     });
+
+    @if(auth()->user()->canDelete())
+
+    // Open bulk delete modal
+    $('#bulkDeleteBtn').on('click', function () {
+        const selected = getSelectedIds();
+        if (!selected.length) return;
+
+        $('#bulkDeleteModalCount').text(selected.length);
+        $('#bulkDeleteConfirmInput').val('').removeClass('is-invalid is-valid');
+        $('#bulkDeleteConfirmBtn').prop('disabled', true);
+
+        const list = $('#bulkDeleteLeadsList').empty();
+
+        // ── Advanced stage definitions ───────────────────────────────
+        // final_status advanced values
+        const advancedFinalStatuses = {
+            'follow_up': 'Follow Up',
+            'admitted': 'Admitted',
+        };
+
+        // status (counseling_stage) advanced values
+        const advancedStages = {
+            'booking':                      'Booking',
+            'application_form_submitted':   'Application Submitted',
+            'whatsapp_link_submitted':      'WhatsApp Link Submitted',
+            'cancelled':                    'Cancelled',
+        };
+
+        const stageCounts   = {};
+        const advancedLeads = [];
+
+        selected.forEach(function (id) {
+            // Use desktop row only to avoid double-counting
+            const $checkbox  = $(`.leads-desktop-view input.lead-checkbox[value="${id}"]`);
+            const row        = $checkbox.closest('tr');
+
+            const code        = row.find('td').eq(1).text().trim();
+            const name        = row.find('.lead-name-link').text().trim();
+            const phone       = row.find('.lead-phone').text().trim();
+            const branchName  = row.find('.lead-branch-name').text().trim();
+            const finalStatus = $checkbox.attr('data-final-status') || '';
+            const stage       = $checkbox.attr('data-stage') || '';
+            const $fsBadge    = row.find('.fs-badge').first();
+            const statusText  = $fsBadge.text().trim();
+
+            // Check advanced — final_status first, then counseling stage
+            let isAdvanced    = false;
+            let advancedLabel = '';
+
+            if (advancedFinalStatuses[finalStatus]) {
+                isAdvanced    = true;
+                advancedLabel = advancedFinalStatuses[finalStatus];
+            } else if (advancedStages[stage]) {
+                isAdvanced    = true;
+                advancedLabel = advancedStages[stage];
+            }
+
+            if (isAdvanced) {
+                stageCounts[advancedLabel] = (stageCounts[advancedLabel] || 0) + 1;
+                advancedLeads.push({ name, code, advancedLabel });
+            }
+
+            list.append(`
+                <div class="d-flex align-items-center gap-2 flex-wrap py-2 border-bottom"
+                    style="border-color:#f5c2c7 !important;">
+                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger">${code}</span>
+                    <span class="fw-semibold">${name || 'Unknown'}</span>
+                    ${phone      ? `<span class="text-muted small"><i class="las la-phone me-1"></i>${phone}</span>` : ''}
+                    ${branchName ? `<span class="badge bg-soft-primary text-primary border border-primary">${branchName}</span>` : ''}
+                    ${isAdvanced
+                        ? `<span class="ms-auto badge bg-warning text-dark">
+                            <i class="las la-exclamation-triangle me-1"></i>${advancedLabel}
+                        </span>`
+                        : `<span class="ms-auto badge bg-secondary">${statusText}</span>`
+                    }
+                </div>
+            `);
+        });
+
+        // ── Build advanced stage warning block ───────────────────────
+        const $warning  = $('#bulkDeleteAdvancedWarning');
+        const stageKeys = Object.keys(stageCounts);
+
+        if (stageKeys.length > 0) {
+            const total = stageKeys.reduce((sum, k) => sum + stageCounts[k], 0);
+
+            const stageBreakdown = stageKeys.map(k =>
+                `<span class="badge bg-warning text-dark me-1">${stageCounts[k]} ${k}</span>`
+            ).join('');
+
+            $warning.html(`
+                <div class="d-flex align-items-start gap-2">
+                    <i class="las la-exclamation-triangle text-warning mt-1"
+                    style="font-size:1.4rem;flex-shrink:0"></i>
+                    <div>
+                        <strong class="d-block text-warning mb-1">
+                            ⚠ ${total} lead(s) are in advanced stages!
+                        </strong>
+                        <div class="mb-2">${stageBreakdown}</div>
+                        <ul class="mb-0 ps-3 small text-danger">
+                            ${advancedLeads.map(l =>
+                                `<li><strong>${l.code}</strong> — ${l.name}
+                                <span class="text-muted">(${l.advancedLabel})</span></li>`
+                            ).join('')}
+                        </ul>
+                        <div class="small text-muted mt-2">
+                            These leads have significant progress. Deleting them is
+                            <strong class="text-danger">irreversible</strong>.
+                        </div>
+                    </div>
+                </div>
+            `).show();
+        } else {
+            $warning.hide().empty();
+        }
+
+        $('#bulkDeleteModal').modal('show');
+    });
+
+    // Enable confirm button only when user types DELETE exactly
+    $('#bulkDeleteConfirmInput').on('input', function () {
+        const val = $(this).val().trim();
+        if (val === 'DELETE') {
+            $(this).removeClass('is-invalid').addClass('is-valid');
+            $('#bulkDeleteConfirmBtn').prop('disabled', false);
+        } else {
+            $(this).removeClass('is-valid').addClass('is-invalid');
+            $('#bulkDeleteConfirmBtn').prop('disabled', true);
+            $('#bulkDeleteConfirmError').text('You must type DELETE exactly to proceed.');
+        }
+    });
+
+    // Prevent accidental submit on Enter key in confirm input
+    $('#bulkDeleteConfirmInput').on('keydown', function (e) {
+        if (e.key === 'Enter') e.preventDefault();
+    });
+
+    // Execute bulk delete
+    $('#bulkDeleteConfirmBtn').on('click', function () {
+        if ($('#bulkDeleteConfirmInput').val().trim() !== 'DELETE') return;
+
+        const selected = getSelectedIds();
+        const $btn     = $(this);
+        const orig     = $btn.html();
+
+        $btn.prop('disabled', true).html(
+            '<span class="spinner-border spinner-border-sm me-1"></span>Deleting...'
+        );
+
+        $.ajax({
+            url:  "{{ route('edu-leads.bulk-delete') }}",
+            type: 'DELETE',
+            data: { lead_ids: selected },
+            success: function (res) {
+                $btn.prop('disabled', false).html(orig);
+                $('#bulkDeleteModal').modal('hide');
+
+                Swal.fire({
+                    icon:              'success',
+                    title:             'Deleted!',
+                    html:              `<strong>${res.count}</strong> lead(s) permanently deleted.`,
+                    timer:             2500,
+                    showConfirmButton: false,
+                }).then(function () {
+                    $('.lead-checkbox, #selectAll').prop('checked', false);
+                    updateBulkBtn();
+                    loadLeads(currentPage);
+                });
+            },
+            error: function (xhr) {
+                $btn.prop('disabled', false).html(orig);
+                Swal.fire({
+                    icon:  'error',
+                    title: 'Error',
+                    text:  xhr.responseJSON?.message || 'Bulk delete failed.',
+                });
+            }
+        });
+    });
+
+    // Reset modal state on close
+    $('#bulkDeleteModal').on('hidden.bs.modal', function () {
+        $('#bulkDeleteConfirmInput').val('').removeClass('is-invalid is-valid');
+        $('#bulkDeleteConfirmBtn')
+            .prop('disabled', true)
+            .html('<i class="las la-trash me-1"></i>Yes, Delete Permanently');
+    });
+
+    @endif
 
     // ── INITIALISE ────────────────────────────────────────────────────
     prePopulateFilters();

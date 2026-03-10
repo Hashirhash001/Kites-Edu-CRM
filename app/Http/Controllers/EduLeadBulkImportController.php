@@ -140,34 +140,33 @@ class EduLeadBulkImportController extends Controller
         $inst = $spreadsheet->createSheet();
         $inst->setTitle('Instructions');
         $inst->fromArray([
-            ['Column', 'Header Name', 'Required?', 'Accepted Values'],
-            ['A', '✅ Mobile Number',      '✅ YES', '10-15 digits, e.g. +919876543210'],
-            ['B', '✅ School/College Name', '✅ YES', 'Name of school or college'],
-            ['C', '✅ Department/Stream',   '✅ YES', 'e.g. Science, Commerce, Arts, Engineering, Medical'],
-            ['D', 'Student Name',           'No',  'Full name of student'],
-            ['E', 'WhatsApp Number',        'No',  'If blank, Mobile Number is used'],
-            ['F', 'Course Interested',      'No',  'e.g. MBBS, B.Tech, MBA, Nursing'],
-            ['G', 'Country',                'No',  'e.g. Russia, USA, UK, India'],
-            ['H', 'Source of Lead',         'No',  'Facebook, Google, Walk-in, Referral'],
-            ['I', 'Calling Staff Name',     'No',  'Must match a telecaller in the CRM'],
-            ['J', 'Call Date',              'No',  'DD/MM/YYYY'],
-            ['K', 'Call Status',            'No',  'Connected  or  Not Connected'],
-            ['L', 'Student Interest Level', 'No',  'Hot  /  Warm  /  Cold'],
-            ['M', 'Follow-up Date',         'No',  'DD/MM/YYYY'],
-            ['N', 'Follow-up Status',       'No',  'pending  /  completed'],
-            ['O', 'Remarks / Notes',        'No',  'Free text'],
-            ['P', 'Next Action',            'No',  'Free text'],
-            ['Q', 'Final Status',           'No',  'pending / contacted / follow_up / admitted / not_interested / dropped'],
-            ['', '', '', ''],
-            ['CRITICAL REQUIRED FIELDS:', '', '', ''],
-            ['1. Mobile Number - Must be unique (10-15 digits)', '', '', ''],
-            ['2. School/College Name - Institution name', '', '', ''],
-            ['3. Department/Stream - e.g. Science, Commerce, Medical', '', '', ''],
-            ['', '', '', ''],
-            ['TIPS:', '', '', ''],
-            ['Delete the example row (row 2) before uploading', '', '', ''],
-            ['Maximum 3000 rows per file', '', '', ''],
-            ['Duplicate Mobile Numbers will be skipped automatically', '', '', ''],
+            ['Column', 'Header Name',                          'Required?', 'Accepted Values'],
+            ['A',      'Mobile Number',                        'YES',    '10-15 digits, e.g. 919876543210'],
+            ['B',      'School/College Name',                  'No',        'Name of school or college'],
+            ['C',      'Department/Stream',                    'No',        'e.g. Science, Commerce, Arts'],
+            ['D',      'Student Name',                         'No',        'Full name of student'],
+            ['E',      'WhatsApp Number',                      'No',        'If blank, Mobile Number is used'],
+            ['F',      'Course Interested',                    'No',        'e.g. MBBS, B.Tech, MBA'],
+            ['G',      'Country',                              'No',        'e.g. Russia, USA, UK, India'],
+            ['H',      'Source of Lead',                       'No',        'Facebook, Google, Walk-in, Referral'],
+            ['I',      'Calling Staff Name',                   'No',        'Must match a telecaller in the CRM'],
+            ['J',      'Call Date',                            'No',        'DDMMYYYY'],
+            ['K',      'Call Status',                          'No',        'Connected or Not Connected'],
+            ['L',      'Student Interest Level',               'No',        'Hot / Warm / Cold'],
+            ['M',      'Follow-up Date',                       'No',        'DDMMYYYY'],
+            ['N',      'Follow-up Status',                     'No',        'pending / completed'],
+            ['O',      'Remarks / Notes',                      'No',        'Free text'],
+            ['P',      'Next Action',                          'No',        'Free text'],
+            ['Q',      'Final Status',                         'No',        'pending / contacted / follow_up / admitted / not_interested / dropped'],
+            [null, null, null, null],
+            [null, null, null, null],
+            [null, 'ONLY REQUIRED FIELD',                     null,        null],
+            [null, '1. Mobile Number - Must be unique, 10-15 digits', null, null],
+            [null, null, null, null],
+            [null, 'TIPS',                                    null,        null],
+            [null, 'Delete the example row (row 2) before uploading', null, null],
+            [null, 'Maximum 3000 rows per file',              null,        null],
+            [null, 'Duplicate Mobile Numbers will be skipped automatically', null, null],
         ], null, 'A1');
         $inst->getStyle('A1:D1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
@@ -493,15 +492,9 @@ class EduLeadBulkImportController extends Controller
                         }
                         $seenPhones[$phone] = true;
 
-                        $schoolCollege = trim((string)$row['school_college']);
-                        if (empty($schoolCollege)) {
-                            throw new \Exception('✅ School/College Name is REQUIRED');
-                        }
-
-                        $department = trim((string)$row['department']);
-                        if (empty($department)) {
-                            throw new \Exception('✅ Department/Stream is REQUIRED');
-                        }
+                        // Optional fields — use null if empty
+                        $schoolCollege = trim((string)($row['schoolcollege'] ?? ''));
+                        $department    = trim((string)($row['department'] ?? ''));
 
                         // ✅ Duplicate check — includes soft-deleted rows
                         $existingLead = EduLead::withTrashed()->where('phone', $phone)->first();
@@ -628,14 +621,33 @@ class EduLeadBulkImportController extends Controller
                             ? auth()->user()->branch_id
                             : null;
 
+                        // Determine institution type — only if schoolCollege is provided
+                        $institutionType = null;
+                        $schoolName      = null;
+                        $collegeName     = null;
+
+                        if (!empty($schoolCollege)) {
+                            $scLower = strtolower($schoolCollege);
+                            if (str_contains($scLower, 'school') || str_contains($scLower, 'high school') || str_contains($scLower, 'secondary')) {
+                                $institutionType = 'school';
+                                $schoolName      = $schoolCollege;
+                            } elseif (str_contains($scLower, 'college') || str_contains($scLower, 'university') || str_contains($scLower, 'institute')) {
+                                $institutionType = 'college';
+                                $collegeName     = $schoolCollege;
+                            } else {
+                                $institutionType = 'school';
+                                $schoolName      = $schoolCollege;
+                            }
+                        }
+
                         EduLead::create([
                             'phone'                => $phone,
-                            'school'               => $schoolName,
-                            'school_department'    => $institutionType === 'school' ? $department : null,
-                            'college'              => $collegeName,
-                            'college_department'   => $institutionType === 'college' ? $department : null,
-                            'institution_type'     => $institutionType,
-                            'name'                 => !empty($row['student_name']) ? trim($row['student_name']) : 'Lead-' . substr($phone, -4),
+                            'school'             => $schoolName,
+                            'school_department'  => ($institutionType === 'school' && !empty($department)) ? $department : null,
+                            'college'            => $collegeName,
+                            'college_department' => ($institutionType === 'college' && !empty($department)) ? $department : null,
+                            'institution_type'   => $institutionType,
+                            'name'               => !empty($row['studentname']) ? trim($row['studentname']) : 'Lead-' . substr($phone, -4),
                             'whatsapp_number'      => $cleanWhatsapp,
                             'course_interested'    => !empty($row['course']) ? $row['course'] : null,
                             'course_id'            => $courseId,

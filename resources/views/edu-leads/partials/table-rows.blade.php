@@ -106,15 +106,16 @@
 ════════════════════════════════════════════════════ --}}
 <tr class="leads-desktop-view">
 
-    {{-- Checkbox --}}
     @if($authUser->canAssignLeads())
     <td class="checkbox-col">
         <div class="checkbox-wrapper">
             <input type="checkbox"
-                   class="custom-checkbox lead-checkbox"
-                   value="{{ $lead->id }}"
-                   data-branch-id="{{ $lead->branch_id }}"
-                   data-branch-name="{{ $lead->branch?->name }}">
+                class="custom-checkbox lead-checkbox"
+                value="{{ $lead->id }}"
+                data-branch-id="{{ $lead->branch_id }}"
+                data-branch-name="{{ $lead->branch?->name }}"
+                data-final-status="{{ $lead->final_status }}"
+                data-stage="{{ $lead->status }}">
         </div>
     </td>
     @endif
@@ -301,11 +302,14 @@
                 <div class="lm-name-block">
                     @if($authUser->canAssignLeads())
                     <input type="checkbox"
-                           class="custom-checkbox lead-checkbox lm-checkbox"
-                           value="{{ $lead->id }}"
-                           data-branch-id="{{ $lead->branch_id }}"
-                           data-branch-name="{{ $lead->branch?->name }}">
+                        class="custom-checkbox lead-checkbox lm-checkbox"
+                        value="{{ $lead->id }}"
+                        data-branch-id="{{ $lead->branch_id }}"
+                        data-branch-name="{{ $lead->branch?->name }}"
+                        data-final-status="{{ $lead->final_status }}"
+                        data-stage="{{ $lead->status }}">
                     @endif
+
                     <div>
                         <a href="{{ route('edu-leads.show', $lead->id) }}" class="lm-name">{{ $lead->name }}</a>
                         <span class="lm-code">{{ $lead->lead_code }}</span>

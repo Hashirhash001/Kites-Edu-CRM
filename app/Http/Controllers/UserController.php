@@ -76,7 +76,7 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
-            'email'     => ['required', 'email', 'unique:users,email'],
+            'email'     => ['required', 'email', Rule::unique('users', 'email')->whereNull('deleted_at')],
             'password'  => ['required', 'min:8', 'confirmed'],
             'phone'     => ['nullable', 'string', 'max:20'],
             'role'      => ['required', Rule::in(array_keys(User::ROLES))],
@@ -91,15 +91,42 @@ class UserController extends Controller
             ], 422);
         }
 
+        $branchId = in_array($validated['role'], User::BRANCH_FREE_ROLES)
+            ? null
+            : ($validated['branch_id'] ?? null);
+
+        // ── Check for soft-deleted user with same email ───────────────────
+        $deletedUser = User::withTrashed()
+            ->where('email', $validated['email'])
+            ->whereNotNull('deleted_at')
+            ->first();
+
+        if ($deletedUser) {
+            // Restore and update with new details
+            $deletedUser->restore();
+            $deletedUser->update([
+                'name'      => $validated['name'],
+                'password'  => Hash::make($validated['password']),
+                'phone'     => $validated['phone'] ?? null,
+                'role'      => $validated['role'],
+                'branch_id' => $branchId,
+                'is_active' => $request->boolean('is_active', true),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "User {$deletedUser->name} restored and updated successfully!",
+            ]);
+        }
+
+        // ── Create fresh user ─────────────────────────────────────────────
         $user = User::create([
             'name'      => $validated['name'],
             'email'     => $validated['email'],
             'password'  => Hash::make($validated['password']),
             'phone'     => $validated['phone'] ?? null,
             'role'      => $validated['role'],
-            'branch_id' => in_array($validated['role'], User::BRANCH_FREE_ROLES)
-                            ? null
-                            : ($validated['branch_id'] ?? null),
+            'branch_id' => $branchId,
             'is_active' => $request->boolean('is_active', true),
         ]);
 
