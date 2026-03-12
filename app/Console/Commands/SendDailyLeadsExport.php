@@ -30,7 +30,13 @@ class SendDailyLeadsExport extends Command
         ->get();
 
         if ($leads->isEmpty()) {
-            $this->info('No leads created today. Skipping email.');
+            Mail::to('leads@ajkadm.com')->send(new DailyLeadsExport(null, null, [
+                'total'    => 0,
+                'hot'      => 0,
+                'admitted' => 0,
+                'pending'  => 0,
+            ]));
+            $this->info('No leads today — notification email sent.');
             return;
         }
 
