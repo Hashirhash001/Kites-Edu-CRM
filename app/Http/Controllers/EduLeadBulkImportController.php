@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class EduLeadBulkImportController extends Controller
@@ -73,21 +74,27 @@ class EduLeadBulkImportController extends Controller
             'G1' => 'Country',
             'H1' => 'Source of Lead',
             'I1' => 'Calling Staff Name',
-            'J1' => 'Call Date',
-            'K1' => 'Call Status (Connected/Not Connected)',
-            'L1' => 'Student Interest Level (Hot/Warm/Cold)',
-            'M1' => 'Follow-up Date',
-            'N1' => 'Follow-up Status',
-            'O1' => 'Remarks / Notes',
-            'P1' => 'Next Action',
-            'Q1' => 'Final Status (Admitted / Not Interested / Pending)',
+            'J1' => 'Call Status (Contacted/Not Attended)',
+            'K1' => 'Student Interest Level (Hot/Warm/Cold)',
+            'L1' => 'Remarks / Notes',
+            'M1' => 'Final Status (Admitted / Not Interested / Pending)',
+        ];
+
+        $widths = [
+            'A' => 20, 'B' => 30, 'C' => 22, 'D' => 22, 'E' => 18,
+            'F' => 22, 'G' => 16, 'H' => 18, 'I' => 20, 'J' => 32,
+            'K' => 34, 'L' => 30, 'M' => 40,
         ];
 
         foreach ($headers as $cell => $label) {
             $sheet->setCellValue($cell, $label);
         }
 
-        $sheet->getStyle('A1:Q1')->applyFromArray([
+        foreach ($widths as $col => $width) {
+            $sheet->getColumnDimension($col)->setWidth($width);
+        }
+
+        $sheet->getStyle('A1:M1')->applyFromArray([
             'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D4ED8']],
             'alignment' => [
@@ -95,87 +102,105 @@ class EduLeadBulkImportController extends Controller
                 'vertical'   => Alignment::VERTICAL_CENTER,
                 'wrapText'   => true,
             ],
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                    'color'       => ['rgb' => 'CBD5E1'],
+                ],
+            ],
         ]);
         $sheet->getRowDimension(1)->setRowHeight(42);
 
-        $widths = [
-            'A' => 20, 'B' => 30, 'C' => 22, 'D' => 22, 'E' => 18,
-            'F' => 22, 'G' => 16, 'H' => 18, 'I' => 20, 'J' => 14,
-            'K' => 32, 'L' => 34, 'M' => 14, 'N' => 18, 'O' => 30,
-            'P' => 24, 'Q' => 40,
-        ];
-        foreach ($widths as $col => $w) {
-            $sheet->getColumnDimension($col)->setWidth($w);
-        }
-
-        // Example row
         $example = [
             'A2' => '+919876543210',
             'B2' => 'St. Mary\'s High School',
-            'C2' => 'Science',
+            'C2' => 'Biology science',
             'D2' => 'Rahul Kumar',
             'E2' => '+919876543210',
             'F2' => 'MBBS',
             'G2' => 'Russia',
             'H2' => 'Facebook',
             'I2' => 'Aneesh',
-            'J2' => '11/01/2025',
-            'K2' => 'Connected',
-            'L2' => 'Hot',
-            'M2' => '15/01/2025',
-            'N2' => 'pending',
-            'O2' => 'Interested, needs fee structure',
-            'P2' => 'Send fee structure PDF',
-            'Q2' => 'Pending',
+            'J2' => 'Contacted',
+            'K2' => 'Hot',
+            'L2' => 'Interested, needs fee structure',
+            'M2' => 'Pending',
         ];
+
         foreach ($example as $cell => $val) {
             $sheet->setCellValue($cell, $val);
         }
-        $sheet->getStyle('A2:Q2')->applyFromArray([
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'DBEAFE']],
+
+        $sheet->getStyle('A2:M2')->applyFromArray([
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'DBEAFE']],
+            'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
+            'borders'   => [
+                'allBorders' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                    'color'       => ['rgb' => 'CBD5E1'],
+                ],
+            ],
         ]);
+        $sheet->getRowDimension(2)->setRowHeight(18);
         $sheet->freezePane('A2');
 
         // Instructions sheet
-        $inst = $spreadsheet->createSheet();
+        $inst = $spreadsheet->createSheet(1);
         $inst->setTitle('Instructions');
-        $inst->fromArray([
-            ['Column', 'Header Name',                          'Required?', 'Accepted Values'],
-            ['A',      'Mobile Number',                        'YES',    '10-15 digits, e.g. 919876543210'],
-            ['B',      'School/College Name',                  'No',        'Name of school or college'],
-            ['C',      'Department/Stream',                    'No',        'e.g. Science, Commerce, Arts'],
-            ['D',      'Student Name',                         'No',        'Full name of student'],
-            ['E',      'WhatsApp Number',                      'No',        'If blank, Mobile Number is used'],
-            ['F',      'Course Interested',                    'No',        'e.g. MBBS, B.Tech, MBA'],
-            ['G',      'Country',                              'No',        'e.g. Russia, USA, UK, India'],
-            ['H',      'Source of Lead',                       'No',        'Facebook, Google, Walk-in, Referral'],
-            ['I',      'Calling Staff Name',                   'No',        'Must match a telecaller in the CRM'],
-            ['J',      'Call Date',                            'No',        'DDMMYYYY'],
-            ['K',      'Call Status',                          'No',        'Connected or Not Connected'],
-            ['L',      'Student Interest Level',               'No',        'Hot / Warm / Cold'],
-            ['M',      'Follow-up Date',                       'No',        'DDMMYYYY'],
-            ['N',      'Follow-up Status',                     'No',        'pending / completed'],
-            ['O',      'Remarks / Notes',                      'No',        'Free text'],
-            ['P',      'Next Action',                          'No',        'Free text'],
-            ['Q',      'Final Status',                         'No',        'pending / contacted / follow_up / admitted / not_interested / dropped'],
+
+        $instRows = [
+            ['Column', 'Header Name',                                          'Required?', 'Accepted Values'],
+            ['A',      'Mobile Number',                                        'YES',       '10-15 digits, e.g. 919876543210'],
+            ['B',      'School / College Name',                                'No',        'Full institution name — if it contains "college", "university" or "institute" it is saved as college, otherwise as school'],
+            ['C',      'Department / Stream',                                  'No',        'e.g. Science, Commerce, Arts, Computer Science'],
+            ['D',      'Student Name',                                         'No',        'Full name of student'],
+            ['E',      'WhatsApp Number',                                      'No',        'If blank, Mobile Number is used'],
+            ['F',      'Course Interested',                                    'No',        'e.g. MBBS, B.Tech, MBA'],
+            ['G',      'Country',                                              'No',        'e.g. Russia, USA, UK, India'],
+            ['H',      'Source of Lead',                                       'No',        'Facebook, Google, Walk-in, Referral'],
+            ['I',      'Calling Staff Name',                                   'No',        'Must match a telecaller name in the CRM'],
+            ['J',      'Call Date',                                            'No',        'DD/MM/YYYY'],
+            ['K',      'Call Status',                                          'No',        'Contacted or Not Attended'],
+            ['L',      'Student Interest Level',                               'No',        'Hot / Warm / Cold'],
+            ['M',      'Follow-up Date',                                       'No',        'DD/MM/YYYY'],
+            ['N',      'Follow-up Status',                                     'No',        'pending / completed'],
+            ['O',      'Remarks / Notes',                                      'No',        'Free text'],
+            ['P',      'Next Action',                                          'No',        'Free text'],
+            ['Q',      'Final Status',                                         'No',        'pending / contacted / follow_up / admitted / not_interested / dropped'],
             [null, null, null, null],
+            [null, 'ONLY REQUIRED FIELD',                                      null,        null],
+            [null, '1. Mobile Number — Must be unique, 10-15 digits',          null,        null],
             [null, null, null, null],
-            [null, 'ONLY REQUIRED FIELD',                     null,        null],
-            [null, '1. Mobile Number - Must be unique, 10-15 digits', null, null],
-            [null, null, null, null],
-            [null, 'TIPS',                                    null,        null],
-            [null, 'Delete the example row (row 2) before uploading', null, null],
-            [null, 'Maximum 3000 rows per file',              null,        null],
-            [null, 'Duplicate Mobile Numbers will be skipped automatically', null, null],
-        ], null, 'A1');
+            [null, 'TIPS',                                                     null,        null],
+            [null, 'Delete the example row (row 2) before uploading',          null,        null],
+            [null, 'Maximum 3000 rows per file',                               null,        null],
+            [null, 'Duplicate Mobile Numbers will be skipped automatically',   null,        null],
+        ];
+
+        foreach ($instRows as $rowIndex => $rowData) {
+            foreach ($rowData as $colIndex => $value) {
+                if ($value !== null) {
+                    $colLetter = Coordinate::stringFromColumnIndex($colIndex + 1);
+                    $inst->setCellValue("{$colLetter}" . ($rowIndex + 1), $value);
+                }
+            }
+        }
+
         $inst->getStyle('A1:D1')->applyFromArray([
-            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D4ED8']],
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D4ED8']],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical'   => Alignment::VERTICAL_CENTER,
+            ],
         ]);
+        $inst->getRowDimension(1)->setRowHeight(22);
         $inst->getColumnDimension('A')->setWidth(8);
-        $inst->getColumnDimension('B')->setWidth(30);
+        $inst->getColumnDimension('B')->setWidth(50);
         $inst->getColumnDimension('C')->setWidth(12);
         $inst->getColumnDimension('D')->setWidth(60);
+
+        $spreadsheet->setActiveSheetIndex(0);
 
         $writer   = new Xlsx($spreadsheet);
         $filename = 'edu_leads_import_template_' . date('Y-m-d') . '.xlsx';
@@ -204,7 +229,11 @@ class EduLeadBulkImportController extends Controller
             'lead_source'     => ['source of lead', 'source', 'lead source'],
             'calling_staff'   => ['calling staff name', 'telecaller name', 'telecaller', 'calling staff', 'staff name'],
             'call_date'       => ['call date', 'date'],
-            'call_status'     => ['call status (connected/not connected)', 'call status'],
+            'call_status' => [
+                'call status (contacted/not attended)',
+                'call status (connected/not connected)',
+                'call status',
+            ],
             'interest_level'  => ['student interest level (hot/warm/cold)', 'interest level', 'interest'],
             'followup_date'   => ['follow-up date', 'followup date', 'follow up date'],
             'followup_status' => ['follow-up status', 'followup status', 'follow up status'],
@@ -430,8 +459,7 @@ class EduLeadBulkImportController extends Controller
                     for ($r = $headerRow + 1; $r <= $highestRow; $r++) {
                         $rowArr = $ws->rangeToArray('A' . $r . ':' . $highestCol . $r, null, true, false)[0];
                         $ph = $this->cleanPhone($rowArr[$colMap['mobile_number']] ?? '');
-                        if (!$ph) continue; // Skip rows without valid phone
-
+                        if (!$ph) continue;
                         $records[] = $this->buildRecord($rowArr, $colMap, $sheetName, $r);
                     }
                 }
@@ -466,7 +494,6 @@ class EduLeadBulkImportController extends Controller
 
             $processed = $successful = $failed = 0;
             $errors = $failedRowsData = [];
-
             $seenPhones = [];
 
             $progressKey = "import_progress_{$import->id}";
@@ -479,64 +506,42 @@ class EduLeadBulkImportController extends Controller
                 foreach ($chunk as $row) {
                     $rowId = "{$row['sheet_name']} Row {$row['excel_row']}";
                     try {
-                        // ═══════════════════════════════════════════════════════════
-                        //  REQUIRED FIELDS VALIDATION (ONLY 3)
-                        // ═══════════════════════════════════════════════════════════
+                        // ── 1. Phone (required) ───────────────────────────────
                         $phone = $this->cleanPhone($row['mobile_number']);
                         if (!$phone) {
                             throw new \Exception('✅ Mobile Number is REQUIRED (10-15 digits)');
                         }
 
+                        // ── 2. Intra-file duplicate ───────────────────────────
                         if (isset($seenPhones[$phone])) {
                             throw new \Exception("Duplicate mobile number {$phone} within this file");
                         }
                         $seenPhones[$phone] = true;
 
-                        // Optional fields — use null if empty
-                        $schoolCollege = trim((string)($row['schoolcollege'] ?? ''));
-                        $department    = trim((string)($row['department'] ?? ''));
+                        // ── 3. Optional text fields ───────────────────────────
+                        $school_college = trim((string)($row['school_college'] ?? ''));
+                        $department     = trim((string)($row['department']     ?? ''));
+                        $cleanWhatsapp  = $this->cleanPhone($row['whatsapp'] ?? '') ?: $phone;
 
-                        // ✅ Duplicate check — includes soft-deleted rows
-                        $existingLead = EduLead::withTrashed()->where('phone', $phone)->first();
+                        // ── 4. Institution type ───────────────────────────────
+                        $institution_type = null;
+                        $school_name      = null;
+                        $college_name     = null;
 
-                        if ($existingLead) {
-                            if ($existingLead->trashed()) {
-                                // Restore the soft-deleted lead and update with new data
-                                $existingLead->restore();
-                                $existingLead->update([
-                                    'name'           => !empty($row['student_name']) ? trim($row['student_name']) : $existingLead->name,
-                                    'final_status'   => $finalStatus,
-                                    'interest_level' => $interestLevel,
-                                    'remarks'        => !empty($row['remarks']) ? $row['remarks'] : $existingLead->remarks,
-                                    'assigned_to'    => $assignedTo ?? $existingLead->assigned_to,
-                                    'lead_source_id' => $leadSource?->id ?? $existingLead->lead_source_id,
-                                    'branch_id'      => $branchId ?? $existingLead->branch_id,
-                                ]);
-                                $successful++;
-                                $processed++;
-                                continue; // skip EduLead::create() below
+                        if (!empty($school_college)) {
+                            $scLower = strtolower($school_college);
+                            if (str_contains($scLower, 'college') ||
+                                str_contains($scLower, 'university') ||
+                                str_contains($scLower, 'institute')) {
+                                $institution_type = 'college';
+                                $college_name     = $school_college;
                             } else {
-                                throw new \Exception("Mobile number {$phone} already exists (active lead)");
+                                $institution_type = 'school';
+                                $school_name      = $school_college;
                             }
                         }
 
-                        $cleanWhatsapp = $this->cleanPhone($row['whatsapp'] ?? '') ?? $phone;
-                        if ($cleanWhatsapp !== $phone) {
-                            $existingWa = EduLead::withTrashed()
-                                ->where('whatsapp_number', $cleanWhatsapp)
-                                ->first();
-
-                            if ($existingWa && !$existingWa->trashed()) {
-                                throw new \Exception("WhatsApp number {$cleanWhatsapp} already exists");
-                            }
-                            // if trashed — allow through, phone is the primary unique key
-                        }
-
-                        // ═══════════════════════════════════════════════════════════
-                        // OPTIONAL FIELDS
-                        // ═══════════════════════════════════════════════════════════
-
-                        // Lead Source
+                        // ── 5. Lead Source ────────────────────────────────────
                         $leadSource = null;
                         if (!empty($row['lead_source'])) {
                             $leadSource = EduLeadSource::whereRaw('LOWER(name) = ?', [strtolower($row['lead_source'])])
@@ -552,7 +557,7 @@ class EduLeadBulkImportController extends Controller
                                 ?? EduLeadSource::where('is_active', true)->first();
                         }
 
-                        // Telecaller
+                        // ── 6. Telecaller ─────────────────────────────────────
                         $assignedTo = null;
                         if (!empty($row['calling_staff'])) {
                             $tc = User::where('is_active', true)
@@ -566,11 +571,11 @@ class EduLeadBulkImportController extends Controller
                             if ($tc) $assignedTo = $tc->id;
                         }
 
-                        // Interest Level
-                        $interestRaw   = strtolower(trim((string)$row['interest_level']));
+                        // ── 7. Interest level ─────────────────────────────────
+                        $interestRaw   = strtolower(trim((string)($row['interest_level'] ?? '')));
                         $interestLevel = in_array($interestRaw, ['hot', 'warm', 'cold']) ? $interestRaw : null;
 
-                        // Final Status
+                        // ── 8. Final status ───────────────────────────────────
                         $statusMap = [
                             'admitted'       => 'admitted',
                             'not interested' => 'not_interested',
@@ -584,9 +589,16 @@ class EduLeadBulkImportController extends Controller
                             'not_attended'   => 'not_attended',
                             'not attended'   => 'not_attended',
                         ];
-                        $finalStatus = $statusMap[strtolower(trim((string)$row['final_status']))] ?? 'pending';
+                        $finalStatus = $statusMap[strtolower(trim((string)($row['final_status'] ?? '')))] ?? 'pending';
 
-                        // Course
+                        $callStatusMap = [
+                            'contacted'    => 'contacted',
+                            'not attended' => 'not_attended',
+                            'not_attended' => 'not_attended',
+                        ];
+                        $call_status = $callStatusMap[strtolower(trim((string)($row['call_status'] ?? '')))] ?? null;
+
+                        // ── 9. Course ─────────────────────────────────────────
                         $courseId = null;
                         if (!empty($row['course'])) {
                             $course   = Course::where('is_active', true)
@@ -594,75 +606,82 @@ class EduLeadBulkImportController extends Controller
                             $courseId = $course?->id;
                         }
 
-                        // Determine institution type from school_college name
-                        $institutionType = null;
-                        $schoolName = null;
-                        $collegeName = null;
-
-                        $scLower = strtolower($schoolCollege);
-                        if (str_contains($scLower, 'school') ||
-                            str_contains($scLower, 'high school') ||
-                            str_contains($scLower, 'secondary')) {
-                            $institutionType = 'school';
-                            $schoolName = $schoolCollege;
-                        } elseif (str_contains($scLower, 'college') ||
-                                  str_contains($scLower, 'university') ||
-                                  str_contains($scLower, 'institute')) {
-                            $institutionType = 'college';
-                            $collegeName = $schoolCollege;
-                        } else {
-                            // Default to school if ambiguous
-                            $institutionType = 'school';
-                            $schoolName = $schoolCollege;
-                        }
-
-                        // Branch determination
+                        // ── 10. Branch ────────────────────────────────────────
                         $branchId = auth()->user()->role === 'lead_manager'
                             ? auth()->user()->branch_id
                             : null;
 
-                        // Determine institution type — only if schoolCollege is provided
-                        $institutionType = null;
-                        $schoolName      = null;
-                        $collegeName     = null;
+                        // ── 11. DB duplicate check (all vars ready now) ───────
+                        $existingLead = EduLead::withTrashed()->where('phone', $phone)->first();
 
-                        if (!empty($schoolCollege)) {
-                            $scLower = strtolower($schoolCollege);
-                            if (str_contains($scLower, 'school') || str_contains($scLower, 'high school') || str_contains($scLower, 'secondary')) {
-                                $institutionType = 'school';
-                                $schoolName      = $schoolCollege;
-                            } elseif (str_contains($scLower, 'college') || str_contains($scLower, 'university') || str_contains($scLower, 'institute')) {
-                                $institutionType = 'college';
-                                $collegeName     = $schoolCollege;
+                        if ($existingLead) {
+                            if ($existingLead->trashed()) {
+                                // Restore via forceFill — skips boot restoring event
+                                $existingLead->forceFill([
+                                    'deleted_at'         => null,
+                                    'name'               => !empty($row['student_name']) ? trim($row['student_name']) : $existingLead->name,
+                                    'whatsapp_number'    => $cleanWhatsapp,
+                                    'institution_type'   => $institution_type       ?? $existingLead->institution_type,
+                                    'school'             => $school_name            ?? $existingLead->school,
+                                    'school_department'  => ($institution_type === 'school'  && !empty($department)) ? $department : $existingLead->school_department,
+                                    'college'            => $college_name           ?? $existingLead->college,
+                                    'college_department' => ($institution_type === 'college' && !empty($department)) ? $department : $existingLead->college_department,
+                                    'course_interested'  => !empty($row['course'])  ? $row['course']       : $existingLead->course_interested,
+                                    'course_id'          => $courseId               ?? $existingLead->course_id,
+                                    'country'            => !empty($row['country']) ? trim($row['country']) : $existingLead->country,
+                                    'call_status' => $call_status ?? $existingLead->call_status,
+                                    'final_status'       => $finalStatus,
+                                    'interest_level'     => $interestLevel          ?? $existingLead->interest_level,
+                                    'remarks'            => !empty($row['remarks']) ? $row['remarks']       : $existingLead->remarks,
+                                    'assigned_to'        => $assignedTo             ?? $existingLead->assigned_to,
+                                    'lead_source_id'     => $leadSource?->id        ?? $existingLead->lead_source_id,
+                                    'branch_id'          => $branchId               ?? $existingLead->branch_id,
+                                ])->save();
+
+                                $successful++;
+                                $processed++;
+                                continue;
                             } else {
-                                $institutionType = 'school';
-                                $schoolName      = $schoolCollege;
+                                throw new \Exception("Mobile number {$phone} already exists (active lead)");
                             }
                         }
 
+                        // ── 12. WhatsApp duplicate check ──────────────────────
+                        if ($cleanWhatsapp !== $phone) {
+                            $existingWa = EduLead::withTrashed()
+                                ->where('whatsapp_number', $cleanWhatsapp)
+                                ->first();
+                            if ($existingWa && !$existingWa->trashed()) {
+                                throw new \Exception("WhatsApp number {$cleanWhatsapp} already exists");
+                            }
+                        }
+
+                        // ── 13. Create new lead ───────────────────────────────
                         EduLead::create([
-                            'phone'                => $phone,
-                            'school'             => $schoolName,
-                            'school_department'  => ($institutionType === 'school' && !empty($department)) ? $department : null,
-                            'college'            => $collegeName,
-                            'college_department' => ($institutionType === 'college' && !empty($department)) ? $department : null,
-                            'institution_type'   => $institutionType,
-                            'name'               => !empty($row['studentname']) ? trim($row['studentname']) : 'Lead-' . substr($phone, -4),
-                            'whatsapp_number'      => $cleanWhatsapp,
-                            'course_interested'    => !empty($row['course']) ? $row['course'] : null,
-                            'course_id'            => $courseId,
-                            'country'              => !empty($row['country']) ? trim($row['country']) : null,
-                            'lead_source_id'       => $leadSource?->id,
-                            'assigned_to'          => $assignedTo,
-                            'interest_level'       => $interestLevel,
-                            'final_status'         => $finalStatus,
-                            'remarks'              => !empty($row['remarks']) ? $row['remarks'] : null,
-                            'followup_date'        => $this->parseDate($row['followup_date']),
-                            'branch_id'            => $branchId,
-                            'created_by'           => auth()->id(),
+                            'phone'              => $phone,
+                            'name'               => !empty($row['student_name']) ? trim($row['student_name']) : 'Lead-' . substr($phone, -4),
+                            'whatsapp_number'    => $cleanWhatsapp,
+                            'institution_type'   => $institution_type,
+                            'school'             => $school_name,
+                            'school_department'  => ($institution_type === 'school'  && !empty($department)) ? $department : null,
+                            'college'            => $college_name,
+                            'college_department' => ($institution_type === 'college' && !empty($department)) ? $department : null,
+                            'course_interested'  => !empty($row['course'])   ? $row['course']        : null,
+                            'course_id'          => $courseId,
+                            'country'            => !empty($row['country'])  ? trim($row['country'])  : null,
+                            'lead_source_id'     => $leadSource?->id,
+                            'assigned_to'        => $assignedTo,
+                            'interest_level'     => $interestLevel,
+                            'call_status' => $call_status,
+                            'final_status'       => $finalStatus,
+                            'remarks'            => !empty($row['remarks'])  ? $row['remarks']        : null,
+                            'followup_date'      => $this->parseDate($row['followup_date'] ?? ''),
+                            'branch_id'          => $branchId,
+                            'created_by'         => auth()->id(),
                         ]);
 
                         $successful++;
+
                     } catch (\Exception $e) {
                         $errors[]         = [
                             'row'    => $rowId,
@@ -674,6 +693,7 @@ class EduLeadBulkImportController extends Controller
                         $failed++;
                         Log::warning("EduLead import [{$rowId}]: " . $e->getMessage());
                     }
+
                     $processed++;
 
                     if ($processed % 5 === 0) {
@@ -771,7 +791,7 @@ class EduLeadBulkImportController extends Controller
             '✅ Mobile Number', '✅ School/College Name', '✅ Department/Stream',
             'Student Name', 'WhatsApp Number', 'Course Interested', 'Country',
             'Source of Lead', 'Calling Staff Name', 'Call Date',
-            'Call Status (Connected/Not Connected)', 'Student Interest Level (Hot/Warm/Cold)',
+            'Call Status (Contacted/Not Attended)', 'Student Interest Level (Hot/Warm/Cold)',
             'Follow-up Date', 'Follow-up Status', 'Remarks / Notes', 'Next Action',
             'Final Status (Admitted / Not Interested / Pending)',
             'ERROR — Fix before re-importing',
