@@ -797,6 +797,22 @@
                         </select>
                     </div>
 
+                    {{-- Agent / Referral Name Search (shown only when Source = Referral/Agent) --}}
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-6" id="agentNameWrap" style="display:none;">
+                        <label class="filter-label">
+                            <i class="las la-user-tie text-warning"></i> Agent / Referral Name
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white">
+                                <i class="las la-search text-muted"></i>
+                            </span>
+                            <input type="text"
+                                class="form-control"
+                                id="filterAgentName"
+                                placeholder="Search name...">
+                        </div>
+                    </div>
+
                     {{-- Date Range --}}
                     <div class="col-xl-4 col-lg-5 col-md-6">
                         <label class="filter-label"><i class="las la-calendar text-success"></i> Created Date Range</label>
@@ -2020,6 +2036,21 @@ $(document).ready(function () {
     $('#filterPreferredState, #filterCourse, #filterSource, #filterAssignedTo, #filterBranch,' +
       '#filterSchoolDepartment, #filterCollegeDepartment, #filterDistrict, #filterInterestLevel'
     ).on('change', function () { updateActiveFilterCount(); if (initialized) loadLeads(1); });
+
+    // Source — also toggles Agent/Referral name field
+    $('#filterSource').on('change', function () {
+        const selectedText = $(this).find('option:selected').text().toLowerCase();
+        const isAgentOrReferral = selectedText.includes('referral') || selectedText.includes('agent');
+        const wrap = document.getElementById('agentNameWrap');
+        if (isAgentOrReferral) {
+            wrap.style.display = '';
+        } else {
+            wrap.style.display = 'none';
+            $('#filterAgentName').val('');
+        }
+        updateActiveFilterCount();
+        if (initialized) loadLeads(1);
+    });
 
     $('#dateFrom, #dateTo').on('change', function () { updateActiveFilterCount(); if (initialized) loadLeads(1); });
 
