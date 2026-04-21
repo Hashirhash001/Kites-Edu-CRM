@@ -73,17 +73,18 @@ class EduLeadBulkImportController extends Controller
             'F1' => 'Course Interested',
             'G1' => 'Country',
             'H1' => 'Source of Lead',
-            'I1' => 'Calling Staff Name',
-            'J1' => 'Call Status (Contacted/Not Attended)',
-            'K1' => 'Student Interest Level (Hot/Warm/Cold)',
-            'L1' => 'Remarks / Notes',
-            'M1' => 'Final Status (Admitted / Not Interested / Pending)',
+            'I1' => 'Agent / Referral Name',
+            'J1' => 'Calling Staff Name',
+            'K1' => 'Call Status (Contacted/Not Attended)',
+            'L1' => 'Student Interest Level (Hot/Warm/Cold)',
+            'M1' => 'Remarks / Notes',
+            'N1' => 'Final Status (Admitted / Not Interested / Pending)',
         ];
 
         $widths = [
             'A' => 20, 'B' => 30, 'C' => 22, 'D' => 22, 'E' => 18,
-            'F' => 22, 'G' => 16, 'H' => 18, 'I' => 20, 'J' => 32,
-            'K' => 34, 'L' => 30, 'M' => 40,
+            'F' => 22, 'G' => 16, 'H' => 18, 'I' => 25, 'J' => 20,
+            'K' => 32, 'L' => 34, 'M' => 30, 'N' => 40,
         ];
 
         foreach ($headers as $cell => $label) {
@@ -94,7 +95,7 @@ class EduLeadBulkImportController extends Controller
             $sheet->getColumnDimension($col)->setWidth($width);
         }
 
-        $sheet->getStyle('A1:M1')->applyFromArray([
+        $sheet->getStyle('A1:N1')->applyFromArray([
             'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D4ED8']],
             'alignment' => [
@@ -114,24 +115,25 @@ class EduLeadBulkImportController extends Controller
         $example = [
             'A2' => '+919876543210',
             'B2' => 'St. Mary\'s High School',
-            'C2' => 'Biology science',
+            'C2' => 'Biology / Science',
             'D2' => 'Rahul Kumar',
             'E2' => '+919876543210',
             'F2' => 'MBBS',
             'G2' => 'Russia',
-            'H2' => 'Facebook',
-            'I2' => 'Aneesh',
-            'J2' => 'Contacted',
-            'K2' => 'Hot',
-            'L2' => 'Interested, needs fee structure',
-            'M2' => 'Pending',
+            'H2' => 'Referral',
+            'I2' => 'John Mathew',
+            'J2' => 'Aneesh',
+            'K2' => 'Contacted',
+            'L2' => 'Hot',
+            'M2' => 'Interested, needs fee structure',
+            'N2' => 'Pending',
         ];
 
         foreach ($example as $cell => $val) {
             $sheet->setCellValue($cell, $val);
         }
 
-        $sheet->getStyle('A2:M2')->applyFromArray([
+        $sheet->getStyle('A2:N2')->applyFromArray([
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'DBEAFE']],
             'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
             'borders'   => [
@@ -228,6 +230,7 @@ class EduLeadBulkImportController extends Controller
             'country'         => ['country'],
             'lead_source'     => ['source of lead', 'source', 'lead source'],
             'calling_staff'   => ['calling staff name', 'telecaller name', 'telecaller', 'calling staff', 'staff name'],
+            'agent_referral' => ['agent / referral name', 'agent/referral name', 'agent referral name', 'agent name', 'referral     name', 'referral', 'agent'],
             'call_date'       => ['call date', 'date'],
             'call_status' => [
                 'call status (contacted/not attended)',
@@ -571,6 +574,23 @@ class EduLeadBulkImportController extends Controller
                             if ($tc) $assignedTo = $tc->id;
                         }
 
+                        // ── 6b. Agent / Referral Name ─────────────────────────
+                        $agentReferralRaw = trim((string)($row['agent_referral'] ?? ''));
+                        $agent_name       = null;
+                        $referral_name    = null;
+
+                        if (!empty($agentReferralRaw) && $leadSource) {
+                            $sourceName = strtolower($leadSource->name ?? '');
+                            if (str_contains($sourceName, 'agent')) {
+                                $agent_name    = $agentReferralRaw;
+                            } elseif (str_contains($sourceName, 'referral')) {
+                                $referral_name = $agentReferralRaw;
+                            } else {
+                                // Fallback: store in referral_name
+                                $referral_name = $agentReferralRaw;
+                            }
+                        }
+
                         // ── 7. Interest level ─────────────────────────────────
                         $interestRaw   = strtolower(trim((string)($row['interest_level'] ?? '')));
                         $interestLevel = in_array($interestRaw, ['hot', 'warm', 'cold']) ? $interestRaw : null;
@@ -635,6 +655,8 @@ class EduLeadBulkImportController extends Controller
                                     'remarks'            => !empty($row['remarks']) ? $row['remarks']       : $existingLead->remarks,
                                     'assigned_to'        => $assignedTo             ?? $existingLead->assigned_to,
                                     'lead_source_id'     => $leadSource?->id        ?? $existingLead->lead_source_id,
+                                    'agent_name'    => $agent_name    ?? $existingLead->agent_name,
+                                    'referral_name' => $referral_name ?? $existingLead->referral_name,
                                     'branch_id'          => $branchId               ?? $existingLead->branch_id,
                                 ])->save();
 
@@ -670,6 +692,8 @@ class EduLeadBulkImportController extends Controller
                             'course_id'          => $courseId,
                             'country'            => !empty($row['country'])  ? trim($row['country'])  : null,
                             'lead_source_id'     => $leadSource?->id,
+                            'agent_name'    => $agent_name,
+                            'referral_name' => $referral_name,
                             'assigned_to'        => $assignedTo,
                             'interest_level'     => $interestLevel,
                             'call_status' => $call_status,
@@ -790,9 +814,10 @@ class EduLeadBulkImportController extends Controller
         $headers = [
             '✅ Mobile Number', '✅ School/College Name', '✅ Department/Stream',
             'Student Name', 'WhatsApp Number', 'Course Interested', 'Country',
-            'Source of Lead', 'Calling Staff Name', 'Call Date',
-            'Call Status (Contacted/Not Attended)', 'Student Interest Level (Hot/Warm/Cold)',
-            'Follow-up Date', 'Follow-up Status', 'Remarks / Notes', 'Next Action',
+            'Source of Lead', 'Agent / Referral Name',   // ← ADD
+            'Calling Staff Name', 'Call Status (Contacted/Not Attended)',
+            'Student Interest Level (Hot/Warm/Cold)',
+            'Remarks / Notes',
             'Final Status (Admitted / Not Interested / Pending)',
             'ERROR — Fix before re-importing',
         ];
@@ -815,6 +840,7 @@ class EduLeadBulkImportController extends Controller
                 $d['course']          ?? '',
                 $d['country']         ?? '',
                 $d['lead_source']     ?? '',
+                $d['agent_referral'] ?? '',
                 $d['calling_staff']   ?? '',
                 $d['call_date']       ?? '',
                 $d['call_status']     ?? '',
@@ -864,6 +890,7 @@ class EduLeadBulkImportController extends Controller
             'remarks'         => $row[$colMap['remarks']          ?? -1]         ?? '',
             'next_action'     => $row[$colMap['next_action']      ?? -1]         ?? '',
             'final_status'    => $row[$colMap['final_status']     ?? -1]         ?? '',
+            'agent_referral' => $row[$colMap['agent_referral'] ?? -1] ?? '',
         ];
     }
 
