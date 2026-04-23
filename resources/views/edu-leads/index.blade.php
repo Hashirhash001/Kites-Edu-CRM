@@ -1878,6 +1878,11 @@ $(document).ready(function () {
             document.getElementById('filterToggleIcon').classList.add('open');
         }
 
+        // Apply default sort arrow on initial load if no URL sort params
+        if (!p.get('sort_column')) {
+            $('[data-column="created_at"]').addClass('desc');
+        }
+
         initialized = true;
     }
 
