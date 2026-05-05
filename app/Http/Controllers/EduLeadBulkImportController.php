@@ -18,6 +18,10 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
+use PhpOffice\PhpSpreadsheet\NamedRange;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class EduLeadBulkImportController extends Controller
 {
@@ -55,19 +59,17 @@ class EduLeadBulkImportController extends Controller
         return view('edu-leads.bulk-import', compact('recentImports'));
     }
 
-    // =========================================================================
     // DOWNLOAD TEMPLATE
-    // =========================================================================
     public function downloadTemplate()
     {
         $spreadsheet = new Spreadsheet();
-        $sheet       = $spreadsheet->getActiveSheet();
+        $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Student Follow-up CRM');
 
         $headers = [
             'A1' => '✅ Mobile Number',
-            'B1' => '✅ School / College Name',
-            'C1' => '✅ Department / Stream',
+            'B1' => 'School / College Name',
+            'C1' => 'Department / Stream',
             'D1' => 'Student Name',
             'E1' => 'WhatsApp Number',
             'F1' => 'Course Interested',
@@ -82,15 +84,15 @@ class EduLeadBulkImportController extends Controller
         ];
 
         $widths = [
-            'A' => 20, 'B' => 30, 'C' => 22, 'D' => 22, 'E' => 18,
-            'F' => 22, 'G' => 16, 'H' => 18, 'I' => 25, 'J' => 20,
-            'K' => 32, 'L' => 34, 'M' => 30, 'N' => 40,
+            'A' => 20, 'B' => 30, 'C' => 22, 'D' => 22,
+            'E' => 18, 'F' => 22, 'G' => 16, 'H' => 18,
+            'I' => 25, 'J' => 20, 'K' => 32, 'L' => 34,
+            'M' => 30, 'N' => 40,
         ];
 
         foreach ($headers as $cell => $label) {
             $sheet->setCellValue($cell, $label);
         }
-
         foreach ($widths as $col => $width) {
             $sheet->getColumnDimension($col)->setWidth($width);
         }
@@ -98,24 +100,16 @@ class EduLeadBulkImportController extends Controller
         $sheet->getStyle('A1:N1')->applyFromArray([
             'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D4ED8']],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical'   => Alignment::VERTICAL_CENTER,
-                'wrapText'   => true,
-            ],
-            'borders' => [
-                'allBorders' => [
-                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-                    'color'       => ['rgb' => 'CBD5E1'],
-                ],
-            ],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E1']]],
         ]);
+
         $sheet->getRowDimension(1)->setRowHeight(42);
 
         $example = [
             'A2' => '+919876543210',
-            'B2' => 'St. Mary\'s High School',
-            'C2' => 'Biology / Science',
+            'B2' => "St. Mary's High School",
+            'C2' => 'Biology Science',
             'D2' => 'Rahul Kumar',
             'E2' => '+919876543210',
             'F2' => 'MBBS',
@@ -136,54 +130,92 @@ class EduLeadBulkImportController extends Controller
         $sheet->getStyle('A2:N2')->applyFromArray([
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'DBEAFE']],
             'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
-            'borders'   => [
-                'allBorders' => [
-                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-                    'color'       => ['rgb' => 'CBD5E1'],
-                ],
-            ],
+            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E1']]],
         ]);
+
         $sheet->getRowDimension(2)->setRowHeight(18);
         $sheet->freezePane('A2');
 
-        // Instructions sheet
-        $inst = $spreadsheet->createSheet(1);
+        // ── Department / Stream dropdown (column C) ───────────────────────────
+        $deptOptions = [
+            'Biology Science',
+            'Computer Science',
+            'Commerce',
+            'Arts & Journalism',
+            'Humanities',
+            'Vocational',
+            'Mix',
+            'Other',
+        ];
+
+        // Hidden helper sheet to hold the dropdown list
+        $deptSheet = $spreadsheet->createSheet(1);
+        $deptSheet->setTitle('Departments');
+        foreach ($deptOptions as $i => $opt) {
+            $deptSheet->setCellValue('A' . ($i + 1), $opt);
+        }
+        $deptSheet->setSheetState(Worksheet::SHEETSTATE_HIDDEN);
+
+        // Direct sheet reference — more reliable than named range in Excel
+        $deptFormula = 'Departments!$A$1:$A$' . count($deptOptions);
+
+        // Apply dropdown validation to C2:C3000
+        $validation = $sheet->getCell('C2')->getDataValidation();
+        $validation
+            ->setType(DataValidation::TYPE_LIST)
+            ->setErrorStyle(DataValidation::STYLE_WARNING)
+            ->setAllowBlank(true)
+            ->setShowDropDown(true)
+            ->setShowErrorMessage(true)
+            ->setErrorTitle('Invalid Department')
+            ->setError('Please select a value from the dropdown list.')
+            ->setFormula1($deptFormula);
+
+        for ($r = 3; $r <= 3000; $r++) {
+            $sheet->getCell('C' . $r)->setDataValidation(clone $validation);
+        }
+        // ── End department dropdown ───────────────────────────────────────────
+
+        // Instructions sheet (index 2 since Departments is at 1)
+        $inst = $spreadsheet->createSheet(2);
         $inst->setTitle('Instructions');
 
         $instRows = [
-            ['Column', 'Header Name',                                          'Required?', 'Accepted Values'],
-            ['A',      'Mobile Number',                                        'YES',       '10-15 digits, e.g. 919876543210'],
-            ['B',      'School / College Name',                                'No',        'Full institution name — if it contains "college", "university" or "institute" it is saved as college, otherwise as school'],
-            ['C',      'Department / Stream',                                  'No',        'e.g. Science, Commerce, Arts, Computer Science'],
-            ['D',      'Student Name',                                         'No',        'Full name of student'],
-            ['E',      'WhatsApp Number',                                      'No',        'If blank, Mobile Number is used'],
-            ['F',      'Course Interested',                                    'No',        'e.g. MBBS, B.Tech, MBA'],
-            ['G',      'Country',                                              'No',        'e.g. Russia, USA, UK, India'],
-            ['H',      'Source of Lead',                                       'No',        'Facebook, Google, Walk-in, Referral'],
-            ['I',      'Calling Staff Name',                                   'No',        'Must match a telecaller name in the CRM'],
-            ['J',      'Call Date',                                            'No',        'DD/MM/YYYY'],
-            ['K',      'Call Status',                                          'No',        'Contacted or Not Attended'],
-            ['L',      'Student Interest Level',                               'No',        'Hot / Warm / Cold'],
-            ['M',      'Follow-up Date',                                       'No',        'DD/MM/YYYY'],
-            ['N',      'Follow-up Status',                                     'No',        'pending / completed'],
-            ['O',      'Remarks / Notes',                                      'No',        'Free text'],
-            ['P',      'Next Action',                                          'No',        'Free text'],
-            ['Q',      'Final Status',                                         'No',        'pending / contacted / follow_up / admitted / not_interested / dropped'],
+            ['Column', 'Header Name', 'Required?', 'Accepted Values'],
+            ['A', 'Mobile Number',         'YES', '10-15 digits, e.g. +919876543210'],
+            ['B', 'School / College Name', 'No',  'Full institution name — if it contains "college", "university" or "institute" it is saved as college, otherwise as school'],
+            ['C', 'Department / Stream',   'No',  implode(', ', $deptOptions)],
+            ['D', 'Student Name',          'No',  'Full name of student'],
+            ['E', 'WhatsApp Number',       'No',  'If blank, Mobile Number is used'],
+            ['F', 'Course Interested',     'No',  'e.g. MBBS, B.Tech, MBA'],
+            ['G', 'Country',               'No',  'e.g. Russia, USA, UK, India'],
+            ['H', 'Source of Lead',        'No',  'Facebook, Google, Walk-in, Referral'],
+            ['I', 'Agent / Referral Name', 'No',  'Name of agent or referral person (only used when source is Agent or Referral)'],
+            ['J', 'Calling Staff Name',    'No',  'Must match a telecaller name in the CRM'],
+            ['K', 'Call Date',             'No',  'DD/MM/YYYY'],
+            ['L', 'Call Status',           'No',  'Contacted or Not Attended'],
+            ['M', 'Student Interest Level','No',  'Hot  Warm  Cold'],
+            ['N', 'Follow-up Date',        'No',  'DD/MM/YYYY'],
+            ['O', 'Follow-up Status',      'No',  'pending  completed'],
+            ['P', 'Remarks / Notes',       'No',  'Free text'],
+            ['Q', 'Next Action',           'No',  'Free text'],
+            ['R', 'Final Status',          'No',  'pending  contacted  followup  admitted  notinterested  dropped'],
             [null, null, null, null],
-            [null, 'ONLY REQUIRED FIELD',                                      null,        null],
-            [null, '1. Mobile Number — Must be unique, 10-15 digits',          null,        null],
+            [null, null, null, '⚠ ONLY REQUIRED FIELD'],
             [null, null, null, null],
-            [null, 'TIPS',                                                     null,        null],
-            [null, 'Delete the example row (row 2) before uploading',          null,        null],
-            [null, 'Maximum 3000 rows per file',                               null,        null],
-            [null, 'Duplicate Mobile Numbers will be skipped automatically',   null,        null],
+            [null, null, null, '1. Mobile Number — Must be unique, 10-15 digits'],
+            [null, null, null, null],
+            [null, null, null, '💡 TIPS'],
+            [null, null, null, 'Delete the example row (row 2) before uploading'],
+            [null, null, null, 'Maximum 3000 rows per file'],
+            [null, null, null, 'Duplicate Mobile Numbers will be skipped automatically'],
         ];
 
         foreach ($instRows as $rowIndex => $rowData) {
             foreach ($rowData as $colIndex => $value) {
                 if ($value !== null) {
                     $colLetter = Coordinate::stringFromColumnIndex($colIndex + 1);
-                    $inst->setCellValue("{$colLetter}" . ($rowIndex + 1), $value);
+                    $inst->setCellValue($colLetter . ($rowIndex + 1), $value);
                 }
             }
         }
@@ -191,10 +223,7 @@ class EduLeadBulkImportController extends Controller
         $inst->getStyle('A1:D1')->applyFromArray([
             'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D4ED8']],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical'   => Alignment::VERTICAL_CENTER,
-            ],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
         ]);
         $inst->getRowDimension(1)->setRowHeight(22);
         $inst->getColumnDimension('A')->setWidth(8);
@@ -205,7 +234,7 @@ class EduLeadBulkImportController extends Controller
         $spreadsheet->setActiveSheetIndex(0);
 
         $writer   = new Xlsx($spreadsheet);
-        $filename = 'edu_leads_import_template_' . date('Y-m-d') . '.xlsx';
+        $filename = 'edu-leads-import-template-' . date('Y-m-d') . '.xlsx';
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
@@ -627,7 +656,7 @@ class EduLeadBulkImportController extends Controller
                         }
 
                         // ── 10. Branch ────────────────────────────────────────
-                        $branchId = auth()->user()->role === 'lead_manager'
+                        $branchId = in_array(auth()->user()->role, ['lead_manager', 'telecaller'])
                             ? auth()->user()->branch_id
                             : null;
 
@@ -635,6 +664,10 @@ class EduLeadBulkImportController extends Controller
                         $existingLead = EduLead::withTrashed()->where('phone', $phone)->first();
 
                         if ($existingLead) {
+                            // Auto-assign to self if telecaller is importing and no calling staff matched
+                            if (auth()->user()->role === 'telecaller' && !$assignedTo) {
+                                $assignedTo = auth()->id();
+                            }
                             if ($existingLead->trashed()) {
                                 // Restore via forceFill — skips boot restoring event
                                 $existingLead->forceFill([
@@ -676,6 +709,11 @@ class EduLeadBulkImportController extends Controller
                             if ($existingWa && !$existingWa->trashed()) {
                                 throw new \Exception("WhatsApp number {$cleanWhatsapp} already exists");
                             }
+                        }
+
+                        // Auto-assign to self if telecaller is importing and no calling staff matched
+                        if (auth()->user()->role === 'telecaller' && !$assignedTo) {
+                            $assignedTo = auth()->id();
                         }
 
                         // ── 13. Create new lead ───────────────────────────────

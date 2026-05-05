@@ -250,7 +250,7 @@
                     @endif
 
                     {{-- Bulk Import & Export — only managers and above --}}
-                    @if(in_array($authRole, ['super_admin', 'operation_head', 'lead_manager']))
+                    @if(in_array($authRole, ['super_admin', 'operation_head', 'lead_manager', 'telecaller']))
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('edu-leads.bulk-import') ? 'active' : '' }}"
                            href="{{ route('edu-leads.bulk-import') }}">
