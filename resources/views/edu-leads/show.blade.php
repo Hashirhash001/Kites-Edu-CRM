@@ -1883,19 +1883,35 @@
                         <span class="info-value">{{ $eduLead->leadSource->name ?? '—' }}</span>
                     </div>
 
-                    @if($eduLead->agent_name)
+                    {{--only show Agent row if source is agent/partner type --}}
+                    @php
+                        $sourceName = strtolower($eduLead->leadSource?->name ?? '');
+                        $isAgentSource = str_contains($sourceName, 'agent') || str_contains($sourceName, 'partner');
+                        $isReferralSource = str_contains($sourceName, 'referral');
+                    @endphp
+
+                    @if($eduLead->agent_name && $isAgentSource)
                     <div class="info-row">
                         <span class="info-label">Agent</span>
-                        <span class="info-value">{{ $eduLead->agent_name ?? '—' }}</a>
-                        </span>
+                        <span class="info-value">{{ $eduLead->agent_name }}</span>
                     </div>
                     @endif
 
-                    @if($eduLead->referral_name)
+                    @if($eduLead->referral_name && $isReferralSource)
                     <div class="info-row">
                         <span class="info-label">Referral</span>
-                        <span class="info-value">{{ $eduLead->referral_name ?? '—' }}</span>
+                        <span class="info-value">{{ $eduLead->referral_name }}</span>
                     </div>
+                    @endif
+
+                    {{-- Fallback: show whichever is set if source is neither agent nor referral --}}
+                    @if(!$isAgentSource && !$isReferralSource)
+                        @if($eduLead->agent_name || $eduLead->referral_name)
+                        <div class="info-row">
+                            <span class="info-label">Reference</span>
+                            <span class="info-value">{{ $eduLead->agent_name ?? $eduLead->referral_name }}</span>
+                        </div>
+                        @endif
                     @endif
 
                     {{-- <div class="info-row">

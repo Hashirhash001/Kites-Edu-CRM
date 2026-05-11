@@ -292,7 +292,7 @@ class EduLeadController extends Controller
                     'branch_id'   => ($user->isLeadManager() || $user->isTelecaller())
                                         ? $user->branch_id
                                         : ($validated['branch_id'] ?? $trashedLead->branch_id),
-                    'created_by'  => $trashedLead->created_by, // keep original creator
+                    'created_by'  =>    auth()->id(),
                     'assigned_to' => $user->isTelecaller()
                                         ? $user->id
                                         : ($validated['assigned_to'] ?? $trashedLead->assigned_to),
@@ -347,7 +347,10 @@ class EduLeadController extends Controller
                 ? $user->branch_id
                 : ($validated['branch_id'] ?? null);
 
-            if ($user->isTelecaller() && empty($validated['agent_name'])) {
+            // only auto-fill if source is agent/partner type
+            $sourceName = strtolower(\App\Models\EduLeadSource::find($validated['lead_source_id'])?->name ?? '');
+            if ($user->isTelecaller() && empty($validated['agent_name'])
+                && (str_contains($sourceName, 'agent') || str_contains($sourceName, 'partner'))) {
                 $validated['agent_name'] = $user->name;
             }
 
@@ -1475,7 +1478,14 @@ class EduLeadController extends Controller
                 $upcomingFu = max(0, $pendingFu - $overdueFu - $todayFu);
                 $doneFu     = $orderedFollowups->where('status', 'completed')->count();
 
-                $referenceName = $lead->agent_name ?? $lead->referral_name ?? '';
+                $sourceName = strtolower($lead->leadSource?->name ?? '');
+                if (str_contains($sourceName, 'agent') || str_contains($sourceName, 'partner')) {
+                    $referenceName = $lead->agent_name ?? '';
+                } elseif (str_contains($sourceName, 'referral')) {
+                    $referenceName = $lead->referral_name ?? '';
+                } else {
+                    $referenceName = $lead->agent_name ?? $lead->referral_name ?? '';
+                }
 
                 // ── Static row data ───────────────────────────────────────────
                 $rowData = [
