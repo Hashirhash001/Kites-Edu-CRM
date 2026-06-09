@@ -1797,7 +1797,7 @@ $(document).ready(function () {
             followup_count:   $('#filterFollowupCount').val(),
             followup_number:   $('#filterFollowupNumber').val(),
 
-            final_status:       activeStatus,
+            final_status:       activeStatus || '',
             sort_column:        currentSort.column,
             sort_direction:     currentSort.direction,
 

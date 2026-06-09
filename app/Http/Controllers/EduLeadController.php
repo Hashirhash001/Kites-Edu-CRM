@@ -293,12 +293,17 @@ class EduLeadController extends Controller
                                         ? $user->branch_id
                                         : ($validated['branch_id'] ?? $trashedLead->branch_id),
                     'created_by'  =>    auth()->id(),
+                    'created_at'  =>    now(),
+                    'updated_at'  =>    now(),
                     'assigned_to' => $user->isTelecaller()
                                         ? $user->id
                                         : ($validated['assigned_to'] ?? $trashedLead->assigned_to),
                     'final_status'   => $validated['final_status']   ?? 'pending',
                     'interest_level' => $validated['interest_level'] ?? null,
                 ]));
+
+                // Force created_at since Eloquent's update() respects timestamps guard
+                $trashedLead->forceFill(['created_at' => now()])->save();
 
                 Log::info('Soft-deleted lead restored on re-create', [
                     'lead_id'    => $trashedLead->id,
@@ -402,7 +407,6 @@ class EduLeadController extends Controller
             ], 500);
         }
     }
-
 
     // =========================================================================
     // SHOW
@@ -1303,7 +1307,12 @@ class EduLeadController extends Controller
                     ? $query->whereNull('assigned_to')
                     : $query->where('assigned_to', $request->assigned_to);
             }
-            if ($request->filled('agent_name'))       $query->where('agent_name',  'like', '%' . $request->agent_name . '%');
+            if ($request->filled('agent_name')) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('agent_name', 'like', '%' . $request->agent_name . '%')
+                    ->orWhere('referral_name', 'like', '%' . $request->agent_name . '%');
+                });
+            }
             if ($request->filled('call_status'))      $query->where('call_status', $request->call_status);
             if ($request->filled('counseling_stage')) $query->where('status',      $request->counseling_stage);
             if ($request->filled('followup_count')) {
@@ -1329,6 +1338,7 @@ class EduLeadController extends Controller
                     ->orWhere('school',            'like', $s)
                     ->orWhere('college',           'like', $s)
                     ->orWhere('agent_name',        'like', $s)
+                    ->orWhere('referralname', 'like', $s)
                     ->orWhere('application_number','like', $s)
                 );
             }

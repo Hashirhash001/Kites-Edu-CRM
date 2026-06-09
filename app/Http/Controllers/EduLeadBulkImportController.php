@@ -692,6 +692,8 @@ class EduLeadBulkImportController extends Controller
                                     'referral_name' => $referral_name ?? $existingLead->referral_name,
                                     'branch_id'          => $branchId               ?? $existingLead->branch_id,
                                     'created_by'        => auth()->id(),
+                                    'created_at'        => now(),
+                                    'updated_at'        => now(),
                                 ])->save();
 
                                 $successful++;

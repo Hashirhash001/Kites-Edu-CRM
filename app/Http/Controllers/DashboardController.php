@@ -268,13 +268,13 @@ class DashboardController extends Controller
             ->orderByRaw($priorityOrder)
             ->orderBy('followup_date')
             ->orderBy('followup_time')
-            ->limit(20)->get();
+            ->get();
 
         $todayFollowups = (clone $query)
             ->whereDate('followup_date', today())
             ->orderByRaw($priorityOrder)
             ->orderBy('followup_time')
-            ->limit(20)->get();
+            ->get();
 
         $thisWeekFollowups = (clone $query)
             ->whereDate('followup_date', '>', today())
@@ -282,7 +282,7 @@ class DashboardController extends Controller
             ->orderByRaw($priorityOrder)
             ->orderBy('followup_date')
             ->orderBy('followup_time')
-            ->limit(20)->get();
+            ->get();
 
         $thisMonthFollowups = (clone $query)
             ->whereDate('followup_date', '>', now()->endOfWeek())
@@ -290,7 +290,7 @@ class DashboardController extends Controller
             ->orderByRaw($priorityOrder)
             ->orderBy('followup_date')
             ->orderBy('followup_time')
-            ->limit(30)->get();
+            ->get();
 
         return compact(
             'overdue', 'todayCount', 'thisWeek', 'thisMonth',
