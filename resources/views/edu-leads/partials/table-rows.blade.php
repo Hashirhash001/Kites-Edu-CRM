@@ -3,6 +3,8 @@
     $authUser = auth()->user();
 
     $followupNumber = $followupNumber ?? null;
+    $isPreLead = $isPreLead ?? false;
+    $routePrefix = $routePrefix ?? ($isPreLead ? 'edu-pre-leads' : 'edu-leads');
 
     $statusLabels = [
         'pending'        => ['label' => '⏳ Pending',        'class' => 'fs-pending'],
@@ -123,7 +125,7 @@
     <td><span class="text-muted small fw-semibold">{{ $lead->lead_code }}</span></td>
 
     <td>
-        <a href="{{ route('edu-leads.show', $lead->id) }}" class="lead-name-link fw-semibold">
+        <a href="{{ route($routePrefix . '.show', $lead->id) }}" class="lead-name-link fw-semibold">
             {{ $lead->name }}
         </a>
         <span class="lead-branch-name d-none">{{ $lead->branch?->name }}</span>
@@ -268,9 +270,15 @@
 
     <td>
         <div class="action-icons">
-            <a href="{{ route('edu-leads.show', $lead->id) }}" title="View" class="text-info"><i class="las la-eye fs-18"></i></a>
+            <a href="{{ route($routePrefix . '.show', $lead->id) }}" title="View" class="text-info"><i class="las la-eye fs-18"></i></a>
             @if($authUser->isSuperAdmin() || $authUser->isOperationHead() || ($authUser->isLeadManager() && $lead->branch_id === $authUser->branch_id) || ($authUser->isTelecaller() && $lead->assigned_to == $authUser->id))
-            <a href="{{ route('edu-leads.edit', $lead->id) }}" title="Edit" class="text-secondary"><i class="las la-pen fs-18"></i></a>
+            <a href="{{ route($routePrefix . '.edit', $lead->id) }}" title="Edit" class="text-secondary"><i class="las la-pen fs-18"></i></a>
+            @endif
+            @if($isPreLead && $authUser->canCreateLeads())
+            <a href="javascript:void(0)" class="convertPreLeadBtn text-success" title="Convert to Lead"
+               data-id="{{ $lead->id }}" data-name="{{ $lead->name }}" data-code="{{ $lead->lead_code }}">
+                <i class="las la-exchange-alt fs-18"></i>
+            </a>
             @endif
             @if($authUser->canAssignLeads())
             <a href="javascript:void(0)" class="assignLeadBtn text-primary" title="Assign"
@@ -311,7 +319,7 @@
                     @endif
 
                     <div>
-                        <a href="{{ route('edu-leads.show', $lead->id) }}" class="lm-name">{{ $lead->name }}</a>
+                        <a href="{{ route($routePrefix . '.show', $lead->id) }}" class="lm-name">{{ $lead->name }}</a>
                         <span class="lm-code">{{ $lead->lead_code }}</span>
                     </div>
                 </div>
@@ -430,11 +438,11 @@
 
             {{-- Action buttons --}}
             <div class="lm-actions">
-                <a href="{{ route('edu-leads.show', $lead->id) }}" class="lm-action-btn btn-view" title="View">
+                <a href="{{ route($routePrefix . '.show', $lead->id) }}" class="lm-action-btn btn-view" title="View">
                     <i class="las la-eye"></i>
                 </a>
                 @if($authUser->isSuperAdmin() || $authUser->isOperationHead() || ($authUser->isLeadManager() && $lead->branch_id === $authUser->branch_id) || ($authUser->isTelecaller() && $lead->assigned_to == $authUser->id))
-                <a href="{{ route('edu-leads.edit', $lead->id) }}" class="lm-action-btn btn-edit" title="Edit">
+                <a href="{{ route($routePrefix . '.edit', $lead->id) }}" class="lm-action-btn btn-edit" title="Edit">
                     <i class="las la-pen"></i>
                 </a>
                 @endif

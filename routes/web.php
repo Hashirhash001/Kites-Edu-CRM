@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EduLeadController;
+use App\Http\Controllers\EduPreLeadController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -121,6 +122,40 @@ Route::middleware(['auth', 'active'])->group(function () {
 
     // Education Lead Resource Routes
     Route::resource('edu-leads', EduLeadController::class);
+
+    // ============================================================
+    // EDUCATION PRE-LEADS
+    // ============================================================
+    Route::patch('edu-pre-leads/{eduLead}/status', [EduPreLeadController::class, 'updateStatus'])
+        ->name('edu-pre-leads.updateStatus');
+    Route::patch('edu-pre-leads/{eduLead}/tracking', [EduPreLeadController::class, 'updateTracking'])
+        ->name('edu-pre-leads.updateTracking');
+    Route::post('edu-pre-leads/{eduLead}/convert', [EduPreLeadController::class, 'convertToLead'])
+        ->name('edu-pre-leads.convert');
+    Route::post('edu-pre-leads/{eduLead}/assign', [EduPreLeadController::class, 'assignLead'])
+        ->name('edu-pre-leads.assign');
+    Route::post('edu-pre-leads/{eduLead}/calls', [EduPreLeadController::class, 'addCall'])
+        ->name('edu-pre-leads.addCall');
+    Route::post('edu-pre-leads/{eduLead}/followups', [EduPreLeadController::class, 'addFollowup'])
+        ->name('edu-pre-leads.addFollowup');
+    Route::post('edu-pre-leads/{eduLead}/notes', [EduPreLeadController::class, 'addNote'])
+        ->name('edu-pre-leads.addNote');
+    Route::post('edu-pre-leads/followups/{followup}/complete', [EduPreLeadController::class, 'completeFollowup'])
+        ->name('edu-pre-leads.followups.complete');
+    Route::put('edu-pre-leads/followups/{followup}', [EduPreLeadController::class, 'updateFollowup'])
+        ->name('edu-pre-leads.followups.update');
+    Route::delete('edu-pre-leads/followup/{followup}', [EduPreLeadController::class, 'deleteFollowup'])
+        ->name('edu-pre-leads.deleteFollowup');
+    Route::delete('edu-pre-leads/call/{call}', [EduPreLeadController::class, 'deleteCall'])
+        ->name('edu-pre-leads.deleteCall');
+    Route::delete('edu-pre-leads/note/{note}', [EduPreLeadController::class, 'deleteNote'])
+        ->name('edu-pre-leads.deleteNote');
+    Route::post('edu-pre-leads/bulk-assign', [EduPreLeadController::class, 'bulkAssign'])
+        ->name('edu-pre-leads.bulk-assign');
+    Route::delete('edu-pre-leads/bulk-delete', [EduPreLeadController::class, 'bulkDelete'])
+        ->name('edu-pre-leads.bulk-delete');
+    Route::resource('edu-pre-leads', EduPreLeadController::class)
+        ->parameters(['edu-pre-leads' => 'eduLead']);
 
 });
 

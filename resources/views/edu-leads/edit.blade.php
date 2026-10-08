@@ -1,4 +1,9 @@
 @extends('layouts.app')
+@php
+    $isPreLead = $isPreLead ?? false;
+    $routePrefix = $isPreLead ? 'edu-pre-leads' : 'edu-leads';
+    $listTitle = $isPreLead ? 'Education Pre-Leads' : 'Education Leads';
+@endphp
 @section('title', 'Edit Lead - ' . $eduLead->name)
 
 @section('extra-css')
@@ -208,15 +213,15 @@
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-0">
                             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('edu-leads.index') }}">Education Leads</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route($routePrefix . '.index') }}">{{ $listTitle }}</a></li>
                             <li class="breadcrumb-item">
-                                <a href="{{ route('edu-leads.show', $eduLead) }}">{{ $eduLead->name }}</a>
+                                <a href="{{ route($routePrefix . '.show', $eduLead) }}">{{ $eduLead->name }}</a>
                             </li>
                             <li class="breadcrumb-item active">Edit</li>
                         </ol>
                     </nav>
                 </div>
-                <a href="{{ route('edu-leads.show', $eduLead) }}" class="btn btn-secondary">
+                <a href="{{ route($routePrefix . '.show', $eduLead) }}" class="btn btn-secondary">
                     <i class="las la-arrow-left me-1"></i> Back to Details
                 </a>
             </div>
@@ -738,7 +743,7 @@
                                         Last updated: {{ $eduLead->updated_at->format('d M Y, h:i A') }}
                                     </small>
                                     <div class="form-action-btns">
-                                        <a href="{{ route('edu-leads.show', $eduLead) }}" class="btn btn-secondary">
+                                        <a href="{{ route($routePrefix . '.show', $eduLead) }}" class="btn btn-secondary">
                                             <i class="las la-times me-1"></i>
                                             <span class="btn-label">Cancel</span>
                                         </a>
@@ -897,7 +902,7 @@ $(function () {
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Updating...');
 
         $.ajax({
-            url: '{{ route("edu-leads.update", $eduLead->id) }}',
+            url: '{{ route($routePrefix . ".update", $eduLead->id) }}',
             method: 'POST',
             data: new FormData(form),
             processData: false,

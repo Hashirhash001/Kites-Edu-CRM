@@ -14,6 +14,7 @@ class EduLead extends Model
 
     protected $fillable = [
         'lead_code',
+        'is_pre_lead',
         'created_by',
         'assigned_to',
         'branch_id',
@@ -72,6 +73,7 @@ class EduLead extends Model
     ];
 
     protected $casts = [
+        'is_pre_lead'     => 'boolean',
         'call_date'       => 'date',
         'followup_date'   => 'date',
         'admitted_at'     => 'datetime',
@@ -142,9 +144,14 @@ class EduLead extends Model
             ->orderBy('id', 'desc')
             ->first();
 
-        $newNumber = $lastLead
-            ? str_pad((int) substr($lastLead->lead_code, -4) + 1, 4, '0', STR_PAD_LEFT)
-            : '0001';
+        if ($lastLead) {
+            $parts = explode('-', $lastLead->lead_code);
+            $lastNum = (int) end($parts);
+            $nextNum = $lastNum + 1;
+            $newNumber = str_pad($nextNum, max(4, strlen((string) $nextNum)), '0', STR_PAD_LEFT);
+        } else {
+            $newNumber = '0001';
+        }
 
         return "{$prefix}-{$year}-{$newNumber}";
     }
@@ -208,6 +215,9 @@ class EduLead extends Model
     }
 
     // ── Scopes ────────────────────────────────────────────────────────
+
+    public function scopeRegularLeads($query)  { return $query->where('is_pre_lead', false); }
+    public function scopePreLeads($query)      { return $query->where('is_pre_lead', true); }
 
     public function scopeHot($query)           { return $query->where('interest_level', 'hot'); }
     public function scopeWarm($query)          { return $query->where('interest_level', 'warm'); }

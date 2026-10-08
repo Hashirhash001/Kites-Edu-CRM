@@ -32,10 +32,27 @@ class EduLeadController extends Controller
         $this->middleware('auth');
     }
 
+    protected function preLeadMode(?Request $request = null): bool
+    {
+        $request ??= request();
+
+        return $request->routeIs('edu-pre-leads.*');
+    }
+
+    protected function leadsRoutePrefix(bool $isPreLead = null): string
+    {
+        return ($isPreLead ?? $this->preLeadMode()) ? 'edu-pre-leads' : 'edu-leads';
+    }
+
     // =========================================================================
     // INDEX
     // =========================================================================
     public function index(Request $request)
+    {
+        return $this->renderLeadsIndex($request, false);
+    }
+
+    protected function renderLeadsIndex(Request $request, bool $isPreLead)
     {
         $user = Auth::user();
 
@@ -47,7 +64,7 @@ class EduLeadController extends Controller
             'course.programme', 'leadSource', 'createdBy', 'assignedTo', 'branch',
             'followups', 'latestFollowup'
         ]);
-        $baseQuery->visibleTo($user);
+        $baseQuery->visibleTo($user)->where('is_pre_lead', $isPreLead);
 
         // ── Filters ───────────────────────────────────────────────────────────────
         if ($request->filled('interest_level'))
@@ -193,7 +210,10 @@ class EduLeadController extends Controller
         $maxFollowupNumber = max($maxFollowupNumber, 5); // always show at least 5 options
 
         // ── Header badge counts ───────────────────────────────────────────────────
-        $hotLeadsCount = EduLead::where('interest_level', 'hot')->visibleTo($user)->count();
+        $hotLeadsCount = EduLead::where('interest_level', 'hot')
+            ->where('is_pre_lead', $isPreLead)
+            ->visibleTo($user)
+            ->count();
 
         $pendingFollowupsCount = EduLeadFollowup::where('status', 'pending')
             ->whereDate('followup_date', '<=', today())
@@ -215,7 +235,7 @@ class EduLeadController extends Controller
         if ($isJson) {
             return response()->json([
                 'success'            => true,
-                'html'               => view('edu-leads.partials.table-rows', compact('leads', 'followupNumber'))->render(),
+                'html'               => view('edu-leads.partials.table-rows', compact('leads', 'followupNumber', 'isPreLead'))->render(),
                 'pagination'         => $leads->links('pagination::bootstrap-5')->render(),
                 'total'              => $leads->total(),
                 'per_page'           => $leads->perPage(),
@@ -233,7 +253,8 @@ class EduLeadController extends Controller
             'leads', 'hotLeadsCount', 'pendingFollowupsCount',
             'courses', 'programmes', 'leadSources', 'branches',
             'assignableUsers', 'statusCounts', 'institutionCounts',
-            'states', 'districtMap', 'followupNumber', 'maxFollowupNumber'
+            'states', 'districtMap', 'followupNumber', 'maxFollowupNumber',
+            'isPreLead'
         ));
     }
 
@@ -261,7 +282,7 @@ class EduLeadController extends Controller
             'courses', 'programmes', 'leadSources', 'branches',
             'userBranchId', 'coursesByProgramme',
             'states', 'districtMap'
-        ));
+        ) + ['isPreLead' => $this->preLeadMode()]);
     }
 
     // =========================================================================
@@ -316,7 +337,7 @@ class EduLeadController extends Controller
                     'message'      => 'This lead was previously deleted and has been restored with updated information.',
                     'lead_id'      => $trashedLead->id,
                     'lead_code'    => $trashedLead->lead_code,
-                    'redirect_url' => route('edu-leads.show', $trashedLead->id),
+                    'redirect_url' => route($this->leadsRoutePrefix((bool) $trashedLead->is_pre_lead) . '.show', $trashedLead->id),
                 ]);
             }
 
@@ -365,16 +386,21 @@ class EduLeadController extends Controller
                 'assigned_to' => $user->isTelecaller()
                     ? $user->id
                     : ($validated['assigned_to'] ?? null),
+                'is_pre_lead' => $this->preLeadMode(),
             ]));
 
             Log::info('Education lead created', ['lead_id' => $lead->id, 'created_by' => $user->id]);
 
+            $routePrefix = $this->leadsRoutePrefix($lead->is_pre_lead);
+
             return response()->json([
                 'success'      => true,
-                'message'      => 'Lead created successfully!',
+                'message'      => $lead->is_pre_lead
+                    ? 'Pre-lead created successfully!'
+                    : 'Lead created successfully!',
                 'lead_id'      => $lead->id,
                 'lead_code'    => $lead->lead_code,
-                'redirect_url' => route('edu-leads.show', $lead->id),
+                'redirect_url' => route("{$routePrefix}.show", $lead->id),
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -387,12 +413,26 @@ class EduLeadController extends Controller
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('Lead creation DB error: ' . $e->getMessage());
             if ($e->errorInfo[1] === 1062) {
-                $field = str_contains($e->getMessage(), 'phone') ? 'phone' : 'field';
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This phone number is already registered.',
-                    'errors'  => ['phone' => ['This phone number already exists in the system.']],
-                ], 422);
+                $msg = $e->getMessage();
+                if (str_contains($msg, 'whatsapp_number')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This WhatsApp number is already registered.',
+                        'errors'  => ['whatsapp_number' => ['This WhatsApp number already exists in the system.']],
+                    ], 422);
+                } elseif (str_contains($msg, 'lead_code')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This lead code is already registered.',
+                        'errors'  => ['lead_code' => ['This lead code already exists in the system.']],
+                    ], 422);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This phone number is already registered.',
+                        'errors'  => ['phone' => ['This phone number already exists in the system.']],
+                    ], 422);
+                }
             }
             return response()->json([
                 'success' => false,
@@ -432,7 +472,9 @@ class EduLeadController extends Controller
             'statusHistory.user',
         ]);
 
-        return view('edu-leads.show', compact('eduLead'));
+        $isPreLead = (bool) $eduLead->is_pre_lead;
+
+        return view('edu-leads.show', compact('eduLead', 'isPreLead'));
     }
 
     // =========================================================================
@@ -465,10 +507,12 @@ class EduLeadController extends Controller
         $states             = IndiaGeoHelper::states();
         $districtMap        = IndiaGeoHelper::districtMap();
 
+        $isPreLead = (bool) $eduLead->is_pre_lead;
+
         return view('edu-leads.edit', compact(
             'eduLead', 'courses', 'programmes', 'leadSources', 'branches',
             'coursesByProgramme', 'assignableUsers',
-            'states', 'districtMap'
+            'states', 'districtMap', 'isPreLead'
         ));
     }
 
@@ -545,7 +589,7 @@ class EduLeadController extends Controller
                 'message'      => 'Lead updated successfully!',
                 'lead_id'      => $eduLead->id,
                 'lead_code'    => $eduLead->lead_code,
-                'redirect_url' => route('edu-leads.show', $eduLead->id),
+                'redirect_url' => route($this->leadsRoutePrefix((bool) $eduLead->is_pre_lead) . '.show', $eduLead->id),
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -558,11 +602,26 @@ class EduLeadController extends Controller
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('Lead update DB error: ' . $e->getMessage());
             if ($e->errorInfo[1] === 1062) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This phone number is already registered.',
-                    'errors'  => ['phone' => ['This phone number already exists in the system.']],
-                ], 422);
+                $msg = $e->getMessage();
+                if (str_contains($msg, 'whatsapp_number')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This WhatsApp number is already registered.',
+                        'errors'  => ['whatsapp_number' => ['This WhatsApp number already exists in the system.']],
+                    ], 422);
+                } elseif (str_contains($msg, 'lead_code')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This lead code is already registered.',
+                        'errors'  => ['lead_code' => ['This lead code already exists in the system.']],
+                    ], 422);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This phone number is already registered.',
+                        'errors'  => ['phone' => ['This phone number already exists in the system.']],
+                    ], 422);
+                }
             }
             return response()->json([
                 'success' => false,
@@ -737,6 +796,11 @@ class EduLeadController extends Controller
             foreach ($validated['lead_ids'] as $leadId) {
                 $lead = EduLead::find($leadId);
                 if (!$lead) { $skipped++; continue; }
+
+                if ((bool) $lead->is_pre_lead !== $this->preLeadMode()) {
+                    $skipped++;
+                    continue;
+                }
 
                 // LeadManager (assigner) can only assign leads from their own branch
                 if ($user->isLeadManager() && $lead->branch_id !== $user->branch_id) {
@@ -1285,7 +1349,7 @@ class EduLeadController extends Controller
                 'followups' => fn($q) => $q->orderBy('followup_number'),
             ]);
 
-            $query->visibleTo($user);
+            $query->visibleTo($user)->regularLeads();
 
             // ── Filters ───────────────────────────────────────────────────────
             if ($request->filled('interest_level'))     $query->where('interest_level',   $request->interest_level);
@@ -1642,6 +1706,7 @@ class EduLeadController extends Controller
         if (strlen($query) < 2) return response()->json(['leads' => []]);
 
         $leadsQuery = EduLead::with(['course.programme', 'assignedTo', 'leadSource', 'branch'])
+            ->regularLeads()
             ->where(fn($q) => $q
                 ->where('name',               'like', "%{$query}%")
                 ->orWhere('phone',            'like', "%{$query}%")
@@ -1872,9 +1937,11 @@ class EduLeadController extends Controller
                 'lead_ids.*' => 'exists:edu_leads,id',
             ]);
 
-            $leads   = EduLead::whereIn('id', $validated['lead_ids'])->get();
+            $leads   = EduLead::whereIn('id', $validated['lead_ids'])
+                ->where('is_pre_lead', $this->preLeadMode())
+                ->get();
             $count   = 0;
-            $skipped = 0;
+            $skipped = count($validated['lead_ids']) - $leads->count();
 
             foreach ($leads as $lead) {
                 $lead->delete();

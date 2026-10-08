@@ -1,5 +1,11 @@
 @extends('layouts.app')
-@section('title', 'Create Education Lead')
+@php
+    $isPreLead = $isPreLead ?? false;
+    $routePrefix = $isPreLead ? 'edu-pre-leads' : 'edu-leads';
+    $pageTitle = $isPreLead ? 'Create Education Pre-Lead' : 'Create Education Lead';
+    $listTitle = $isPreLead ? 'Education Pre-Leads' : 'Education Leads';
+@endphp
+@section('title', $pageTitle)
 
 @section('extra-css')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
@@ -204,16 +210,16 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h4 class="mb-1">Create Education Lead</h4>
+                    <h4 class="mb-1">{{ $pageTitle }}</h4>
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-0">
                             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('edu-leads.index') }}">Education Leads</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route($routePrefix . '.index') }}">{{ $listTitle }}</a></li>
                             <li class="breadcrumb-item active">Create</li>
                         </ol>
                     </nav>
                 </div>
-                <a href="{{ route('edu-leads.index') }}" class="btn btn-secondary">
+                <a href="{{ route($routePrefix . '.index') }}" class="btn btn-secondary">
                     <i class="las la-arrow-left me-1"></i> Back to List
                 </a>
             </div>
@@ -654,7 +660,7 @@
                             <div class="col-12">
                                 <hr>
                                 <div class="form-action-btns justify-content-end">
-                                    <a href="{{ route('edu-leads.index') }}" class="btn btn-secondary">
+                                    <a href="{{ route($routePrefix . '.index') }}" class="btn btn-secondary">
                                         <i class="las la-times me-1"></i>
                                         <span class="btn-label">Cancel</span>
                                     </a>
@@ -806,7 +812,7 @@ $(function () {
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Creating...');
 
         $.ajax({
-            url: '{{ route("edu-leads.store") }}',
+            url: '{{ route($routePrefix . ".store") }}',
             method: 'POST',
             data: new FormData(form),
             processData: false,

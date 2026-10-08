@@ -1,5 +1,11 @@
 @extends('layouts.app')
-@section('title', 'Education Leads')
+@php
+    $isPreLead = $isPreLead ?? false;
+    $routePrefix = $isPreLead ? 'edu-pre-leads' : 'edu-leads';
+    $pageTitle = $isPreLead ? 'Education Pre-Leads' : 'Education Leads';
+    $createLabel = $isPreLead ? 'Create Pre-Lead' : 'Create Lead';
+@endphp
+@section('title', $pageTitle)
 
 @section('extra-css')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
@@ -705,11 +711,11 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
-                    <h4 class="mb-1">Education Leads</h4>
+                    <h4 class="mb-1">{{ $pageTitle }}</h4>
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-0">
                             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item active">Education Leads</li>
+                            <li class="breadcrumb-item active">{{ $pageTitle }}</li>
                         </ol>
                     </nav>
                 </div>
@@ -1071,13 +1077,15 @@
                     </button>
                     @endif
 
+                    @if(!$isPreLead)
                     <button type="button" class="btn btn-success" id="exportBtn" onclick="exportWithFilters()">
                         <i class="las la-file-download me-1"></i>Export CSV
                     </button>
+                    @endif
 
                     @if(auth()->user()->canCreateLeads())
-                    <a href="{{ route('edu-leads.create') }}" class="btn btn-primary">
-                        <i class="las la-plus me-1"></i>Create Lead
+                    <a href="{{ route($routePrefix . '.create') }}" class="btn btn-primary">
+                        <i class="las la-plus me-1"></i>{{ $createLabel }}
                     </a>
                     @endif
                 </div>
@@ -1143,7 +1151,7 @@
                         </tr>
                     </thead>
                     <tbody id="leadsTableBody">
-                        @include('edu-leads.partials.table-rows')
+                        @include('edu-leads.partials.table-rows', compact('isPreLead', 'routePrefix'))
                     </tbody>
                 </table>
             </div>
@@ -1422,6 +1430,12 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 const districtMap = @json($districtMap ?? []);
+const LEADS_API_PREFIX = @json($isPreLead ? '/edu-pre-leads' : '/edu-leads');
+const LEADS_INDEX_URL = @json(route($routePrefix . '.index'));
+const LEADS_EXPORT_URL = @json(route('edu-leads.export'));
+const LEADS_BULK_ASSIGN_URL = @json(route($routePrefix . '.bulk-assign'));
+const LEADS_BULK_DELETE_URL = @json(route($routePrefix . '.bulk-delete'));
+const IS_PRE_LEAD_LIST = @json($isPreLead);
 
 // Master copy of ALL course options — built once on page load, never mutated
 let allCourseOptions = [];
@@ -1902,7 +1916,7 @@ $(document).ready(function () {
         $('#leadsTable').addClass('table-loading');
 
         activeXhr = $.ajax({
-            url: "{{ route('edu-leads.index') }}",
+            url: LEADS_INDEX_URL,
             type: 'GET',
             data: params,
             dataType: 'json',
@@ -1990,7 +2004,7 @@ $(document).ready(function () {
         // you may want to remove _json for export
         params.delete('_json');
         params.delete('page');
-        window.location.href = "{{ route('edu-leads.export') }}?" + params.toString();
+        window.location.href = LEADS_EXPORT_URL + "?" + params.toString();
     };
 
     // ── FILTER CONTROLS ──────────────────────────────────────────────
@@ -2020,7 +2034,7 @@ $(document).ready(function () {
         $('.status-tab[data-status=""]').addClass('active');
 
         $('#activeFilterCount').hide();
-        window.location.href = "{{ route('edu-leads.index') }}";
+        window.location.href = LEADS_INDEX_URL;
     });
 
     // Search – debounced
@@ -2291,7 +2305,7 @@ $(document).ready(function () {
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Assigning...');
 
         $.ajax({
-            url:  `/edu-leads/${$('#assignLeadId').val()}/assign`,
+            url:  `${LEADS_API_PREFIX}/${$('#assignLeadId').val()}/assign`,
             type: 'POST',
             data: {
                 assigned_to: telecaller,
@@ -2438,7 +2452,7 @@ $(document).ready(function () {
         $('#bulkAssignModal').modal('hide');
 
         $.ajax({
-            url:  "{{ route('edu-leads.bulk-assign') }}",
+            url:  LEADS_BULK_ASSIGN_URL,
             type: 'POST',
             data: { lead_ids: selected, assigned_to: telecaller, notes: $('#bulkNotes').val() },
             success: function (res) {
@@ -2486,7 +2500,7 @@ $(document).ready(function () {
             if (!result.isConfirmed) return;
 
             $.ajax({
-                url:  `/edu-leads/${id}`,
+                url:  `${LEADS_API_PREFIX}/${id}`,
                 type: 'DELETE',
                 success: function (res) {
                     if (res.success) {
@@ -2502,6 +2516,43 @@ $(document).ready(function () {
                 error: function (xhr) {
                     Swal.fire({ icon: 'error', title: 'Error', text: xhr.responseJSON?.message || 'Could not delete lead.' });
                 }
+            });
+        });
+    });
+
+    $(document).on('click', '.convertPreLeadBtn', function () {
+        const id   = $(this).data('id');
+        const name = $(this).data('name');
+        const code = $(this).data('code');
+
+        Swal.fire({
+            title: 'Convert to Lead?',
+            html:  `Move <strong>${name}</strong> (${code}) to <strong>Education Leads</strong>?`,
+            icon:  'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Convert',
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+        }).then(result => {
+            if (!result.isConfirmed) return;
+
+            $.ajax({
+                url:  `${LEADS_API_PREFIX}/${id}/convert`,
+                type: 'POST',
+                success: function (res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Converted!',
+                            text: res.message,
+                            timer: 2200,
+                            showConfirmButton: false,
+                        }).then(() => loadLeads(currentPage));
+                    }
+                },
+                error: function (xhr) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: xhr.responseJSON?.message || 'Could not convert pre-lead.' });
+                },
             });
         });
     });
@@ -2656,7 +2707,7 @@ $(document).ready(function () {
         );
 
         $.ajax({
-            url:  "{{ route('edu-leads.bulk-delete') }}",
+            url:  LEADS_BULK_DELETE_URL,
             type: 'DELETE',
             data: { lead_ids: selected },
             success: function (res) {

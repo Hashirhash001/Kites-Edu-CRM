@@ -1,4 +1,9 @@
 @extends('layouts.app')
+@php
+    $isPreLead = $isPreLead ?? false;
+    $routePrefix = $isPreLead ? 'edu-pre-leads' : 'edu-leads';
+    $listTitle = $isPreLead ? 'Education Pre-Leads' : 'Education Leads';
+@endphp
 
 @section('title', 'Lead Details - ' . $eduLead->name)
 
@@ -1377,13 +1382,21 @@
                 {{-- Right: Action Buttons --}}
                 <div class="col-md-4 text-md-end mt-3 mt-md-0">
                     <div class="lead-header-actions">
-                        <a href="{{ route('edu-leads.index') }}" class="btn btn-light action-button">
+                        <a href="{{ route($routePrefix . '.index') }}" class="btn btn-light action-button">
                             <i class="las la-arrow-left me-1"></i>
                             <span class="btn-label">Back</span>
                         </a>
 
+                        @if($isPreLead && auth()->user()->canCreateLeads())
+                        <button type="button" class="btn btn-success action-button" id="convertPreLeadBtn"
+                                data-id="{{ $eduLead->id }}" data-name="{{ $eduLead->name }}" data-code="{{ $eduLead->lead_code }}">
+                            <i class="las la-exchange-alt me-1"></i>
+                            <span class="btn-label">Convert to Lead</span>
+                        </button>
+                        @endif
+
                         @if($canEdit)
-                        <a href="{{ route('edu-leads.edit', $eduLead->id) }}"
+                        <a href="{{ route($routePrefix . '.edit', $eduLead->id) }}"
                         class="btn btn-primary action-button">
                             <i class="las la-edit me-1"></i>
                             <span class="btn-label">Edit</span>
@@ -2936,6 +2949,8 @@ $(document).ready(function () {
 
     const CSRF = '{{ csrf_token() }}';
     const LEAD = {{ $eduLead->id }};
+    const LEADS_API_PREFIX = @json($isPreLead ? '/edu-pre-leads' : '/edu-leads');
+    const LEADS_INDEX_URL = @json(route($routePrefix . '.index'));
 
     // Ordinal suffix helper — mirrors the blade $ordinal closure
     function ordinal(n) {
@@ -3079,7 +3094,7 @@ $(document).ready(function () {
         $row.addClass('tracking-saving');
 
         $.ajax({
-            url    : '{{ route("edu-leads.updateTracking", $eduLead) }}',
+            url    : '{{ route($routePrefix . ".updateTracking", $eduLead) }}',
             method : 'POST',
             data   : { _token: CSRF, _method: 'PATCH', field, value },
         }).done(function (response) {
@@ -3196,7 +3211,7 @@ $(document).ready(function () {
     // ══════════════════════════════════════════════════════════════════
     // ADD FOLLOWUP
     // ══════════════════════════════════════════════════════════════════
-    handleFormSubmit('#addFollowupForm', '{{ route("edu-leads.addFollowup", $eduLead) }}', '#addFollowupModal', 'Saving...', function (response) {
+    handleFormSubmit('#addFollowupForm', '{{ route($routePrefix . ".addFollowup", $eduLead) }}', '#addFollowupModal', 'Saving...', function (response) {
         $('#addFollowupModal').modal('hide');
         $('#addFollowupForm')[0].reset();
         Swal.fire({ icon: 'success', title: 'Followup Scheduled!', text: response.message, confirmButtonColor: '#667eea', timer: 2000, showConfirmButton: false })
@@ -3209,7 +3224,7 @@ $(document).ready(function () {
     // ══════════════════════════════════════════════════════════════════
     // ADD CALL
     // ══════════════════════════════════════════════════════════════════
-    handleFormSubmit('#addCallForm', '{{ route("edu-leads.addCall", $eduLead) }}', '#addCallModal', 'Saving...', function (response) {
+    handleFormSubmit('#addCallForm', '{{ route($routePrefix . ".addCall", $eduLead) }}', '#addCallModal', 'Saving...', function (response) {
         $('#addCallModal').modal('hide');
         $('#addCallForm')[0].reset();
         $('#connectedFields').hide();
@@ -3226,7 +3241,7 @@ $(document).ready(function () {
     // ══════════════════════════════════════════════════════════════════
     // ADD NOTE
     // ══════════════════════════════════════════════════════════════════
-    handleFormSubmit('#addNoteForm', '{{ route("edu-leads.addNote", $eduLead) }}', '#addNoteModal', 'Saving...', function (response) {
+    handleFormSubmit('#addNoteForm', '{{ route($routePrefix . ".addNote", $eduLead) }}', '#addNoteModal', 'Saving...', function (response) {
         $('#addNoteModal').modal('hide');
         $('#addNoteForm')[0].reset();
         Swal.fire({ icon: 'success', title: 'Note Added!', text: response.message, confirmButtonColor: '#667eea', timer: 2000, showConfirmButton: false })
@@ -3295,7 +3310,7 @@ $(document).ready(function () {
         .html('<span class="spinner-border spinner-border-sm me-1"></span>Saving...');
 
         $.ajax({
-            url:  '/edu-leads/followups/' + id + '/complete',
+            url:  LEADS_API_PREFIX + '/followups/' + id + '/complete',
             type: 'POST',
             data: $(this).serialize(),
             success: function (res) {
@@ -3405,7 +3420,7 @@ $(document).ready(function () {
         .html('<span class="spinner-border spinner-border-sm me-1"></span>Saving...');
 
         $.ajax({
-            url:  '/edu-leads/followups/' + id,
+            url:  LEADS_API_PREFIX + '/followups/' + id,
             type: 'POST',
             data: $(this).serialize(),
             success: function (res) {
@@ -3446,7 +3461,7 @@ $(document).ready(function () {
             if (!result.isConfirmed) return;
 
             $.ajax({
-                url:  '/edu-leads/followup/' + id,
+                url:  LEADS_API_PREFIX + '/followup/' + id,
                 type: 'DELETE',
                 data: { _token: $('meta[name="csrf-token"]').attr('content') },
                 success: function (res) {
@@ -3478,7 +3493,7 @@ $(document).ready(function () {
         const id = $(this).data('id');
         confirmDelete('Delete Call Log?').then(ok => {
             if (!ok) return;
-            $.ajax({ url: `/edu-leads/call/${id}`, method: 'DELETE', data: { _token: CSRF } })
+            $.ajax({ url: `${LEADS_API_PREFIX}/call/${id}`, method: 'DELETE', data: { _token: CSRF } })
                 .done(r => { if (r.success) fadeRemove(`#call-${id}`, '#callLogsContainer', 'call logs'); })
                 .fail(deleteError);
         });
@@ -3488,9 +3503,36 @@ $(document).ready(function () {
         const id = $(this).data('id');
         confirmDelete('Delete Note?').then(ok => {
             if (!ok) return;
-            $.ajax({ url: `/edu-leads/note/${id}`, method: 'DELETE', data: { _token: CSRF } })
+            $.ajax({ url: `${LEADS_API_PREFIX}/note/${id}`, method: 'DELETE', data: { _token: CSRF } })
                 .done(r => { if (r.success) fadeRemove(`#note-${id}`, '#notesContainer', 'notes'); })
                 .fail(deleteError);
+        });
+    });
+
+    // ══════════════════════════════════════════════════════════════════
+    // CONVERT PRE-LEAD
+    // ══════════════════════════════════════════════════════════════════
+    $(document).on('click', '#convertPreLeadBtn', function () {
+        const name = $(this).data('name');
+        const code = $(this).data('code');
+        Swal.fire({
+            title: 'Convert to Lead?',
+            html: `Move <strong>${name}</strong> (${code}) to <strong>Education Leads</strong>?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Convert',
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            $.ajax({ url: `${LEADS_API_PREFIX}/${LEAD}/convert`, method: 'POST', data: { _token: CSRF } })
+                .done(res => {
+                    if (res.success) {
+                        Swal.fire({ icon: 'success', title: 'Converted!', text: res.message, timer: 2000, showConfirmButton: false })
+                            .then(() => { window.location.href = res.redirect_url || LEADS_INDEX_URL; });
+                    }
+                })
+                .fail(xhr => Swal.fire({ icon: 'error', title: 'Error', text: xhr.responseJSON?.message || 'Could not convert.' }));
         });
     });
 
@@ -3507,10 +3549,10 @@ $(document).ready(function () {
         }).then(result => {
             if (!result.isConfirmed) return;
             Swal.fire({ title: 'Deleting...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            $.ajax({ url: `{{ route('edu-leads.destroy', '') }}/${LEAD}`, method: 'DELETE', data: { _token: CSRF } })
+            $.ajax({ url: `${LEADS_API_PREFIX}/${LEAD}`, method: 'DELETE', data: { _token: CSRF } })
                 .done(() => {
                     Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false })
-                        .then(() => { window.location.href = '{{ route("edu-leads.index") }}'; });
+                        .then(() => { window.location.href = LEADS_INDEX_URL; });
                 })
                 .fail(xhr => {
                     Swal.fire({ icon: 'error', title: 'Error!', text: xhr.responseJSON?.message || 'Failed to delete.', confirmButtonColor: '#dc3545' });

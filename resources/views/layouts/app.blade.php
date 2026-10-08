@@ -186,7 +186,7 @@
                             $authId     = $authUser->id;
 
                             // Hot leads — scoped by role
-                            $hotQuery = \App\Models\EduLead::where('interest_level', 'hot');
+                            $hotQuery = \App\Models\EduLead::where('interest_level', 'hot')->regularLeads();
 
                             if ($authRole === 'telecaller') {
                                 $hotQuery->where('assigned_to', $authId);
@@ -194,6 +194,8 @@
                                 $hotQuery->where('branch_id', $authUser->branch_id);
                             }
                             $hotLeadsCount = $hotQuery->count();
+
+                            $preLeadsCount = \App\Models\EduLead::preLeads()->visibleTo($authUser)->count();
 
                             // Overdue follow-ups — scoped by role
                             $overdueQuery = \App\Models\EduLeadFollowup::where('status', 'pending')
@@ -211,11 +213,12 @@
                             // My assigned pending leads (telecaller)
                             $myPendingLeads = $authRole === 'telecaller'
                                 ? \App\Models\EduLead::where('assigned_to', $authId)
+                                    ->regularLeads()
                                     ->where('final_status', 'pending')->count()
                                 : 0;
 
                         } catch (\Exception $e) {
-                            $hotLeadsCount = $overdueFollowupsCount = $myPendingLeads = 0;
+                            $hotLeadsCount = $overdueFollowupsCount = $myPendingLeads = $preLeadsCount = 0;
                         }
                     @endphp
 
@@ -236,6 +239,19 @@
                         </a>
                     </li>
 
+                    {{-- Education Pre-Leads --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('edu-pre-leads.*') ? 'active' : '' }}"
+                           href="{{ route('edu-pre-leads.index') }}">
+                            <i class="las la-user-clock menu-icon"></i>
+                            <span>Education Pre-Leads
+                                @if(($preLeadsCount ?? 0) > 0)
+                                    <span class="badge bg-primary ms-2">{{ $preLeadsCount }}</span>
+                                @endif
+                            </span>
+                        </a>
+                    </li>
+
                     {{-- Quick Actions — all roles that can create --}}
                     @if($authUser->canCreateLeads())
                     <li class="menu-label mt-3"><span>Quick Actions</span></li>
@@ -245,6 +261,14 @@
                            href="{{ route('edu-leads.create') }}">
                             <i class="las la-plus-circle menu-icon"></i>
                             <span>New Lead</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('edu-pre-leads.create') ? 'active' : '' }}"
+                           href="{{ route('edu-pre-leads.create') }}">
+                            <i class="las la-user-plus menu-icon"></i>
+                            <span>New Pre-Lead</span>
                         </a>
                     </li>
                     @endif
